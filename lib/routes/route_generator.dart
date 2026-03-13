@@ -8,7 +8,13 @@ import '../features/asha_worker/screens/asha_dashboard.dart';
 import '../features/doctor/screens/doctor_dashboard.dart';
 import '../features/user/screens/login_screen.dart' as user_login;
 import '../features/asha_worker/screens/login_screen.dart' as asha_login;
-import '../features/doctor/screens/login_screen.dart' as doctor_login;
+import '../features/doctor/screens/doctor_login_screen.dart' as doctor_login;
+import '../features/user/screens/symptom_checker_screen.dart';
+import '../features/user/screens/doctor_consult_screen.dart';
+import '../features/user/screens/medicine_tracker_screen.dart';
+import '../features/user/screens/add_medicine_screen.dart';
+import '../features/user/screens/nearby_healthcare_screen.dart';
+
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -35,6 +41,29 @@ class RouteGenerator {
         return _fadeRoute(_PlaceholderScreen(title: 'Login with OTP'));
       case AppRoutes.forgotPassword:
         return _fadeRoute(_PlaceholderScreen(title: 'Forgot Password'));
+      case AppRoutes.symptomChecker:
+        return _fadeRoute(const SymptomCheckerScreen());
+      case AppRoutes.medicineTracker:
+        return _fadeRoute(const MedicineTrackerScreen());
+      case AppRoutes.addMedicine:
+        return _fadeRoute(const AddMedicineScreen());
+
+      case AppRoutes.nearbyClinics:
+        return _fadeRoute(const NearbyHealthcareScreen());
+
+      case AppRoutes.consultDoctor:
+        return _fadeRoute(const DoctorConsultScreen());
+
+      case AppRoutes.myPrescriptions:
+        return _fadeRoute(_PlaceholderScreen(title: 'My Prescriptions'));
+      case AppRoutes.healthTips:
+        return _fadeRoute(_PlaceholderScreen(title: 'Health Tips'));
+      case AppRoutes.emergencyHelp:
+        return _fadeRoute(_PlaceholderScreen(title: 'Emergency Help'));
+      case AppRoutes.settings:
+        return _fadeRoute(_PlaceholderScreen(title: 'Settings'));
+      case AppRoutes.profile:
+        return _fadeRoute(_PlaceholderScreen(title: 'Profile'));
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

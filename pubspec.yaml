@@ -43,6 +43,9 @@ dependencies:
   connectivity_plus: ^6.0.3
   google_fonts: ^6.2.1
   json_annotation: ^4.9.0
+  google_maps_flutter: ^2.14.2
+  geolocator: ^14.0.2
+  fl_chart: 0.69.0
 
 dev_dependencies:
   flutter_test:
