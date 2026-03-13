@@ -8,6 +8,7 @@ import '../../doctor/screens/consult_doctor_screen.dart';
 import '../../reports/screens/village_health_report_screen.dart';
 import '../../referral/screens/emergency_referral_screen.dart';
 import '../../settings/screens/settings_screen.dart';
+import '../screens/login_screen.dart';
 
 class AshaDrawer extends StatelessWidget {
   const AshaDrawer({super.key});
@@ -128,7 +129,15 @@ class AshaDrawer extends StatelessWidget {
               'Logout',
               style: TextStyle(color: Colors.redAccent),
             ),
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AshaLoginScreen(),
+                ),
+                (route) => false,
+              );
+            },
           ),
         ],
       ),

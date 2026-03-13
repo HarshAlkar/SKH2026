@@ -4,104 +4,102 @@ import 'package:intl/intl.dart';
 
 class ConsultationCard extends StatelessWidget {
   final ConsultationModel consultation;
+  final VoidCallback onTap;
 
-  const ConsultationCard({super.key, required this.consultation});
+  const ConsultationCard({
+    super.key,
+    required this.consultation,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    Color statusColor;
-    String statusText;
-
-    switch (consultation.status) {
-      case ConsultationStatus.pending:
-        statusColor = Colors.orange;
-        statusText = "Pending";
-        break;
-      case ConsultationStatus.adviceProvided:
-        statusColor = Colors.blue;
-        statusText = "Advice Provided";
-        break;
-      case ConsultationStatus.completed:
-        statusColor = Colors.green;
-        statusText = "Completed";
-        break;
-    }
+    const Color primaryColor = Color(0xFF2F4DB6);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
-            offset: const Offset(0, 2),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: statusColor.withOpacity(0.1),
-            child: Icon(
-              Icons.medical_services_outlined,
-              color: statusColor,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
               children: [
-                Text(
-                  consultation.doctorName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: Colors.black87,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.medical_services_outlined,
+                    color: primaryColor,
+                    size: 24,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  "\${statusText} • \${_formatTimestamp(consultation.timestamp)}",
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        consultation.doctorName,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "${_formatType(consultation.consultationType)} • ${DateFormat('MMM dd, hh:mm a').format(consultation.timestamp)}",
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
                 ),
+                _buildStatusBadge(consultation.status),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              statusText,
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  String _formatTimestamp(DateTime timestamp) {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
+  String _formatType(ConsultationType type) {
+    return type.name[0].toUpperCase() + type.name.substring(1);
+  }
 
-    if (difference.inMinutes < 60) {
-      return "\${difference.inMinutes} mins ago";
-    } else if (difference.inHours < 24) {
-      return "\${difference.inHours} hrs ago";
-    } else {
-      return DateFormat('MMM d').format(timestamp);
-    }
+  Widget _buildStatusBadge(ConsultationStatus status) {
+    bool isPending = status == ConsultationStatus.pending;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: (isPending ? Colors.orange : Colors.blue).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        isPending ? "Pending" : "Advice Provided",
+        style: TextStyle(
+          color: isPending ? Colors.orange : Colors.blue[700],
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 }

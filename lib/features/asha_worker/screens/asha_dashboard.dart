@@ -12,6 +12,8 @@ import '../widgets/asha_drawer.dart';
 import '../../activity/screens/all_activity_screen.dart';
 import '../../activity/screens/activity_details_screen.dart';
 import '../../activity/models/activity_model.dart';
+import '../../notifications/screens/notification_screen.dart';
+import '../../notifications/widgets/notification_badge.dart';
 
 class AshaDashboard extends StatelessWidget {
   const AshaDashboard({super.key});
@@ -79,6 +81,17 @@ class AshaDashboard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  NotificationBadge(
+                    count: 3,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NotificationScreen(),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
@@ -90,7 +103,7 @@ class AshaDashboard extends StatelessWidget {
                 mainAxisSpacing: 16,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.1,
+                childAspectRatio: 1.0,
                 children: [
                   StatsCard(
                     icon: Icons.people_alt_outlined,

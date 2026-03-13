@@ -86,13 +86,8 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            color: darkBlue,
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
+        actions: const [
+          SizedBox(width: 8),
         ],
       ),
       drawer: const AshaDrawer(),
