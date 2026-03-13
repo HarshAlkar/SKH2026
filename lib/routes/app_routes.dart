@@ -9,4 +9,6 @@ class AppRoutes {
   
   static const String symptomChecker = '/symptom-checker';
   static const String videoCall = '/video-call';
+  static const String loginWithOtp = '/login-with-otp';
+  static const String forgotPassword = '/forgot-password';
 }
