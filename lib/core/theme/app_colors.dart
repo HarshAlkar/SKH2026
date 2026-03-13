@@ -8,7 +8,7 @@ class AppColors {
   static const Color surface = Colors.white;
   static const Color error = Color(0xFFD32F2F);
   static const Color success = Color(0xFF388E3C);
-  
+
   static const Color textPrimary = Color(0xFF1E293B);
   static const Color textSecondary = Color(0xFF64748B);
 }

@@ -19,9 +19,7 @@ class AppTheme {
           color: AppColors.textPrimary,
           fontWeight: FontWeight.bold,
         ),
-        bodyLarge: GoogleFonts.outfit(
-          color: AppColors.textPrimary,
-        ),
+        bodyLarge: GoogleFonts.outfit(color: AppColors.textPrimary),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
