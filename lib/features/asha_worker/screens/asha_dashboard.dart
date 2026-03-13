@@ -6,6 +6,7 @@ import '../../alerts/screens/risk_alert_screen.dart';
 import '../../doctor/screens/consult_doctor_screen.dart';
 import '../../reports/screens/village_health_report_screen.dart';
 import '../../health_records/screens/health_records_screen.dart';
+import '../../visits/screens/village_visits_screen.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/activity_tile.dart';
@@ -296,7 +297,10 @@ class AshaDashboard extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.directions_walk),
             title: const Text('Village Visits'),
-            onTap: () => Navigator.pop(context),
+            onTap: () {
+              Navigator.pop(context);
+              _navigateTo(context, const VillageVisitsScreen());
+            },
           ),
           ListTile(
             leading: const Icon(Icons.folder_shared_outlined),
