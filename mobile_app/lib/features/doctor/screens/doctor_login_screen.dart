@@ -16,7 +16,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailPhoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -32,10 +32,10 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
       setState(() {
         _isLoading = true;
       });
-      
+
       // Simulate login API call
       await Future.delayed(const Duration(seconds: 2));
-      
+
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -45,7 +45,8 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const DoctorDashboard(),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const DoctorDashboard(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -64,7 +65,10 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: primaryColor,
-        leading: const Icon(Icons.add_box_outlined, color: Colors.white), // Medical plus icon alternative
+        leading: const Icon(
+          Icons.add_box_outlined,
+          color: Colors.white,
+        ), // Medical plus icon alternative
         title: const Text(
           'Gramin Health Connect',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -83,7 +87,10 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 16.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -124,7 +131,10 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: primaryColor.withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(20),
@@ -155,9 +165,9 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // DESCRIPTION TEXT
                     const Text(
                       "Provide expert healthcare guidance to rural communities with high-trust digital tools.",
@@ -168,9 +178,9 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                         height: 1.5,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // LOGIN FORM
                     Container(
                       padding: const EdgeInsets.all(24),
@@ -205,26 +215,44 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                               keyboardType: TextInputType.emailAddress,
                               decoration: InputDecoration(
                                 hintText: "doctor@graminhealth.com",
-                                hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-                                prefixIcon: const Icon(Icons.alternate_email, color: primaryColor, size: 20),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFF94A3B8),
+                                  fontSize: 14,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.alternate_email,
+                                  color: primaryColor,
+                                  size: 20,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 filled: true,
                                 fillColor: const Color(0xFFF8FAFC),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: primaryColor, width: 2),
+                                  borderSide: const BorderSide(
+                                    color: primaryColor,
+                                    width: 2,
+                                  ),
                                 ),
                                 errorBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Colors.redAccent),
+                                  borderSide: const BorderSide(
+                                    color: Colors.redAccent,
+                                  ),
                                 ),
                               ),
                               validator: (value) {
@@ -234,9 +262,9 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                 return null;
                               },
                             ),
-                            
+
                             const SizedBox(height: 20),
-                            
+
                             // FIELD 2
                             const Text(
                               "Password",
@@ -252,11 +280,20 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                               obscureText: _obscurePassword,
                               decoration: InputDecoration(
                                 hintText: "Enter your password",
-                                hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-                                prefixIcon: const Icon(Icons.lock_outline, color: primaryColor, size: 20),
+                                hintStyle: const TextStyle(
+                                  color: Color(0xFF94A3B8),
+                                  fontSize: 14,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.lock_outline,
+                                  color: primaryColor,
+                                  size: 20,
+                                ),
                                 suffixIcon: IconButton(
                                   icon: Icon(
-                                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                    _obscurePassword
+                                        ? Icons.visibility_off_outlined
+                                        : Icons.visibility_outlined,
                                     color: const Color(0xFF94A3B8),
                                     size: 20,
                                   ),
@@ -266,24 +303,35 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                     });
                                   },
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
                                 filled: true,
                                 fillColor: const Color(0xFFF8FAFC),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xFFE2E8F0),
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: primaryColor, width: 2),
+                                  borderSide: const BorderSide(
+                                    color: primaryColor,
+                                    width: 2,
+                                  ),
                                 ),
                                 errorBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Colors.redAccent),
+                                  borderSide: const BorderSide(
+                                    color: Colors.redAccent,
+                                  ),
                                 ),
                               ),
                               validator: (value) {
@@ -293,9 +341,9 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                 return null;
                               },
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // HELPER LINKS
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -305,7 +353,8 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => const DoctorForgotPasswordScreen(),
+                                        builder: (context) =>
+                                            const DoctorForgotPasswordScreen(),
                                       ),
                                     );
                                   },
@@ -323,7 +372,8 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => const DoctorOtpLoginScreen(),
+                                        builder: (context) =>
+                                            const DoctorOtpLoginScreen(),
                                       ),
                                     );
                                   },
@@ -338,9 +388,9 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                 ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 24),
-                            
+
                             // PRIMARY BUTTON
                             SizedBox(
                               width: double.infinity,
@@ -365,7 +415,8 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                         ),
                                       )
                                     : const Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Icon(Icons.login_rounded, size: 20),
                                           SizedBox(width: 8),
@@ -380,9 +431,9 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                       ),
                               ),
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // SECONDARY BUTTON
                             SizedBox(
                               width: double.infinity,
@@ -392,7 +443,8 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const DoctorRegisterScreen(),
+                                      builder: (context) =>
+                                          const DoctorRegisterScreen(),
                                     ),
                                   );
                                 },
@@ -407,7 +459,10 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                 child: const Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.person_add_alt_1_rounded, size: 20),
+                                    Icon(
+                                      Icons.person_add_alt_1_rounded,
+                                      size: 20,
+                                    ),
                                     SizedBox(width: 8),
                                     Text(
                                       "Register as Doctor",
@@ -424,13 +479,15 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 48),
-                    
+
                     // SECURITY FEATURES SECTION
                     Row(
                       children: [
-                        const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
+                        const Expanded(
+                          child: Divider(color: Color(0xFFE2E8F0)),
+                        ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
@@ -443,7 +500,9 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                             ),
                           ),
                         ),
-                        const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
+                        const Expanded(
+                          child: Divider(color: Color(0xFFE2E8F0)),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -451,17 +510,29 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSecurityFeature(Icons.verified_user_outlined, "HIPAA\nCompliant", primaryColor),
+                        _buildSecurityFeature(
+                          Icons.verified_user_outlined,
+                          "HIPAA\nCompliant",
+                          primaryColor,
+                        ),
                         const SizedBox(width: 24),
-                        _buildSecurityFeature(Icons.lock_outline, "256-bit AES\nEncryption", primaryColor),
+                        _buildSecurityFeature(
+                          Icons.lock_outline,
+                          "256-bit AES\nEncryption",
+                          primaryColor,
+                        ),
                         const SizedBox(width: 24),
-                        _buildSecurityFeature(Icons.support_agent_outlined, "24/7\nSupport", primaryColor),
+                        _buildSecurityFeature(
+                          Icons.support_agent_outlined,
+                          "24/7\nSupport",
+                          primaryColor,
+                        ),
                       ],
                     ),
                   ],
                 ),
               ),
-              
+
               // FOOTER
               Container(
                 width: double.infinity,
@@ -471,10 +542,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                   children: [
                     const Text(
                       "© 2024 Gramin Health Connect",
-                      style: TextStyle(
-                        color: Color(0xFF94A3B8),
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
                     ),
                     const SizedBox(height: 8),
                     InkWell(

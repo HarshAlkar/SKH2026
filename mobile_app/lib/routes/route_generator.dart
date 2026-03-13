@@ -17,8 +17,21 @@ import '../features/user/screens/nearby_healthcare_screen.dart';
 import '../features/user/screens/my_prescriptions_screen.dart';
 import '../features/user/screens/emergency_help_screen.dart';
 
-
-
+// ASHA Feature Screens
+import '../features/reports/screens/village_health_report_screen.dart';
+import '../features/patient/screens/village_patients_screen.dart';
+import '../features/patient/models/patient_model.dart';
+import '../features/patient/screens/register_patient_screen.dart';
+import '../features/patient/screens/edit_patient_screen.dart';
+import '../features/asha_worker/screens/update_health_screen.dart';
+import '../features/alerts/screens/risk_alert_screen.dart';
+import '../features/doctor/screens/consult_doctor_screen.dart';
+import '../features/health_records/screens/health_records_screen.dart';
+import '../features/visits/screens/village_visits_screen.dart';
+import '../features/visits/screens/schedule_visit_screen.dart';
+import '../features/referral/screens/emergency_referral_screen.dart';
+import '../features/referral/screens/referral_history_screen.dart';
+import '../features/settings/screens/settings_screen.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -51,25 +64,49 @@ class RouteGenerator {
         return _fadeRoute(const MedicineTrackerScreen());
       case AppRoutes.addMedicine:
         return _fadeRoute(const AddMedicineScreen());
-
       case AppRoutes.nearbyClinics:
         return _fadeRoute(const NearbyHealthcareScreen());
-
       case AppRoutes.consultDoctor:
         return _fadeRoute(const DoctorConsultScreen());
-
       case AppRoutes.myPrescriptions:
         return _fadeRoute(const MyPrescriptionsScreen());
-
       case AppRoutes.healthTips:
         return _fadeRoute(_PlaceholderScreen(title: 'Health Tips'));
       case AppRoutes.emergencyHelp:
         return _fadeRoute(const EmergencyHelpScreen());
-
       case AppRoutes.settings:
         return _fadeRoute(_PlaceholderScreen(title: 'Settings'));
       case AppRoutes.profile:
         return _fadeRoute(_PlaceholderScreen(title: 'Profile'));
+
+      // ASHA Worker portal routes
+      case AppRoutes.villageHealthReport:
+        return _fadeRoute(const VillageHealthReportScreen());
+      case AppRoutes.villagePatients:
+        return _fadeRoute(const VillagePatientsScreen());
+      case AppRoutes.registerPatient:
+        return _fadeRoute(const RegisterPatientScreen());
+      case AppRoutes.editPatient:
+        final patient = settings.arguments as PatientModel;
+        return _fadeRoute(EditPatientScreen(patient: patient));
+      case AppRoutes.updateHealth:
+        return _fadeRoute(const UpdateHealthScreen());
+      case AppRoutes.riskAlerts:
+        return _fadeRoute(const RiskAlertScreen());
+      case AppRoutes.ashaConsultDoctor:
+        return _fadeRoute(const ConsultDoctorScreen());
+      case AppRoutes.healthRecords:
+        return _fadeRoute(const HealthRecordsScreen());
+      case AppRoutes.villageVisits:
+        return _fadeRoute(const VillageVisitsScreen());
+      case AppRoutes.scheduleVisit:
+        return _fadeRoute(const ScheduleVisitScreen());
+      case AppRoutes.emergencyReferral:
+        return _fadeRoute(const EmergencyReferralScreen());
+      case AppRoutes.referralHistory:
+        return _fadeRoute(const ReferralHistoryScreen());
+      case AppRoutes.ashaSettings:
+        return _fadeRoute(const SettingsScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

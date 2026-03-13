@@ -13,7 +13,7 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
@@ -22,7 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _conditionsController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   // State variables
   String? _selectedGender;
   String? _selectedBloodGroup;
@@ -31,7 +31,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
 
   final List<String> _genders = ['Male', 'Female', 'Other'];
-  final List<String> _bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  final List<String> _bloodGroups = [
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'AB+',
+    'AB-',
+    'O+',
+    'O-',
+  ];
 
   @override
   void dispose() {
@@ -53,12 +62,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
 
       setState(() => _isLoading = true);
-      
+
       // Simulate API call
       await Future.delayed(const Duration(seconds: 2));
-      
+
       setState(() => _isLoading = false);
-      
+
       if (mounted) {
         Helpers.showSnackBar(context, 'Registration Successful! Please login.');
         Navigator.pushReplacementNamed(context, AppRoutes.login);
@@ -79,7 +88,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         title: const Text(
           'Gramin Health Connect',
-          style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: SafeArea(
@@ -102,7 +114,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             label: 'Full Name',
                             placeholder: 'Enter your full name',
                             icon: Icons.badge_outlined,
-                            validator: (v) => Validators.validateRequired(v, 'Full Name'),
+                            validator: (v) =>
+                                Validators.validateRequired(v, 'Full Name'),
                           ),
                           const SizedBox(height: 16),
                           Row(
@@ -115,7 +128,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   placeholder: 'Age',
                                   icon: Icons.cake_outlined,
                                   keyboardType: TextInputType.number,
-                                  validator: (v) => Validators.validateRequired(v, 'Age'),
+                                  validator: (v) =>
+                                      Validators.validateRequired(v, 'Age'),
                                 ),
                               ),
                               const SizedBox(width: 16),
@@ -127,8 +141,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   items: _genders,
                                   placeholder: 'Select',
                                   icon: Icons.wc_outlined,
-                                  onChanged: (v) => setState(() => _selectedGender = v),
-                                  validator: (v) => Validators.validateRequired(v, 'Gender'),
+                                  onChanged: (v) =>
+                                      setState(() => _selectedGender = v),
+                                  validator: (v) =>
+                                      Validators.validateRequired(v, 'Gender'),
                                 ),
                               ),
                             ],
@@ -148,7 +164,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             label: 'Village / Location',
                             placeholder: 'Enter your village name',
                             icon: Icons.location_on_outlined,
-                            validator: (v) => Validators.validateRequired(v, 'Village/Location'),
+                            validator: (v) => Validators.validateRequired(
+                              v,
+                              'Village/Location',
+                            ),
                           ),
                         ],
                       ),
@@ -163,13 +182,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             items: _bloodGroups,
                             placeholder: 'Select Blood Group',
                             icon: Icons.bloodtype_outlined,
-                            onChanged: (v) => setState(() => _selectedBloodGroup = v),
+                            onChanged: (v) =>
+                                setState(() => _selectedBloodGroup = v),
                           ),
                           const SizedBox(height: 16),
                           _buildTextField(
                             controller: _conditionsController,
                             label: 'Existing Health Conditions',
-                            placeholder: 'e.g. Diabetes, Blood Pressure, Allergies',
+                            placeholder:
+                                'e.g. Diabetes, Blood Pressure, Allergies',
                             icon: Icons.medical_services_outlined,
                             maxLines: 3,
                           ),
@@ -187,9 +208,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             icon: Icons.vpn_key_outlined,
                             isPassword: true,
                             obscureText: _obscurePassword,
-                            onToggleVisibility: () => setState(() => _obscurePassword = !_obscurePassword),
+                            onToggleVisibility: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
                             validator: (v) {
-                              if (v == null || v.length < 6) return 'Password must be at least 6 characters';
+                              if (v == null || v.length < 6)
+                                return 'Password must be at least 6 characters';
                               return null;
                             },
                           ),
@@ -201,8 +225,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             icon: Icons.shield_outlined,
                             isPassword: true,
                             obscureText: _obscureConfirmPassword,
-                            onToggleVisibility: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                            validator: (v) => Validators.validateRequired(v, 'Confirm Password'),
+                            onToggleVisibility: () => setState(
+                              () => _obscureConfirmPassword =
+                                  !_obscureConfirmPassword,
+                            ),
+                            validator: (v) => Validators.validateRequired(
+                              v,
+                              'Confirm Password',
+                            ),
                           ),
                         ],
                       ),
@@ -249,7 +279,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Image.asset(
               'assets/images/registration_header.png',
               fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => const Icon(Icons.health_and_safety, size: 80, color: AppColors.primary),
+              errorBuilder: (context, error, stackTrace) => const Icon(
+                Icons.health_and_safety,
+                size: 80,
+                color: AppColors.primary,
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -265,17 +299,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const Text(
             'Join thousands of villagers getting better care today.',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSectionCard({required String title, required IconData icon, required List<Widget> children}) {
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -338,7 +373,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF475569),
+          ),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -360,7 +399,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: onToggleVisibility,
                   )
                 : null,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.shade200),
@@ -371,7 +413,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
             filled: true,
             fillColor: Colors.grey.shade50,
@@ -395,24 +440,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF475569)),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF475569),
+          ),
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: value,
           icon: const Icon(Icons.expand_more, color: Colors.grey),
           items: items.map((String item) {
-            return DropdownMenuItem<String>(
-              value: item,
-              child: Text(item),
-            );
+            return DropdownMenuItem<String>(value: item, child: Text(item));
           }).toList(),
           onChanged: onChanged,
           validator: validator,
           decoration: InputDecoration(
             hintText: placeholder,
             prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.shade200),
@@ -423,7 +472,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.primary,
+                width: 1.5,
+              ),
             ),
             filled: true,
             fillColor: Colors.grey.shade50,
@@ -441,7 +493,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         onPressed: _isLoading ? null : _handleRegistration,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.secondary, // Green as per design
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           elevation: 4,
           shadowColor: AppColors.secondary.withOpacity(0.4),
         ),
@@ -466,7 +520,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text('Already have an account? ', style: TextStyle(color: AppColors.textSecondary)),
+        const Text(
+          'Already have an account? ',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
         GestureDetector(
           onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.login),
           child: const Text(

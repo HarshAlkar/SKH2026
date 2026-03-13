@@ -3,6 +3,10 @@ import '../models/consultation_model.dart';
 import '../widgets/consultation_card.dart';
 import '../widgets/patient_selector.dart';
 import '../widgets/consultation_form.dart';
+<<<<<<< HEAD:mobile_app/lib/features/doctor/screens/consult_doctor_screen.dart
+=======
+import '../../asha_worker/widgets/asha_drawer.dart';
+>>>>>>> ce6c8e4eca860c7040d24f0640c17bf9aff762b1:lib/features/doctor/screens/consult_doctor_screen.dart
 
 class ConsultDoctorScreen extends StatefulWidget {
   const ConsultDoctorScreen({super.key});
@@ -84,6 +88,7 @@ class _ConsultDoctorScreenState extends State<ConsultDoctorScreen> {
           ),
         ),
         centerTitle: true,
+<<<<<<< HEAD:mobile_app/lib/features/doctor/screens/consult_doctor_screen.dart
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_new,
@@ -91,6 +96,13 @@ class _ConsultDoctorScreenState extends State<ConsultDoctorScreen> {
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
+=======
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+>>>>>>> ce6c8e4eca860c7040d24f0640c17bf9aff762b1:lib/features/doctor/screens/consult_doctor_screen.dart
         ),
         actions: [
           IconButton(
@@ -224,6 +236,10 @@ class _ConsultDoctorScreenState extends State<ConsultDoctorScreen> {
             ),
         ],
       ),
+<<<<<<< HEAD:mobile_app/lib/features/doctor/screens/consult_doctor_screen.dart
+=======
+      drawer: const AshaDrawer(),
+>>>>>>> ce6c8e4eca860c7040d24f0640c17bf9aff762b1:lib/features/doctor/screens/consult_doctor_screen.dart
     );
   }
 }

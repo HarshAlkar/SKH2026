@@ -11,10 +11,7 @@ class LoadingIndicator extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const CircularProgressIndicator(),
-          if (message != null) ...[
-            const SizedBox(height: 16),
-            Text(message!),
-          ]
+          if (message != null) ...[const SizedBox(height: 16), Text(message!)],
         ],
       ),
     );
