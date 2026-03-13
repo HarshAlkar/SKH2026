@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/patient_model.dart';
 
 class PatientProvider extends ChangeNotifier {
-  List<PatientModel> _patients = [];
+  final List<PatientModel> _patients = [];
   bool _isLoading = false;
 
   List<PatientModel> get patients => _patients;

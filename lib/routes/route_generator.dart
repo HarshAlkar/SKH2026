@@ -8,7 +8,7 @@ import '../features/asha_worker/screens/asha_dashboard.dart';
 import '../features/doctor/screens/doctor_dashboard.dart';
 import '../features/user/screens/login_screen.dart' as user_login;
 import '../features/asha_worker/screens/login_screen.dart' as asha_login;
-import '../features/doctor/screens/login_screen.dart' as doctor_login;
+import '../features/doctor/screens/doctor_login_screen.dart' as doctor_login;
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {

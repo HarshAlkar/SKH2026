@@ -399,7 +399,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           icon: const Icon(Icons.expand_more, color: Colors.grey),
           items: items.map((String item) {
             return DropdownMenuItem<String>(

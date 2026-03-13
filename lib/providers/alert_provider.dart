@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/alert_model.dart';
 
 class AlertProvider extends ChangeNotifier {
-  List<AlertModel> _alerts = [];
+  final List<AlertModel> _alerts = [];
 
   List<AlertModel> get alerts => _alerts;
 
