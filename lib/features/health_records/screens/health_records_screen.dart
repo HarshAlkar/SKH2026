@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/health_record_model.dart';
 import '../widgets/health_record_card.dart';
 import '../../patient/screens/register_patient_screen.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 
 class HealthRecordsScreen extends StatefulWidget {
   const HealthRecordsScreen({super.key});
@@ -107,13 +108,11 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
         backgroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
-          onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
@@ -135,6 +134,7 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
         backgroundColor: primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
+      drawer: const AshaDrawer(),
       body: SafeArea(
         child: Column(
           children: [

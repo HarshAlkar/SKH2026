@@ -25,11 +25,18 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             color: AppColors.primary.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.health_and_safety, color: AppColors.primary, size: 20),
+          child: const Icon(
+            Icons.health_and_safety,
+            color: AppColors.primary,
+            size: 20,
+          ),
         ),
         title: const Text(
           'Gramin Health Connect',
-          style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: SafeArea(
@@ -51,43 +58,44 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               const SizedBox(height: 12),
               const Text(
                 'Select your role to continue',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppColors.textSecondary,
-                ),
+                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 32),
-              
+
               _buildRoleCard(
                 index: 0,
                 icon: Icons.person_outline,
                 title: 'Villager / Patient',
-                description: 'Check symptoms, track medicines, and consult doctors for your family\'s health.',
+                description:
+                    'Check symptoms, track medicines, and consult doctors for your family\'s health.',
                 buttonText: 'Continue as Patient',
                 color: AppColors.primary,
                 onTap: () => Navigator.pushNamed(context, AppRoutes.userLogin),
               ),
-              
+
               _buildRoleCard(
                 index: 1,
                 icon: Icons.assignment_ind_outlined,
                 title: 'ASHA Worker',
-                description: 'Manage village health data, track community visits, and assist local patients.',
+                description:
+                    'Manage village health data, track community visits, and assist local patients.',
                 buttonText: 'Continue as ASHA',
                 color: AppColors.secondary,
                 onTap: () => Navigator.pushNamed(context, AppRoutes.ashaLogin),
               ),
-              
+
               _buildRoleCard(
                 index: 2,
                 icon: Icons.medical_services_outlined,
                 title: 'Doctor',
-                description: 'Provide telemedicine consultation and expert medical advice to rural communities.',
+                description:
+                    'Provide telemedicine consultation and expert medical advice to rural communities.',
                 buttonText: 'Continue as Doctor',
                 color: Colors.orange,
-                onTap: () => Navigator.pushNamed(context, AppRoutes.doctorLogin),
+                onTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.doctorLogin),
               ),
-              
+
               const SizedBox(height: 20),
               const Center(
                 child: Text(
@@ -178,12 +186,17 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: color,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 0,
                   ),
                   child: Text(
                     buttonText,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
               ),

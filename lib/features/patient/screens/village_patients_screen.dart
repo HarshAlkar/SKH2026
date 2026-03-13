@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/patient_model.dart';
 import '../widgets/patient_card.dart';
 import '../widgets/add_patient_button.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 
 class VillagePatientsScreen extends StatefulWidget {
   const VillagePatientsScreen({super.key});
@@ -79,6 +80,12 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
         backgroundColor: Colors.white,
         elevation: 0.5,
         iconTheme: IconThemeData(color: darkBlue),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications),
@@ -88,6 +95,7 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
           const SizedBox(width: 8),
         ],
       ),
+      drawer: const AshaDrawer(),
       body: Column(
         children: [
           // Search Bar Section

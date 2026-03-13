@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/health_chart.dart';
 import '../widgets/progress_indicator_widget.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 
 class VillageHealthReportScreen extends StatelessWidget {
   const VillageHealthReportScreen({super.key});
@@ -26,13 +27,11 @@ class VillageHealthReportScreen extends StatelessWidget {
         backgroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
-          onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
@@ -199,6 +198,7 @@ class VillageHealthReportScreen extends StatelessWidget {
           ),
         ),
       ),
+      drawer: const AshaDrawer(),
     );
   }
 

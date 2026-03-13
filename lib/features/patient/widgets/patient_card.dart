@@ -110,8 +110,10 @@ class _PatientCardState extends State<PatientCard> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () =>
-                          _navigateTo(context, const PatientDetailsScreen()),
+                      onPressed: () => _navigateTo(
+                        context,
+                        PatientDetailsScreen(patient: widget.patient),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF005BBC), // Dark blue
                         foregroundColor: Colors.white,

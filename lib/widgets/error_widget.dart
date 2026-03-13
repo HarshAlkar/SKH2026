@@ -18,7 +18,7 @@ class AppErrorWidget extends StatelessWidget {
           if (onRetry != null) ...[
             const SizedBox(height: 16),
             ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
-          ]
+          ],
         ],
       ),
     );

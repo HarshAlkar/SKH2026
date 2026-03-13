@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/visit_model.dart';
 import 'status_badge.dart';
 import '../../patient/screens/patient_details_screen.dart';
+import '../../patient/models/patient_model.dart';
 
 class VisitCard extends StatelessWidget {
   final VisitModel visit;
@@ -38,7 +39,14 @@ class VisitCard extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const PatientDetailsScreen(),
+                builder: (context) => PatientDetailsScreen(
+                  patient: PatientModel(
+                    name: visit.patientName,
+                    age: 45,
+                    village: visit.village,
+                    status: 'Stable',
+                  ),
+                ),
               ),
             );
           },
@@ -102,8 +110,14 @@ class VisitCard extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  const PatientDetailsScreen(),
+                              builder: (context) => PatientDetailsScreen(
+                                patient: PatientModel(
+                                  name: visit.patientName,
+                                  age: 45,
+                                  village: visit.village,
+                                  status: 'Stable',
+                                ),
+                              ),
                             ),
                           );
                         },

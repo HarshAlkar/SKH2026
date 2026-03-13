@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/alert_model.dart';
 import '../../patient/screens/patient_details_screen.dart';
+import '../../patient/models/patient_model.dart';
 import 'severity_badge.dart';
 
 class AlertCard extends StatelessWidget {
@@ -36,7 +37,14 @@ class AlertCard extends StatelessWidget {
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
-            const PatientDetailsScreen(),
+            PatientDetailsScreen(
+              patient: PatientModel(
+                name: alert.patientName,
+                age: 45,
+                village: 'Kaman',
+                status: 'Stable',
+              ),
+            ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },

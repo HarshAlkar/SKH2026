@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/alert_model.dart';
 import '../widgets/alert_card.dart';
 import 'create_alert_screen.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 
 class RiskAlertScreen extends StatefulWidget {
   const RiskAlertScreen({super.key});
@@ -88,13 +89,11 @@ class _RiskAlertScreenState extends State<RiskAlertScreen> {
         backgroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
-          onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
@@ -126,6 +125,7 @@ class _RiskAlertScreenState extends State<RiskAlertScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
+      drawer: const AshaDrawer(),
       body: SafeArea(
         child: Column(
           children: [

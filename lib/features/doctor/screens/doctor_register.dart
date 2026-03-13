@@ -12,7 +12,7 @@ class DoctorRegisterScreen extends StatefulWidget {
 
 class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   final _nameController = TextEditingController();
   final _emailPhoneController = TextEditingController();
   final _licenseController = TextEditingController();
@@ -28,7 +28,7 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
     'Dermatologist',
     'Pediatrician',
     'Orthopedic',
-    'Neurologist'
+    'Neurologist',
   ];
 
   bool _obscurePassword = true;
@@ -59,16 +59,16 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
         );
         return;
       }
-      
+
       setState(() {
         _isLoading = true;
       });
-      
+
       // Simulate registration API call
       await Future.delayed(const Duration(seconds: 2));
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _isLoading = false;
       });
@@ -77,7 +77,8 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => const DoctorDashboard(),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const DoctorDashboard(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(opacity: animation, child: child);
           },
@@ -104,7 +105,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const DoctorLoginScreen()),
+              MaterialPageRoute(
+                builder: (context) => const DoctorLoginScreen(),
+              ),
             );
           },
         ),
@@ -121,7 +124,10 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 16.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -180,9 +186,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // SECTION TITLE
                 const Text(
                   "Create Professional Profile",
@@ -195,14 +201,11 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                 const SizedBox(height: 6),
                 const Text(
                   "Please provide your credentials for verification.",
-                  style: TextStyle(
-                    color: textSubColor,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: textSubColor, fontSize: 14),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // REGISTRATION FORM
                 Container(
                   padding: const EdgeInsets.all(24),
@@ -234,9 +237,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                             return null;
                           },
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         _buildLabel("Email or Phone"),
                         _buildTextField(
                           controller: _emailPhoneController,
@@ -248,22 +251,32 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                               return 'Email/Phone must not be empty';
                             }
                             // Basic validation
-                            if (!value.contains('@') && double.tryParse(value) == null) {
+                            if (!value.contains('@') &&
+                                double.tryParse(value) == null) {
                               return 'Enter a valid email or phone number';
                             }
                             return null;
                           },
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         _buildLabel("Specialization"),
                         DropdownButtonFormField<String>(
                           value: _selectedSpecialization,
-                          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: textSubColor),
+                          icon: const Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: textSubColor,
+                          ),
                           decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.medical_services_outlined, color: primaryColor, size: 20),
-                            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                            prefixIcon: const Icon(
+                              Icons.medical_services_outlined,
+                              color: primaryColor,
+                              size: 20,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                            ),
                             filled: true,
                             fillColor: inputBgColor,
                             border: OutlineInputBorder(
@@ -276,17 +289,25 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: primaryColor, width: 2),
+                              borderSide: const BorderSide(
+                                color: primaryColor,
+                                width: 2,
+                              ),
                             ),
                             errorBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.redAccent),
+                              borderSide: const BorderSide(
+                                color: Colors.redAccent,
+                              ),
                             ),
                           ),
                           items: _specializations.map((String val) {
                             return DropdownMenuItem(
                               value: val,
-                              child: Text(val, style: const TextStyle(fontSize: 14)),
+                              child: Text(
+                                val,
+                                style: const TextStyle(fontSize: 14),
+                              ),
                             );
                           }).toList(),
                           onChanged: (val) {
@@ -295,9 +316,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                             });
                           },
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         _buildLabel("License Number"),
                         _buildTextField(
                           controller: _licenseController,
@@ -310,9 +331,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                             return null;
                           },
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         _buildLabel("Years of Experience"),
                         _buildTextField(
                           controller: _experienceController,
@@ -330,9 +351,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                             return null;
                           },
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         _buildLabel("Hospital / Clinic Name"),
                         _buildTextField(
                           controller: _hospitalController,
@@ -345,9 +366,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                             return null;
                           },
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         _buildLabel("Password"),
                         _buildTextField(
                           controller: _passwordController,
@@ -369,9 +390,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                             return null;
                           },
                         ),
-                        
+
                         const SizedBox(height: 20),
-                        
+
                         _buildLabel("Confirm Password"),
                         _buildTextField(
                           controller: _confirmPasswordController,
@@ -380,7 +401,8 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                           obscureText: _obscureConfirmPassword,
                           toggleObscure: () {
                             setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
                             });
                           },
                           validator: (value) {
@@ -397,9 +419,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // TERMS & AGREEMENT
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,16 +449,20 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                             height: 1.5,
                           ),
                           children: [
-                            const TextSpan(text: "I certify that all provided medical license information is accurate and I agree to the "),
+                            const TextSpan(
+                              text:
+                                  "I certify that all provided medical license information is accurate and I agree to the ",
+                            ),
                             TextSpan(
                               text: "Terms of Service",
                               style: const TextStyle(
                                 color: primaryColor,
                                 fontWeight: FontWeight.bold,
                               ),
-                              recognizer: TapGestureRecognizer()..onTap = () {
-                                // Navigate to Terms of Service
-                              },
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  // Navigate to Terms of Service
+                                },
                             ),
                             const TextSpan(text: "."),
                           ],
@@ -445,9 +471,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // PRIMARY BUTTON
                 SizedBox(
                   width: double.infinity,
@@ -480,9 +506,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                           ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // SECONDARY LINK
                 Center(
                   child: InkWell(
@@ -514,7 +540,10 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                             TextSpan(text: "Already have an account? "),
                             TextSpan(
                               text: "Login",
-                              style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: primaryColor,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
@@ -522,9 +551,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 48),
-                
+
                 // FOOTER
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -593,7 +622,9 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
         suffixIcon: toggleObscure != null
             ? IconButton(
                 icon: Icon(
-                  obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  obscureText
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   color: const Color(0xFF94A3B8),
                   size: 20,
                 ),

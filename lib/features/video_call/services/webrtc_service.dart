@@ -4,7 +4,10 @@ class WebRTCService {
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
 
-  Future<void> initRenderers(RTCVideoRenderer local, RTCVideoRenderer remote) async {
+  Future<void> initRenderers(
+    RTCVideoRenderer local,
+    RTCVideoRenderer remote,
+  ) async {
     await local.initialize();
     await remote.initialize();
   }
@@ -12,7 +15,7 @@ class WebRTCService {
   Future<void> openUserMedia(RTCVideoRenderer localVideo) async {
     final Map<String, dynamic> mediaConstraints = {
       'audio': true,
-      'video': {'facingMode': 'user'}
+      'video': {'facingMode': 'user'},
     };
 
     _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);

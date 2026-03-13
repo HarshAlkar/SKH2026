@@ -3,6 +3,7 @@ import '../models/consultation_model.dart';
 import '../widgets/consultation_card.dart';
 import '../widgets/patient_selector.dart';
 import '../widgets/consultation_form.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 
 class ConsultDoctorScreen extends StatefulWidget {
   const ConsultDoctorScreen({super.key});
@@ -84,13 +85,11 @@ class _ConsultDoctorScreenState extends State<ConsultDoctorScreen> {
           ),
         ),
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
-          onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
@@ -224,6 +223,7 @@ class _ConsultDoctorScreenState extends State<ConsultDoctorScreen> {
             ),
         ],
       ),
+      drawer: const AshaDrawer(),
     );
   }
 }

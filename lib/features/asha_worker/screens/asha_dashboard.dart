@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../patient/screens/village_patients_screen.dart';
-import '../../patient/screens/register_patient_screen.dart';
 import 'update_health_screen.dart';
 import '../../alerts/screens/risk_alert_screen.dart';
 import '../../doctor/screens/consult_doctor_screen.dart';
-import '../../reports/screens/village_health_report_screen.dart';
-import '../../health_records/screens/health_records_screen.dart';
-import '../../visits/screens/village_visits_screen.dart';
+import '../../referral/screens/emergency_referral_screen.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/activity_tile.dart';
+import '../widgets/emergency_button.dart';
+import '../widgets/asha_drawer.dart';
 
 class AshaDashboard extends StatelessWidget {
   const AshaDashboard({super.key});
@@ -49,12 +48,9 @@ class AshaDashboard extends StatelessWidget {
           const SizedBox(width: 8),
         ],
       ),
-      drawer: _buildDrawer(context),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateTo(context, const RegisterPatientScreen()),
-        backgroundColor: const Color(0xFF2F4DB6),
-        tooltip: 'Register New Patient',
-        child: const Icon(Icons.person_add, color: Colors.white),
+      drawer: const AshaDrawer(),
+      floatingActionButton: EmergencyButton(
+        onTap: () => _navigateTo(context, const EmergencyReferralScreen()),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -150,46 +146,56 @@ class AshaDashboard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
+              Column(
                 children: [
-                  Expanded(
-                    child: QuickActionButton(
-                      icon: Icons.person_add_outlined,
-                      label: "Register Patient",
-                      onTap: () =>
-                          _navigateTo(context, const VillagePatientsScreen()),
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.person_add_outlined,
+                          label: "Register Patient",
+                          onTap: () => _navigateTo(
+                            context,
+                            const VillagePatientsScreen(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.edit_document,
+                          label: "Update Health",
+                          onTap: () => _navigateTo(
+                            context,
+                            const UpdateHealthScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: QuickActionButton(
-                      icon: Icons.edit_document,
-                      label: "Update Health",
-                      onTap: () =>
-                          _navigateTo(context, const UpdateHealthScreen()),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: QuickActionButton(
-                      icon: Icons.warning_amber_rounded,
-                      label: "View Risk Alerts",
-                      onTap: () =>
-                          _navigateTo(context, const RiskAlertScreen()),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: QuickActionButton(
-                      icon: Icons.medical_services_outlined,
-                      label: "Consult Doctor",
-                      onTap: () =>
-                          _navigateTo(context, const ConsultDoctorScreen()),
-                    ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.warning_amber_rounded,
+                          label: "View Risk Alerts",
+                          onTap: () =>
+                              _navigateTo(context, const RiskAlertScreen()),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.medical_services_outlined,
+                          label: "Consult Doctor",
+                          onTap: () => _navigateTo(
+                            context,
+                            const ConsultDoctorScreen(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -253,100 +259,6 @@ class AshaDashboard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context) {
-    return Drawer(
-      child: Column(
-        children: [
-          UserAccountsDrawerHeader(
-            decoration: BoxDecoration(color: primaryColor),
-            accountName: const Text(
-              "Sunita Sharma",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            accountEmail: const Text("Worker ID: AW-208154"),
-            currentAccountPicture: const CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 40, color: Colors.blue),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.dashboard_outlined),
-            title: const Text('Dashboard'),
-            onTap: () => Navigator.pop(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.analytics_outlined),
-            title: const Text('Village Health Report'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const VillageHealthReportScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.person_add_alt_1_outlined),
-            title: const Text('Register Patient'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const VillagePatientsScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.directions_walk),
-            title: const Text('Village Visits'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const VillageVisitsScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.folder_shared_outlined),
-            title: const Text('Health Records'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const HealthRecordsScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.orange,
-            ),
-            title: const Text('Risk Alerts'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const RiskAlertScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.medical_services_outlined,
-              color: Colors.green,
-            ),
-            title: const Text('Consult Doctor'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const ConsultDoctorScreen());
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.settings_outlined),
-            title: const Text('Settings'),
-            onTap: () => Navigator.pop(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.redAccent),
-            ),
-            onTap: () => Navigator.pop(context),
-          ),
-        ],
       ),
     );
   }

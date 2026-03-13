@@ -13,7 +13,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -48,13 +49,20 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       try {
-        await authProvider.login(_phoneController.text, _passwordController.text);
+        await authProvider.login(
+          _phoneController.text,
+          _passwordController.text,
+        );
         if (mounted) {
           Navigator.pushReplacementNamed(context, AppRoutes.userDashboard);
         }
       } catch (e) {
         if (mounted) {
-          Helpers.showSnackBar(context, 'Login failed. Please try again.', isError: true);
+          Helpers.showSnackBar(
+            context,
+            'Login failed. Please try again.',
+            isError: true,
+          );
         }
       }
     }
@@ -78,27 +86,27 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   // Top Section: Icon & Title
                   _buildHeader(),
                   const SizedBox(height: 40),
-                  
+
                   // Login Form
                   _buildLoginForm(),
                   const SizedBox(height: 16),
-                  
+
                   // Actions: Remember Me & Forgot Password
                   _buildMiddleActions(),
                   const SizedBox(height: 24),
-                  
+
                   // Primary Login Button
                   _buildLoginButton(),
                   const SizedBox(height: 24),
-                  
+
                   // Secondary Action: Create Account
                   _buildSecondaryActions(),
                   const SizedBox(height: 32),
-                  
+
                   // Info Card
                   _buildInfoCard(),
                   const SizedBox(height: 32),
-                  
+
                   // Bottom Section: Banner
                   _buildBottomBanner(),
                 ],
@@ -120,9 +128,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             shape: BoxShape.circle,
             color: AppColors.primary.withOpacity(0.1),
           ),
-          child: Image.asset('assets/images/health_icon.png', errorBuilder: (context, error, stackTrace) {
-            return const Icon(Icons.health_and_safety, size: 50, color: AppColors.primary);
-          }),
+          child: Image.asset(
+            'assets/images/health_icon.png',
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(
+                Icons.health_and_safety,
+                size: 50,
+                color: AppColors.primary,
+              );
+            },
+          ),
         ),
         const SizedBox(height: 20),
         const Text(
@@ -137,10 +152,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         const SizedBox(height: 8),
         const Text(
           'Access healthcare guidance anytime',
-          style: TextStyle(
-            fontSize: 16,
-            color: AppColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
         ),
       ],
     );
@@ -161,7 +173,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           validator: (value) => Validators.validatePhone(value),
           decoration: InputDecoration(
             hintText: 'Enter 10-digit mobile number',
-            prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.textSecondary),
+            prefixIcon: const Icon(
+              Icons.phone_outlined,
+              color: AppColors.textSecondary,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey.shade200),
@@ -183,7 +198,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
             ),
             GestureDetector(
-              onTap: () => Navigator.pushNamed(context, AppRoutes.forgotPassword),
+              onTap: () =>
+                  Navigator.pushNamed(context, AppRoutes.forgotPassword),
               child: const Text(
                 'Forgot?',
                 style: TextStyle(
@@ -201,13 +217,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           validator: (value) => Validators.validateRequired(value, 'Password'),
           decoration: InputDecoration(
             hintText: 'Enter your password',
-            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.textSecondary),
+            prefixIcon: const Icon(
+              Icons.lock_outline,
+              color: AppColors.textSecondary,
+            ),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword ? Icons.visibility_off : Icons.visibility,
                 color: AppColors.textSecondary,
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -237,11 +257,16 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               child: Checkbox(
                 value: _rememberMe,
                 onChanged: (value) => setState(() => _rememberMe = value!),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
             ),
             const SizedBox(width: 8),
-            const Text('Remember me', style: TextStyle(color: AppColors.textSecondary)),
+            const Text(
+              'Remember me',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ],
         ),
         GestureDetector(
@@ -273,21 +298,29 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             onPressed: auth.isLoading ? null : _handleLogin,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               elevation: 2,
             ),
             child: auth.isLoading
                 ? const SizedBox(
                     height: 24,
                     width: 24,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   )
                 : const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         'Login',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       SizedBox(width: 8),
                       Icon(Icons.login_outlined),
@@ -303,7 +336,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text('New user? ', style: TextStyle(color: AppColors.textSecondary)),
+        const Text(
+          'New user? ',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
         GestureDetector(
           onTap: () => Navigator.pushNamed(context, AppRoutes.register),
           child: const Text(
@@ -334,7 +370,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           Expanded(
             child: Text(
               'Use this app to check symptoms, track medicines, and consult doctors directly from your phone. Connecting rural healthcare.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.4,
+              ),
             ),
           ),
         ],

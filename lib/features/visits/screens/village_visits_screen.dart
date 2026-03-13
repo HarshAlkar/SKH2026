@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/visit_model.dart';
 import '../widgets/visit_card.dart';
 import 'schedule_visit_screen.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 
 class VillageVisitsScreen extends StatefulWidget {
   const VillageVisitsScreen({super.key});
@@ -101,13 +102,11 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
         backgroundColor: primaryColor,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
           ),
-          onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
@@ -132,20 +131,51 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
         backgroundColor: primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
       ),
+      drawer: const AshaDrawer(),
       body: SafeArea(
         child: Column(
           children: [
-            // Summary Banner
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: primaryColor,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatItem("Total", total.toString()),
-                  _buildStatItem("Completed", completed.toString()),
-                  _buildStatItem("Pending", pending.toString()),
-                ],
+            // Summary Card Section
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 20,
+                  horizontal: 16,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatItem(
+                      "Today's Visits",
+                      total.toString(),
+                      primaryColor,
+                    ),
+                    _buildVerticalDivider(),
+                    _buildStatItem(
+                      "Completed",
+                      completed.toString(),
+                      Colors.green,
+                    ),
+                    _buildVerticalDivider(),
+                    _buildStatItem(
+                      "Pending",
+                      pending.toString(),
+                      Colors.orange,
+                    ),
+                  ],
+                ),
               ),
             ),
 
@@ -220,14 +250,18 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
+  Widget _buildVerticalDivider() {
+    return Container(height: 30, width: 1, color: Colors.grey.withOpacity(0.2));
+  }
+
+  Widget _buildStatItem(String label, String value, Color color) {
     return Column(
       children: [
         Text(
           value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
+          style: TextStyle(
+            color: color,
+            fontSize: 22,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -235,7 +269,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.grey[600],
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
