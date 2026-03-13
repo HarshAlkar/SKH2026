@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/health_record_model.dart';
 import '../widgets/health_record_card.dart';
-import '../../patient/screens/register_patient_screen.dart';
+
 import '../../asha_worker/widgets/asha_drawer.dart';
 
 class HealthRecordsScreen extends StatefulWidget {
@@ -114,26 +114,9 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
+        actions: const [SizedBox(width: 8)],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const RegisterPatientScreen(),
-            ),
-          );
-        },
-        backgroundColor: primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
+
       drawer: const AshaDrawer(),
       body: SafeArea(
         child: Column(

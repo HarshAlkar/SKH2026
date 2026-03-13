@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/visit_model.dart';
 import '../widgets/visit_card.dart';
 import 'schedule_visit_screen.dart';
@@ -15,6 +16,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
   final TextEditingController _searchController = TextEditingController();
   final Color primaryColor = const Color(0xFF2F4DB6);
   final Color backgroundColor = const Color(0xFFF5F7FA);
+  DateTime? _selectedDate;
 
   final List<VisitModel> _allVisits = [
     VisitModel(
@@ -22,6 +24,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
       patientName: 'Sita Devi',
       village: 'Rampur',
       visitTime: '10:30 AM',
+      visitDate: DateTime.now(),
       status: VisitStatus.pending,
     ),
     VisitModel(
@@ -29,6 +32,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
       patientName: 'Ramesh Patil',
       village: 'Kaman',
       visitTime: '11:45 AM',
+      visitDate: DateTime.now(),
       status: VisitStatus.completed,
     ),
     VisitModel(
@@ -36,6 +40,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
       patientName: 'Amit Shinde',
       village: 'Rampur',
       visitTime: '01:15 PM',
+      visitDate: DateTime.now().add(const Duration(days: 1)),
       status: VisitStatus.pending,
     ),
     VisitModel(
@@ -43,6 +48,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
       patientName: 'Shanti Devi',
       village: 'Kaman',
       visitTime: '02:30 PM',
+      visitDate: DateTime.now().add(const Duration(days: 1)),
       status: VisitStatus.missed,
     ),
     VisitModel(
@@ -50,6 +56,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
       patientName: 'Gopal Krishan',
       village: 'Vikhroli',
       visitTime: '04:00 PM',
+      visitDate: DateTime.now().add(const Duration(days: 2)),
       status: VisitStatus.pending,
     ),
   ];
@@ -62,19 +69,43 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
     _filteredVisits = List.from(_allVisits);
   }
 
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDate = picked;
+        _applyFilters();
+      });
+    }
+  }
+
   void _filterVisits(String query) {
+    _applyFilters();
+  }
+
+  void _applyFilters() {
+    final query = _searchController.text.toLowerCase();
     setState(() {
-      if (query.isEmpty) {
-        _filteredVisits = List.from(_allVisits);
-      } else {
-        _filteredVisits = _allVisits
-            .where(
-              (v) =>
-                  v.patientName.toLowerCase().contains(query.toLowerCase()) ||
-                  v.village.toLowerCase().contains(query.toLowerCase()),
-            )
-            .toList();
-      }
+      _filteredVisits = _allVisits.where((v) {
+        final matchesQuery =
+            v.patientName.toLowerCase().contains(query) ||
+            v.village.toLowerCase().contains(query);
+
+        bool matchesDate = true;
+        if (_selectedDate != null) {
+          matchesDate =
+              v.visitDate.year == _selectedDate!.year &&
+              v.visitDate.month == _selectedDate!.month &&
+              v.visitDate.day == _selectedDate!.day;
+        }
+
+        return matchesQuery && matchesDate;
+      }).toList();
     });
   }
 
@@ -114,7 +145,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
               Icons.calendar_month_outlined,
               color: Colors.white,
             ),
-            onPressed: () {},
+            onPressed: _selectDate,
           ),
           const SizedBox(width: 8),
         ],
@@ -210,6 +241,49 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
                 ),
               ),
             ),
+            // Selected Date Indicator
+            if (_selectedDate != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                  vertical: 8.0,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.event_available,
+                      size: 16,
+                      color: Color(0xFF2F4DB6),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Selected Date: ${DateFormat('MMM dd, yyyy').format(_selectedDate!)}",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const Spacer(),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedDate = null;
+                          _applyFilters();
+                        });
+                      },
+                      child: const Text(
+                        "Clear Filter",
+                        style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
             // Visit List
             Expanded(

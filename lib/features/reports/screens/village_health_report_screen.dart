@@ -1,14 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/health_chart.dart';
 import '../widgets/progress_indicator_widget.dart';
+import '../widgets/village_selector_sheet.dart';
+import 'disease_details_screen.dart';
 import '../../asha_worker/widgets/asha_drawer.dart';
 
-class VillageHealthReportScreen extends StatelessWidget {
+class VillageHealthReportScreen extends StatefulWidget {
   const VillageHealthReportScreen({super.key});
 
+  @override
+  State<VillageHealthReportScreen> createState() =>
+      _VillageHealthReportScreenState();
+}
+
+class _VillageHealthReportScreenState extends State<VillageHealthReportScreen> {
   final Color primaryColor = const Color(0xFF2F4DB6);
   final Color backgroundColor = const Color(0xFFF5F7FA);
+
+  String _currentVillage = "Rampur";
+  DateTime _selectedDate = DateTime(2023, 10);
+
+  Future<void> _selectDate() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
+
+  void _showVillageSelector() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => VillageSelectorSheet(
+        currentVillage: _currentVillage,
+        onVillageSelected: (village) {
+          setState(() {
+            _currentVillage = village;
+          });
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +76,7 @@ class VillageHealthReportScreen extends StatelessWidget {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.white),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
+        actions: const [SizedBox(width: 8)],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -62,40 +99,66 @@ class VillageHealthReportScreen extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          color: Colors.white70,
-                          size: 16,
+                    InkWell(
+                      onTap: _showVillageSelector,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          "Rampur Village",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              color: Colors.white70,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "$_currentVillage Village",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.keyboard_arrow_down,
+                              color: Colors.white70,
+                              size: 16,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
-                    Row(
-                      children: [
-                        Text(
-                          "October 2023",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 14,
-                          ),
+                    InkWell(
+                      onTap: _selectDate,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
                         ),
-                        const SizedBox(width: 6),
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          color: Colors.white70,
-                          size: 16,
+                        child: Row(
+                          children: [
+                            Text(
+                              DateFormat('MMMM yyyy').format(_selectedDate),
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.calendar_today_outlined,
+                              color: Colors.white70,
+                              size: 16,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -145,6 +208,14 @@ class VillageHealthReportScreen extends StatelessWidget {
                     _buildSectionContainer(
                       title: "Disease Distribution",
                       actionText: "Details",
+                      onActionTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DiseaseDetailsScreen(),
+                          ),
+                        );
+                      },
                       child: const HealthChart(),
                     ),
                     const SizedBox(height: 24),
@@ -205,6 +276,7 @@ class VillageHealthReportScreen extends StatelessWidget {
   Widget _buildSectionContainer({
     required String title,
     String? actionText,
+    VoidCallback? onActionTap,
     required Widget child,
   }) {
     return Container(
@@ -235,12 +307,22 @@ class VillageHealthReportScreen extends StatelessWidget {
                 ),
               ),
               if (actionText != null)
-                Text(
-                  actionText,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2F4DB6),
+                InkWell(
+                  onTap: onActionTap,
+                  borderRadius: BorderRadius.circular(4),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 2,
+                    ),
+                    child: Text(
+                      actionText,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2F4DB6),
+                      ),
+                    ),
                   ),
                 ),
             ],

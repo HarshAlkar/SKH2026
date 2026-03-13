@@ -9,6 +9,9 @@ import '../widgets/quick_action_button.dart';
 import '../widgets/activity_tile.dart';
 import '../widgets/emergency_button.dart';
 import '../widgets/asha_drawer.dart';
+import '../../activity/screens/all_activity_screen.dart';
+import '../../activity/screens/activity_details_screen.dart';
+import '../../activity/models/activity_model.dart';
 
 class AshaDashboard extends StatelessWidget {
   const AshaDashboard({super.key});
@@ -37,16 +40,7 @@ class AshaDashboard extends StatelessWidget {
         backgroundColor: lightBackground,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black87),
-        actions: [
-          IconButton(
-            icon: CircleAvatar(
-              backgroundColor: primaryColor.withOpacity(0.1),
-              child: Icon(Icons.person_outline, color: primaryColor),
-            ),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
+        actions: const [SizedBox(width: 8)],
       ),
       drawer: const AshaDrawer(),
       floatingActionButton: EmergencyButton(
@@ -84,11 +78,6 @@ class AshaDashboard extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, color: primaryColor, size: 28),
                   ),
                 ],
               ),
@@ -165,10 +154,8 @@ class AshaDashboard extends StatelessWidget {
                         child: QuickActionButton(
                           icon: Icons.edit_document,
                           label: "Update Health",
-                          onTap: () => _navigateTo(
-                            context,
-                            const UpdateHealthScreen(),
-                          ),
+                          onTap: () =>
+                              _navigateTo(context, const UpdateHealthScreen()),
                         ),
                       ),
                     ],
@@ -189,10 +176,8 @@ class AshaDashboard extends StatelessWidget {
                         child: QuickActionButton(
                           icon: Icons.medical_services_outlined,
                           label: "Consult Doctor",
-                          onTap: () => _navigateTo(
-                            context,
-                            const ConsultDoctorScreen(),
-                          ),
+                          onTap: () =>
+                              _navigateTo(context, const ConsultDoctorScreen()),
                         ),
                       ),
                     ],
@@ -215,7 +200,8 @@ class AshaDashboard extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () =>
+                        _navigateTo(context, const AllActivityScreen()),
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: const Size(50, 30),
@@ -240,6 +226,20 @@ class AshaDashboard extends StatelessWidget {
                 activity: "Fever reported • 10 mins ago",
                 iconBackgroundColor: const Color(0xFFE8F1FF), // Light Blue
                 iconColor: primaryColor,
+                onTap: () => _navigateTo(
+                  context,
+                  ActivityDetailsScreen(
+                    activity: ActivityModel(
+                      patientName: "Ramesh Patil",
+                      activityType: "Fever reported",
+                      description:
+                          "Patient reported high fever during routine checkup. Temperature recorded at 101°F.",
+                      timestamp: "10 mins ago",
+                      village: "Rampur",
+                      reportedBy: "ASHA Worker",
+                    ),
+                  ),
+                ),
               ),
               ActivityTile(
                 icon: Icons.check_circle_outline,
@@ -247,6 +247,20 @@ class AshaDashboard extends StatelessWidget {
                 activity: "Vaccination completed • 2 hrs ago",
                 iconBackgroundColor: const Color(0xFFE8F5E9), // Light Green
                 iconColor: Colors.green,
+                onTap: () => _navigateTo(
+                  context,
+                  ActivityDetailsScreen(
+                    activity: ActivityModel(
+                      patientName: "Sita Devi",
+                      activityType: "Vaccination completed",
+                      description:
+                          "Child vaccination drive: BCG and Hepatitis B administered. No immediate adverse reactions noted.",
+                      timestamp: "2 hrs ago",
+                      village: "Kaman",
+                      reportedBy: "ASHA Worker",
+                    ),
+                  ),
+                ),
               ),
               ActivityTile(
                 icon: Icons.error_outline,
@@ -254,6 +268,20 @@ class AshaDashboard extends StatelessWidget {
                 activity: "High BP Alert • 4 hrs ago",
                 iconBackgroundColor: const Color(0xFFFFEBEE), // Light Red
                 iconColor: Colors.redAccent,
+                onTap: () => _navigateTo(
+                  context,
+                  ActivityDetailsScreen(
+                    activity: ActivityModel(
+                      patientName: "Amit Shinde",
+                      activityType: "High BP Alert",
+                      description:
+                          "Patient's BP recorded at 160/100 mmHg. Urgent consultation with doctor recommended.",
+                      timestamp: "4 hrs ago",
+                      village: "Rampur",
+                      reportedBy: "ASHA Worker",
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
             ],

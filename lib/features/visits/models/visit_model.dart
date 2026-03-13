@@ -5,6 +5,7 @@ class VisitModel {
   final String patientName;
   final String village;
   final String visitTime;
+  final DateTime visitDate;
   final VisitStatus status;
   final String notes;
 
@@ -13,6 +14,7 @@ class VisitModel {
     required this.patientName,
     required this.village,
     required this.visitTime,
+    required this.visitDate,
     required this.status,
     this.notes = '',
   });
@@ -22,6 +24,7 @@ class VisitModel {
     String? patientName,
     String? village,
     String? visitTime,
+    DateTime? visitDate,
     VisitStatus? status,
     String? notes,
   }) {
@@ -30,6 +33,7 @@ class VisitModel {
       patientName: patientName ?? this.patientName,
       village: village ?? this.village,
       visitTime: visitTime ?? this.visitTime,
+      visitDate: visitDate ?? this.visitDate,
       status: status ?? this.status,
       notes: notes ?? this.notes,
     );

@@ -72,7 +72,7 @@ class VisitCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "Village: \${visit.village}",
+                            "Village: ${visit.village}",
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey[600],
@@ -90,7 +90,7 @@ class VisitCard extends StatelessWidget {
                     Icon(Icons.access_time, size: 16, color: Colors.grey[500]),
                     const SizedBox(width: 4),
                     Text(
-                      "Visit Time: \${visit.visitTime}",
+                      "Visit Time: ${visit.visitTime}",
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[600],
