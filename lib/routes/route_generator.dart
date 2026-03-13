@@ -6,17 +6,25 @@ import '../features/auth/screens/role_selection_screen.dart';
 import '../features/user/screens/user_dashboard_screen.dart';
 import '../features/asha_worker/screens/asha_dashboard.dart';
 import '../features/doctor/screens/doctor_dashboard.dart';
-import '../features/ai_symptom_checker/screens/symptom_prediction_screen.dart';
+import '../features/user/screens/login_screen.dart' as user_login;
+import '../features/asha_worker/screens/login_screen.dart' as asha_login;
+import '../features/doctor/screens/login_screen.dart' as doctor_login;
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
-      case AppRoutes.login:
-        return _fadeRoute(const LoginScreen());
-      case AppRoutes.register:
-        return _fadeRoute(const RegisterScreen());
       case AppRoutes.roleSelection:
         return _fadeRoute(const RoleSelectionScreen());
+      case AppRoutes.login:
+        return _fadeRoute(const LoginScreen());
+      case AppRoutes.userLogin:
+        return _fadeRoute(const user_login.UserLoginScreen());
+      case AppRoutes.ashaLogin:
+        return _fadeRoute(const asha_login.AshaLoginScreen());
+      case AppRoutes.doctorLogin:
+        return _fadeRoute(const doctor_login.DoctorLoginScreen());
+      case AppRoutes.register:
+        return _fadeRoute(const RegisterScreen());
       case AppRoutes.userDashboard:
         return _fadeRoute(const UserDashboardScreen());
       case AppRoutes.ashaDashboard:

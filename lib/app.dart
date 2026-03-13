@@ -28,7 +28,7 @@ class GraminHealthApp extends StatelessWidget {
         title: 'Gramin Health Connect',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        initialRoute: AppRoutes.login,
+        initialRoute: AppRoutes.roleSelection,
         onGenerateRoute: RouteGenerator.generateRoute,
       ),
     );

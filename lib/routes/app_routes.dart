@@ -3,6 +3,10 @@ class AppRoutes {
   static const String register = '/register';
   static const String roleSelection = '/role-selection';
   
+  static const String userLogin = '/user/login';
+  static const String ashaLogin = '/asha/login';
+  static const String doctorLogin = '/doctor/login';
+  
   static const String userDashboard = '/user-dashboard';
   static const String ashaDashboard = '/asha-dashboard';
   static const String doctorDashboard = '/doctor-dashboard';
