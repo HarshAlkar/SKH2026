@@ -17,14 +17,15 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.name or self.username} ({self.role})"
 
-class OTP(models.Model):
+class OTPVerification(models.Model):
     phone_number = models.CharField(max_length=15)
     otp_code = models.CharField(max_length=6)
     created_at = models.DateTimeField(auto_now_add=True)
     expiry_time = models.DateTimeField()
+    is_verified = models.BooleanField(default=False)
 
     def is_expired(self):
         return timezone.now() > self.expiry_time
 
     def __str__(self):
-        return f"OTP for {self.phone_number}: {self.otp_code}"
+        return f"OTP for {self.phone_number}: {self.otp_code} (Verified: {self.is_verified})"

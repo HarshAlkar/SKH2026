@@ -43,3 +43,6 @@ This repository contains a comprehensive healthcare ecosystem spanning mobile, w
 2. **Node.js Signaling Server** facilitates Peer-to-Peer connection.
 3. Doctor accepts call via **Flutter App** or **Web Admin**.
 4. Secure WebRTC connection established for video/audio.
+
+## Security
+See [SECURITY.md](SECURITY.md) for detailed information on how we protect patient data and user identity.

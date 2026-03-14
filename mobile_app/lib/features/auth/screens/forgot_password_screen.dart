@@ -37,8 +37,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
-    final success = await context.read<AuthProvider>().sendOtp(phone);
-    if (success) {
+    final authProvider = context.read<AuthProvider>();
+    final response = await authProvider.sendOtp(phone);
+    if (response != null && mounted) {
       setState(() => _currentStep = 2);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('OTP sent successfully'), backgroundColor: Colors.green),

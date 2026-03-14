@@ -92,23 +92,38 @@ class AuthenticationService {
     await _secureStorage.delete(key: 'password');
   }
 
-  Future<void> sendOtp(String phoneNumber) async {
-    await _apiService.post(
+  Future<Map<String, dynamic>> sendOtp(String phoneNumber) async {
+    return await _apiService.post(
       ApiConstants.sendOtpEndpoint,
       headers: {'Content-Type': 'application/json'},
       body: {'phone_number': phoneNumber},
     );
   }
 
-  Future<void> verifyOtp(String phoneNumber, String otpCode) async {
-    await _apiService.post(
+  Future<Map<String, dynamic>> verifyOtp(String phoneNumber, String otp, {String? role}) async {
+    final response = await _apiService.post(
       ApiConstants.verifyOtpEndpoint,
       headers: {'Content-Type': 'application/json'},
       body: {
         'phone_number': phoneNumber,
-        'otp_code': otpCode,
+        'otp': otp,
+        if (role != null) 'role': role,
       },
     );
+
+    // If response contains token, it means it was a login verify
+    if (response.containsKey('token')) {
+      String token = response['token'];
+      Map<String, dynamic> userData = response['user'];
+
+      await _storageService.saveString('user_data', jsonEncode(userData));
+      await _storageService.saveString('token', token);
+      
+      await _secureStorage.write(key: 'phone_number', value: phoneNumber);
+      if (role != null) await _secureStorage.write(key: 'role', value: role);
+    }
+
+    return response;
   }
 
   Future<void> resetPassword(String phoneNumber, String otpCode, String newPassword) async {

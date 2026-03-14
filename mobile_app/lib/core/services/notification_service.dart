@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../routes/app_routes.dart';
@@ -31,6 +32,13 @@ class NotificationService {
         }
       },
     );
+
+    // Request permissions for Android 13+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+    
+    debugPrint('NotificationService Initialized');
   }
 
   Future<void> showMedicineReminder(int id, String name, String instructions, String dosage) async {
@@ -66,13 +74,17 @@ class NotificationService {
     );
     
     // Voice reminder (Hindi and English)
-    await _speak('Reminder: It is time to take your medicine $name, dosage $dosage. Dawai khane ka time ho gaya hai.');
+    await _speak('Attention: It is time to take your medicine $name, dosage $dosage. Dawai khane ka time ho gaya hai.');
   }
 
   Future<void> _speak(String text) async {
-    // Try to set to Hindi first
-    await flutterTts.setLanguage("hi-IN");
-    await flutterTts.setPitch(1.0);
-    await flutterTts.speak(text);
+    try {
+      await flutterTts.setLanguage("hi-IN");
+      await flutterTts.setPitch(1.0);
+      await flutterTts.setSpeechRate(0.5); // Slightly slower for clarity
+      await flutterTts.speak(text);
+    } catch (e) {
+      debugPrint('TTS Error: $e');
+    }
   }
 }

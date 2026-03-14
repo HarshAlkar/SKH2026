@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'forgot_password_screen.dart';
-import 'doctor_otp_login_screen.dart';
 import 'doctor_register.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../core/utils/helpers.dart';
@@ -47,6 +46,35 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
           isError: true,
         );
       }
+    }
+  }
+
+  void _handleOtpLogin() async {
+    final identifier = _emailPhoneController.text.trim();
+    if (identifier.isEmpty) {
+      Helpers.showSnackBar(context, 'Please enter your phone number', isError: true);
+      return;
+    }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final response = await authProvider.sendOtp(identifier);
+
+    if (response != null && mounted) {
+      Navigator.pushNamed(
+        context, 
+        AppRoutes.loginWithOtp,
+        arguments: {
+          'phoneNumber': identifier,
+          'role': 'doctor',
+          'isForgotPassword': false,
+        },
+      );
+    } else if (mounted) {
+      Helpers.showSnackBar(
+        context,
+        authProvider.error ?? 'Failed to send OTP. Is your account registered?',
+        isError: true,
+      );
     }
   }
 
@@ -315,14 +343,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                                   ),
                                 ),
                                 InkWell(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const DoctorOtpLoginScreen(),
-                                      ),
-                                    );
-                                  },
+                                  onTap: _handleOtpLogin,
                                   child: const Text(
                                     "Login with OTP",
                                     style: TextStyle(

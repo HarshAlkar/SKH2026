@@ -69,29 +69,32 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> sendOtp(String phoneNumber) async {
+  Future<Map<String, dynamic>?> sendOtp(String phoneNumber) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      await _authService.sendOtp(phoneNumber);
+      final response = await _authService.sendOtp(phoneNumber);
       _isLoading = false;
       notifyListeners();
-      return true;
+      return response;
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
-      return false;
+      return null;
     }
   }
 
-  Future<bool> verifyOtp(String phoneNumber, String otpCode) async {
+  Future<bool> verifyOtp(String phoneNumber, String otp, {String? role}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      await _authService.verifyOtp(phoneNumber, otpCode);
+      final response = await _authService.verifyOtp(phoneNumber, otp, role: role);
+      if (response.containsKey('user')) {
+        _user = UserModel.fromJson(response['user']);
+      }
       _isLoading = false;
       notifyListeners();
       return true;

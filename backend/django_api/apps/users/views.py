@@ -6,7 +6,7 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.db import transaction
 from django.utils import timezone
-from .models import User, OTP
+from .models import User, OTPVerification
 from apps.doctors.models import Doctor
 from apps.asha_workers.models import ASHAWorker
 from apps.patients.models import Patient
@@ -158,29 +158,42 @@ class UserViewSet(viewsets.ModelViewSet):
         if not phone_number or len(phone_number) != 10:
             return Response({"error": "Valid 10-digit phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Check if user exists
-        if not User.objects.filter(phone_number=phone_number).exists():
+        # Check if user exists (Optional based on requirement, but user said "Phone number not registered" should be handled)
+        try:
+            user = User.objects.get(phone_number=phone_number)
+        except User.DoesNotExist:
             return Response({"error": "User with this phone number does not exist"}, status=status.HTTP_404_NOT_FOUND)
 
         otp_code = str(random.randint(100000, 999999))
         expiry_time = timezone.now() + datetime.timedelta(minutes=5)
         
-        OTP.objects.create(phone_number=phone_number, otp_code=otp_code, expiry_time=expiry_time)
+        OTPVerification.objects.create(
+            phone_number=phone_number, 
+            otp_code=otp_code, 
+            expiry_time=expiry_time
+        )
         
         # In a real scenario, send SMS. Here we just log it.
         print(f"DEBUG: OTP for {phone_number} is {otp_code}")
         
-        return Response({"message": f"OTP sent to {phone_number}"}, status=status.HTTP_200_OK)
+        return Response({
+            "message": f"OTP sent to {phone_number}",
+            "otp": otp_code # Returning for development ease
+        }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], url_path='verify-otp')
     def verify_otp(self, request):
         phone_number = request.data.get('phone_number')
-        otp_code = request.data.get('otp_code')
+        otp_code = request.data.get('otp') # Use 'otp' instead of 'otp_code'
+        role = request.data.get('role') # Optional: if login, verify role
         
         if not phone_number or not otp_code:
             return Response({"error": "Phone number and OTP code are required"}, status=status.HTTP_400_BAD_REQUEST)
         
-        otp_record = OTP.objects.filter(phone_number=phone_number, otp_code=otp_code).order_by('-created_at').first()
+        otp_record = OTPVerification.objects.filter(
+            phone_number=phone_number, 
+            otp_code=otp_code
+        ).order_by('-created_at').first()
         
         if not otp_record:
             return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
@@ -188,7 +201,29 @@ class UserViewSet(viewsets.ModelViewSet):
         if otp_record.is_expired():
             return Response({"error": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST)
         
-        return Response({"message": "OTP verified successfully"}, status=status.HTTP_200_OK)
+        # Mark as verified
+        otp_record.is_verified = True
+        otp_record.save()
+        
+        # If this is for login, return token
+        try:
+            user = User.objects.get(phone_number=phone_number)
+            
+            # If role is provided, check if it matches
+            if role and user.role != role:
+                return Response({
+                    "error": f"Invalid module. Your account is registered as {user.get_role_display()}."
+                }, status=status.HTTP_403_FORBIDDEN)
+
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({
+                "message": "OTP verified successfully",
+                "token": token.key,
+                "user": UserSerializer(user).data
+            }, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            # This shouldn't happen if they have an OTP, but just in case
+            return Response({"message": "OTP verified for unregistered number"}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], url_path='reset-password')
     def reset_password(self, request):
@@ -202,7 +237,7 @@ class UserViewSet(viewsets.ModelViewSet):
         if len(new_password) < 6:
             return Response({"error": "Password must be at least 6 characters"}, status=status.HTTP_400_BAD_REQUEST)
 
-        otp_record = OTP.objects.filter(phone_number=phone_number, otp_code=otp_code).order_by('-created_at').first()
+        otp_record = OTPVerification.objects.filter(phone_number=phone_number, otp_code=otp_code).order_by('-created_at').first()
         
         if not otp_record or otp_record.is_expired():
             return Response({"error": "Invalid or expired OTP"}, status=status.HTTP_400_BAD_REQUEST)

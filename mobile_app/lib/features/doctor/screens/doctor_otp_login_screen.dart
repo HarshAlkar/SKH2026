@@ -56,7 +56,7 @@ class _DoctorOtpLoginScreenState extends State<DoctorOtpLoginScreen> {
       
       final success = await authProvider.sendOtp(_emailPhoneController.text);
       
-      if (success && mounted) {
+      if (success != null && mounted) {
         setState(() {
           _isOtpSent = true;
         });

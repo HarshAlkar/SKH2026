@@ -12,6 +12,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:label="hs053"
@@ -27,7 +28,7 @@
             android:exported="false"/>
         <receiver
             android:name="dev.fluttercommunity.plus.android_alarm_manager.RebootBroadcastReceiver"
-            android:enabled="false"
+            android:enabled="true"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

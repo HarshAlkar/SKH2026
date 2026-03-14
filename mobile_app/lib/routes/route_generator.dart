@@ -9,6 +9,7 @@ import '../features/auth/screens/role_selection_screen.dart';
 import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/login_screen.dart';
+import '../features/auth/screens/otp_verification_screen.dart';
 
 import '../features/user/screens/symptom_checker_screen.dart';
 import '../features/user/screens/doctor_consult_screen.dart';
@@ -53,7 +54,12 @@ class RouteGenerator {
       case AppRoutes.doctorDashboard:
         return _fadeRoute(const DoctorDashboard());
       case AppRoutes.loginWithOtp:
-        return _fadeRoute(_PlaceholderScreen(title: 'Login with OTP'));
+        final args = settings.arguments as Map<String, dynamic>;
+        return _fadeRoute(OtpVerificationScreen(
+          phoneNumber: args['phoneNumber'],
+          role: args['role'] ?? 'user',
+          isForgotPassword: args['isForgotPassword'] ?? false,
+        ));
       case AppRoutes.forgotPassword:
         return _fadeRoute(const ForgotPasswordScreen());
       case AppRoutes.symptomChecker:

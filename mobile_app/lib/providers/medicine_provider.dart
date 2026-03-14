@@ -25,9 +25,13 @@ class MedicineProvider extends ChangeNotifier {
       // 1. Load from Local DB first (Offline support)
       _medicines = await _dbService.getAllMedicines();
       _updateTodaysMedicines();
+      
+      // 2. Reschedule all alarms to ensure they are active
+      rescheduleAllAlarms();
+      
       notifyListeners();
 
-      // 2. Fetch from Backend and Sync
+      // 3. Fetch from Backend and Sync
       await syncWithBackend();
     } catch (e) {
       debugPrint('Error loading medicines: $e');
@@ -81,9 +85,23 @@ class MedicineProvider extends ChangeNotifier {
     }
   }
 
+  void rescheduleAllAlarms() {
+    final now = DateTime.now();
+    final todayStr = DateFormat('yyyy-MM-dd').format(now);
+    
+    for (var med in _medicines) {
+      // Only schedule if medicine schedule hasn't ended
+      if (med.endDate.compareTo(todayStr) >= 0) {
+        _scheduleAlarm(med);
+      }
+    }
+    debugPrint('All active medicine alarms rescheduled');
+  }
+
   void snoozeMedicine(int id, String name, String instructions, String dosage) {
     final snoozeTime = DateTime.now().add(const Duration(minutes: 10));
     AlarmService.scheduleMedicineAlarm(id, snoozeTime, name, instructions, dosage);
+    debugPrint('Medicine $name snoozed for 10 minutes');
     notifyListeners();
   }
 
@@ -96,9 +114,14 @@ class MedicineProvider extends ChangeNotifier {
       try {
         parsed = format.parse(med.reminderTime);
       } catch (e) {
-        // Fallback to HH:mm
-        final parts = med.reminderTime.split(':');
-        parsed = DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]));
+        // Fallback to HH:mm (24h)
+        try {
+          final parts = med.reminderTime.split(':');
+          parsed = DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]));
+        } catch (e2) {
+          // Fallback to current time if format is completely broken
+          parsed = now;
+        }
       }
 
       DateTime alarmTime = DateTime(now.year, now.month, now.day, parsed.hour, parsed.minute);
@@ -107,16 +130,22 @@ class MedicineProvider extends ChangeNotifier {
       if (alarmTime.isBefore(now)) {
         alarmTime = alarmTime.add(const Duration(days: 1));
       }
-
-      AlarmService.scheduleMedicineAlarm(
-        med.id ?? med.hashCode,
-        alarmTime,
-        med.medicineName,
-        med.instructions,
-        med.dosage,
-      );
+      
+      // Ensure alarmTime is within medicine end date
+      final endDate = DateFormat('yyyy-MM-dd').parse(med.endDate);
+      final alarmDate = DateTime(alarmTime.year, alarmTime.month, alarmTime.day);
+      
+      if (alarmDate.isBefore(endDate.add(const Duration(days: 1)))) {
+        AlarmService.scheduleMedicineAlarm(
+          med.id ?? med.hashCode,
+          alarmTime,
+          med.medicineName,
+          med.instructions,
+          med.dosage,
+        );
+      }
     } catch (e) {
-      debugPrint('Error scheduling alarm: $e');
+      debugPrint('Error scheduling alarm for ${med.medicineName}: $e');
     }
   }
 
@@ -157,6 +186,7 @@ class MedicineProvider extends ChangeNotifier {
       final List<dynamic> response = await _apiService.get('/medicines/user/');
       final remoteMeds = response.map((json) => MedicineModel.fromMap(json)).toList();
 
+      bool hasChanges = false;
       for (var remoteMed in remoteMeds) {
         // Check if exists locally
         final localIndex = _medicines.indexWhere((m) => m.medicineName == remoteMed.medicineName && m.reminderTime == remoteMed.reminderTime);
@@ -164,12 +194,17 @@ class MedicineProvider extends ChangeNotifier {
         if (localIndex == -1) {
           // Add to local
           final id = await _dbService.insert(remoteMed);
-          _medicines.add(MedicineModel.fromMap({...remoteMed.toMap(), 'id': id}));
-          _scheduleAlarm(_medicines.last);
+          final newMed = MedicineModel.fromMap({...remoteMed.toMap(), 'id': id});
+          _medicines.add(newMed);
+          _scheduleAlarm(newMed);
+          hasChanges = true;
         }
       }
-      _updateTodaysMedicines();
-      notifyListeners();
+      
+      if (hasChanges) {
+        _updateTodaysMedicines();
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('Sync error: $e');
     }

@@ -66,6 +66,34 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  Future<void> _handleOtpLogin() async {
+    if (_phoneController.text.length != 10) {
+      Helpers.showSnackBar(context, 'Please enter a valid 10-digit phone number', isError: true);
+      return;
+    }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final response = await authProvider.sendOtp(_phoneController.text);
+
+    if (response != null && mounted) {
+      Navigator.pushNamed(
+        context, 
+        AppRoutes.loginWithOtp,
+        arguments: {
+          'phoneNumber': _phoneController.text,
+          'role': 'user',
+          'isForgotPassword': false,
+        },
+      );
+    } else if (mounted) {
+      Helpers.showSnackBar(
+        context,
+        authProvider.error ?? 'Failed to send OTP. Is your phone number registered?',
+        isError: true,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -268,7 +296,7 @@ class _LoginScreenState extends State<LoginScreen>
           ],
         ),
         GestureDetector(
-          onTap: () => Navigator.pushNamed(context, AppRoutes.loginWithOtp),
+          onTap: _handleOtpLogin,
           child: const Row(
             children: [
               Text(

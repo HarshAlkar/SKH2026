@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'otp_login_screen.dart';
 import 'asha_register_screen.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../core/utils/helpers.dart';
@@ -50,6 +49,35 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
           isError: true,
         );
       }
+    }
+  }
+
+  void _handleOtpLogin() async {
+    final identifier = _idController.text.trim();
+    if (identifier.isEmpty) {
+      Helpers.showSnackBar(context, 'Please enter your phone number', isError: true);
+      return;
+    }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final response = await authProvider.sendOtp(identifier);
+
+    if (response != null && mounted) {
+      Navigator.pushNamed(
+        context, 
+        AppRoutes.loginWithOtp,
+        arguments: {
+          'phoneNumber': identifier,
+          'role': 'asha_worker',
+          'isForgotPassword': false,
+        },
+      );
+    } else if (mounted) {
+      Helpers.showSnackBar(
+        context,
+        authProvider.error ?? 'Failed to send OTP. Is your account registered?',
+        isError: true,
+      );
     }
   }
 
@@ -276,14 +304,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const OtpLoginScreen(),
-                              ),
-                            );
-                          },
+                          onPressed: _handleOtpLogin,
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: const Size(50, 30),
@@ -299,9 +320,6 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-
-                      // Primary Button
                       Consumer<AuthProvider>(
                         builder: (context, auth, _) {
                           return ElevatedButton.icon(
