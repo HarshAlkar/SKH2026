@@ -35,6 +35,63 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
   String _voiceText = '';
+  String _sttError = '';
+  String _selectedLanguage = 'English';
+  String _localeId = 'en-IN';
+  List<stt.LocaleName> _availableLocales = [];
+
+  final Map<String, Map<String, dynamic>> _translations = {
+    'English': {
+      'title': 'AI Symptom Checker',
+      'subtitle': 'How do you feel?',
+      'desc': 'Our AI helps identify potential health concerns',
+      'common': 'COMMON SYMPTOMS',
+      'voice_desc': 'Or describe symptoms by voice',
+      'tap_voice': 'Tap for Voice Input',
+      'listening': 'Listening... Please speak now',
+      'analyze': 'Analyze Symptoms',
+      'analyzing': 'Analyzing...',
+      'result_title': 'ANALYSIS RESULT',
+      'consult': 'Consult Doctor',
+      'notify': 'Notify ASHA',
+      'error_init': 'Speech recognition not available',
+      'symptoms': {
+        'Fever': 'Fever',
+        'Cough': 'Cough',
+        'Headache': 'Headache',
+        'Vomiting': 'Vomiting',
+        'Chest Pain': 'Chest Pain',
+        'Fatigue': 'Fatigue',
+      }
+    },
+    'Hindi': {
+      'title': 'AI लक्षण जाँचकर्ता',
+      'subtitle': 'आप कैसा महसूस कर रहे हैं?',
+      'desc': 'हमारा AI स्वास्थ्य संबंधी चिंताओं को पहचानने में मदद करता है',
+      'common': 'सामान्य लक्षण',
+      'voice_desc': 'या आवाज द्वारा लक्षणों का वर्णन करें',
+      'tap_voice': 'वॉयस इनपुट के लिए टैप करें',
+      'listening': 'सुन रहा हूँ... कृपया अभी बोलें',
+      'analyze': 'लक्षणों का विश्लेषण करें',
+      'analyzing': 'विश्लेषण कर रहा है...',
+      'result_title': 'विश्लेषण परिणाम',
+      'consult': 'डॉक्टर से सलाह लें',
+      'notify': 'ASHA को सूचित करें',
+      'error_init': 'वाक् पहचान उपलब्ध नहीं है',
+      'symptoms': {
+        'Fever': 'बुखार',
+        'Cough': 'खांसी',
+        'Headache': 'सिरदर्द',
+        'Vomiting': 'उल्टी',
+        'Chest Pain': 'सीने में दर्द',
+        'Fatigue': 'थकान',
+      }
+    },
+  };
+
+  String _getTxt(String key) => _translations[_selectedLanguage]?[key] ?? key;
+  String _getSymptomTxt(String symptom) => 
+      (_translations[_selectedLanguage]?['symptoms'] as Map? ?? {})[symptom] ?? symptom;
 
   @override
   void initState() {
@@ -45,9 +102,30 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
   void _initSpeech() async {
     try {
       bool hasSpeech = await _speech.initialize(
-        onError: (errorNotification) => debugPrint('STT Error: $errorNotification'),
-        onStatus: (status) => debugPrint('STT Status: $status'),
+        onError: (errorNotification) {
+          debugPrint('STT Error: $errorNotification');
+          if (mounted) {
+            setState(() {
+              _sttError = errorNotification.errorMsg;
+              _isListening = false;
+            });
+          }
+        },
+        onStatus: (status) {
+          debugPrint('STT Status: $status');
+          if (status == 'notListening' || status == 'done') {
+            if (mounted) setState(() => _isListening = false);
+          }
+        },
       );
+      
+      if (hasSpeech) {
+        _availableLocales = await _speech.locales();
+        for (var locale in _availableLocales) {
+          debugPrint('Available Locale: ${locale.name} [${locale.localeId}]');
+        }
+      }
+
       if (mounted) setState(() {});
       if (!hasSpeech) {
         debugPrint('The user has denied the use of speech recognition.');
@@ -64,6 +142,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
         setState(() {
           _isListening = true;
           _voiceText = '';
+          _sttError = '';
         });
         _speech.listen(
           onResult: (val) => setState(() {
@@ -73,9 +152,12 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
               _isListening = false;
             }
           }),
-          listenFor: const Duration(seconds: 30),
-          pauseFor: const Duration(seconds: 5),
+          localeId: _localeId,
+          listenFor: const Duration(seconds: 60),
+          pauseFor: const Duration(seconds: 10),
           partialResults: true,
+          onDevice: true,
+          cancelOnError: true,
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -157,9 +239,9 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
 
         title: Column(
           children: [
-            const Text(
-              'AI Symptom Checker',
-              style: TextStyle(
+            Text(
+              _getTxt('title'),
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -176,6 +258,35 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
           ],
         ),
         centerTitle: true,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.language, color: AppColors.primary),
+            onSelected: (String lang) {
+              setState(() {
+                _selectedLanguage = lang;
+                if (lang == 'Hindi') {
+                  // Try to find a precise Hindi locale if available
+                  var hiLocale = _availableLocales.firstWhere(
+                    (l) => l.localeId.contains('hi'),
+                    orElse: () => stt.LocaleName('hi-IN', 'Hindi'),
+                  );
+                  _localeId = hiLocale.localeId;
+                } else {
+                  var enLocale = _availableLocales.firstWhere(
+                    (l) => l.localeId.contains('en'),
+                    orElse: () => stt.LocaleName('en-IN', 'English'),
+                  );
+                  _localeId = enLocale.localeId;
+                }
+              });
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(value: 'English', child: Text('English')),
+              const PopupMenuItem(value: 'Hindi', child: Text('हिंदी (Hindi)')),
+            ],
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -183,27 +294,27 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'How do you feel?',
-                style: TextStyle(
+              Text(
+                _getTxt('subtitle'),
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Our AI helps identify potential health concerns',
-                style: TextStyle(
+              Text(
+                _getTxt('desc'),
+                style: const TextStyle(
                   fontSize: 16,
                   color: AppColors.textSecondary,
                 ),
               ),
 
               const SizedBox(height: 32),
-              const Text(
-                'COMMON SYMPTOMS',
-                style: TextStyle(
+              Text(
+                _getTxt('common'),
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textSecondary,
@@ -217,7 +328,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                 children: _allSymptoms.map((symptom) {
                   final isSelected = _selectedSymptoms.contains(symptom);
                   return FilterChip(
-                    label: Text(symptom),
+                    label: Text(_getSymptomTxt(symptom)),
                     selected: isSelected,
                     onSelected: (_) => _toggleSymptom(symptom),
                     selectedColor: AppColors.primary,
@@ -256,7 +367,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                     elevation: 0,
                   ),
                   child: _isAnalyzing
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 24,
                           width: 24,
                           child: CircularProgressIndicator(
@@ -264,14 +375,14 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Row(
+                      : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.analytics_outlined),
-                            SizedBox(width: 12),
+                            const Icon(Icons.analytics_outlined),
+                            const SizedBox(width: 12),
                             Text(
-                              'Analyze Symptoms',
-                              style: TextStyle(
+                              _getTxt('analyze'),
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -292,7 +403,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () => Navigator.pushNamed(context, AppRoutes.consultDoctor),
                         icon: const Icon(Icons.video_call_outlined),
-                        label: const Text('Consult Doctor'),
+                        label: Text(_getTxt('consult')),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.primary,
                           side: const BorderSide(color: AppColors.primary),
@@ -326,7 +437,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                         },
 
                         icon: const Icon(Icons.notification_important_outlined),
-                        label: const Text('Notify ASHA'),
+                        label: Text(_getTxt('notify')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -362,9 +473,9 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
 
         child: Column(
           children: [
-            const Text(
-              'Or describe symptoms by voice',
-              style: TextStyle(color: AppColors.textSecondary),
+            Text(
+              _getTxt('voice_desc'),
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
             Container(
@@ -401,14 +512,42 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                   ),
                 ),
               ),
-            Text(
-              _isListening ? 'Listening...' : 'Tap for Voice Input',
-              style: const TextStyle(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
+            if (_isListening)
+              const Padding(
+                padding: EdgeInsets.only(top: 8.0),
+                child: Text(
+                  'Listening... Please speak now',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              )
+            else if (_sttError.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  'Error: $_sttError. Try again.',
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  _getTxt('tap_voice'),
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -444,9 +583,9 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'ANALYSIS RESULT',
-                style: TextStyle(
+              Text(
+                _getTxt('result_title'),
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,

@@ -1,0 +1,14 @@
+[
+  {"name": "Paracetamol", "category": "Pain Relief"},
+  {"name": "Amoxicillin", "category": "Antibiotic"},
+  {"name": "Cetirizine", "category": "Antihistamine"},
+  {"name": "Ibuprofen", "category": "Anti-inflammatory"},
+  {"name": "Vitamin C", "category": "Supplement"},
+  {"name": "ORS", "category": "Rehydration"},
+  {"name": "Azithromycin", "category": "Antibiotic"},
+  {"name": "Metformin", "category": "Diabetes"},
+  {"name": "Amlodipine", "category": "Hypertension"},
+  {"name": "Pantoprazole", "category": "Acidity"},
+  {"name": "Cough Syrup", "category": "Cough"},
+  {"name": "B-Complex", "category": "Supplement"}
+]

@@ -10,7 +10,7 @@ class AuthenticationService {
   final _secureStorage = const FlutterSecureStorage();
   final StorageService _storageService = StorageService();
 
-  Future<Map<String, dynamic>> login(String phoneNumber, String password) async {
+  Future<Map<String, dynamic>> login(String phoneNumber, String password, String role) async {
     var connectivityResult = await (Connectivity().checkConnectivity());
     bool isOnline = connectivityResult.isNotEmpty && connectivityResult.first != ConnectivityResult.none;
 
@@ -22,6 +22,7 @@ class AuthenticationService {
           body: {
             'phone_number': phoneNumber,
             'password': password,
+            'role': role,
           },
         );
 
@@ -36,6 +37,7 @@ class AuthenticationService {
         // Securely store credentials for offline verification
         await _secureStorage.write(key: 'phone_number', value: phoneNumber);
         await _secureStorage.write(key: 'password', value: password);
+        await _secureStorage.write(key: 'role', value: role);
 
         return response;
       } catch (e) {
@@ -45,8 +47,9 @@ class AuthenticationService {
       // Offline Flow
       String? cachedPhone = await _secureStorage.read(key: 'phone_number');
       String? cachedPass = await _secureStorage.read(key: 'password');
+      String? cachedRole = await _secureStorage.read(key: 'role');
 
-      if (phoneNumber == cachedPhone && password == cachedPass) {
+      if (phoneNumber == cachedPhone && password == cachedPass && role == cachedRole) {
         String? cachedUserData = _storageService.getString('user_data');
         if (cachedUserData != null) {
           return {
@@ -56,7 +59,7 @@ class AuthenticationService {
           };
         }
       }
-      throw Exception('Invalid credentials or no offline data found.');
+      throw Exception('Invalid credentials or no offline data found for this role.');
     }
   }
 

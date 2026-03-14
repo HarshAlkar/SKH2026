@@ -16,12 +16,35 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
+
+def api_root_view(request):
+    return JsonResponse({
+        "status": "online",
+        "project": "Gramin Health Connect API",
+        "documentation": "Visit /admin/ for administrative control or /api/ for specific endpoints.",
+        "endpoints": [
+            "/api/auth/",
+            "/api/users/",
+            "/api/symptoms/",
+            "/api/medicines/",
+            "/api/consultations/",
+            "/api/prescriptions/",
+            "/api/alerts/",
+            "/api/records/"
+        ]
+    })
 
 urlpatterns = [
+    path('', api_root_view, name='api_root'),
     path('admin/', admin.site.urls),
     path('api/auth/', include('apps.users.urls')), # login/register are actions in UserViewSet
     path('api/users/', include('apps.users.urls')),
     path('api/symptoms/', include('apps.symptom_analysis.urls')),
-    # Other apps would follow...
+    path('api/medicines/', include('apps.medicine_tracker.urls')),
+    path('api/consultations/', include('apps.consultations.urls')),
+    path('api/prescriptions/', include('apps.prescriptions.urls')),
+    path('api/alerts/', include('apps.alerts.urls')),
+    path('api/records/', include('apps.health_records.urls')),
 ]
 

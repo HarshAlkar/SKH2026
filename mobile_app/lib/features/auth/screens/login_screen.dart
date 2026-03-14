@@ -51,22 +51,11 @@ class _LoginScreenState extends State<LoginScreen>
       final success = await authProvider.login(
         _phoneController.text,
         _passwordController.text,
+        'user',
       );
       
       if (success && mounted) {
-        final user = authProvider.user;
-        if (user != null) {
-          switch (user.role) {
-            case 'doctor':
-              Navigator.pushReplacementNamed(context, AppRoutes.doctorDashboard);
-              break;
-            case 'asha_worker':
-              Navigator.pushReplacementNamed(context, AppRoutes.ashaDashboard);
-              break;
-            default:
-              Navigator.pushReplacementNamed(context, AppRoutes.userDashboard);
-          }
-        }
+        Navigator.pushReplacementNamed(context, AppRoutes.userDashboard);
       } else if (mounted) {
         Helpers.showSnackBar(
           context,

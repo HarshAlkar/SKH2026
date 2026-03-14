@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../providers/alert_provider.dart';
 import '../../patient/screens/village_patients_screen.dart';
-import '../../patient/screens/register_patient_screen.dart';
 import 'update_health_screen.dart';
 import '../../alerts/screens/risk_alert_screen.dart';
 import '../../doctor/screens/consult_doctor_screen.dart';
-import '../../reports/screens/village_health_report_screen.dart';
-import '../../health_records/screens/health_records_screen.dart';
-import '../../visits/screens/village_visits_screen.dart';
+// import '../../referral/screens/emergency_referral_screen.dart'; // Missing
 import '../widgets/stats_card.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/activity_tile.dart';
+import '../widgets/emergency_button.dart';
+import '../widgets/asha_drawer.dart';
+// import '../../activity/screens/all_activity_screen.dart'; // Missing
+// import '../../activity/screens/activity_details_screen.dart'; // Missing
+// import '../../activity/models/activity_model.dart'; // Missing
+// import '../../notifications/screens/notification_screen.dart'; // Missing
+// import '../../notifications/widgets/notification_badge.dart'; // Missing
 
 class AshaDashboard extends StatelessWidget {
   const AshaDashboard({super.key});
@@ -35,80 +36,65 @@ class AshaDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Fetch alerts on load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AlertProvider>(context, listen: false).fetchAlerts();
-    });
-
-    return Consumer2<AuthProvider, AlertProvider>(
-      builder: (context, auth, alertProvider, _) {
-        final name = auth.user?.name ?? 'Worker';
-        final alertCount = alertProvider.alerts.length.toString().padLeft(2, '0');
-        
-        return Scaffold(
-          backgroundColor: lightBackground,
-          appBar: AppBar(
-            backgroundColor: lightBackground,
-            elevation: 0,
-            iconTheme: const IconThemeData(color: Colors.black87),
-            actions: [
-              IconButton(
-                icon: CircleAvatar(
-                  backgroundColor: primaryColor.withOpacity(0.1),
-                  child: Icon(Icons.person_outline, color: primaryColor),
-                ),
-                onPressed: () {},
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
-          drawer: _buildDrawer(context, auth),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () => _navigateTo(context, const RegisterPatientScreen()),
-            backgroundColor: const Color(0xFF2F4DB6),
-            tooltip: 'Register New Patient',
-            child: const Icon(Icons.person_add, color: Colors.white),
-          ),
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      backgroundColor: lightBackground,
+      appBar: AppBar(
+        backgroundColor: lightBackground,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        actions: const [SizedBox(width: 8)],
+      ),
+      drawer: const AshaDrawer(),
+      floatingActionButton: EmergencyButton(
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Emergency Referral feature coming soon')),
+          );
+        },
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Greeting Section
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Greeting Section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Good Morning $name 👋",
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "Village Health Overview",
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Good Morning Sunita 👋",
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                         ),
-                      ),
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: Colors.white,
-                        child: Icon(Icons.person, color: primaryColor, size: 28),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        Text(
+                          "Village Health Overview",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined),
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Notifications feature coming soon')),
+                      );
+                    },
+                  ),
+                ],
+              ),
               const SizedBox(height: 24),
 
               // Stats Cards Grid
@@ -118,7 +104,7 @@ class AshaDashboard extends StatelessWidget {
                 mainAxisSpacing: 16,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                childAspectRatio: 1.1,
+                childAspectRatio: 1.0,
                 children: [
                   StatsCard(
                     icon: Icons.people_alt_outlined,
@@ -143,7 +129,7 @@ class AshaDashboard extends StatelessWidget {
                   ),
                   StatsCard(
                     icon: Icons.notifications_none_outlined,
-                    number: alertCount,
+                    number: "03",
                     label: "NEW ALERTS",
                     iconColor: secondaryBlue,
                     iconBackgroundColor: secondaryBlue.withOpacity(0.1),
@@ -163,46 +149,52 @@ class AshaDashboard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
+              Column(
                 children: [
-                  Expanded(
-                    child: QuickActionButton(
-                      icon: Icons.person_add_outlined,
-                      label: "Register Patient",
-                      onTap: () =>
-                          _navigateTo(context, const VillagePatientsScreen()),
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.person_add_outlined,
+                          label: "Register Patient",
+                          onTap: () => _navigateTo(
+                            context,
+                            const VillagePatientsScreen(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.edit_document,
+                          label: "Update Health",
+                          onTap: () =>
+                              _navigateTo(context, const UpdateHealthScreen()),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: QuickActionButton(
-                      icon: Icons.edit_document,
-                      label: "Update Health",
-                      onTap: () =>
-                          _navigateTo(context, const UpdateHealthScreen()),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: QuickActionButton(
-                      icon: Icons.warning_amber_rounded,
-                      label: "View Risk Alerts",
-                      onTap: () =>
-                          _navigateTo(context, const RiskAlertScreen()),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: QuickActionButton(
-                      icon: Icons.medical_services_outlined,
-                      label: "Consult Doctor",
-                      onTap: () =>
-                          _navigateTo(context, const ConsultDoctorScreen()),
-                    ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.warning_amber_rounded,
+                          label: "View Risk Alerts",
+                          onTap: () =>
+                              _navigateTo(context, const RiskAlertScreen()),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.medical_services_outlined,
+                          label: "Consult Doctor",
+                          onTap: () =>
+                              _navigateTo(context, const ConsultDoctorScreen()),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -222,7 +214,11 @@ class AshaDashboard extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Activity history coming soon')),
+                      );
+                    },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: const Size(50, 30),
@@ -239,136 +235,37 @@ class AshaDashboard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (alertProvider.alerts.isEmpty)
-                const Center(child: Text("No recent health alerts"))
-              else
-                ...alertProvider.alerts.take(3).map((alert) => ActivityTile(
-                  icon: alert.severity == 'Emergency' ? Icons.error_outline : Icons.warning_amber_rounded,
-                  name: alert.title,
-                  activity: "${alert.message} • ${_timeAgo(alert.timestamp)}",
-                  iconBackgroundColor: alert.severity == 'Emergency' 
-                      ? const Color(0xFFFFEBEE) 
-                      : const Color(0xFFFFF3E0),
-                  iconColor: alert.severity == 'Emergency' ? Colors.redAccent : Colors.orange,
-                )),
+              const SizedBox(height: 16),
+
+              ActivityTile(
+                icon: Icons.content_paste,
+                name: "Ramesh Patil",
+                activity: "Fever reported • 10 mins ago",
+                iconBackgroundColor: const Color(0xFFE8F1FF), // Light Blue
+                iconColor: primaryColor,
+                onTap: () {},
+              ),
+              ActivityTile(
+                icon: Icons.check_circle_outline,
+                name: "Sita Devi",
+                activity: "Vaccination completed • 2 hrs ago",
+                iconBackgroundColor: const Color(0xFFE8F5E9), // Light Green
+                iconColor: Colors.green,
+                onTap: () {},
+              ),
+              ActivityTile(
+                icon: Icons.error_outline,
+                name: "Amit Shinde",
+                activity: "High BP Alert • 4 hrs ago",
+                iconBackgroundColor: const Color(0xFFFFEBEE), // Light Red
+                iconColor: Colors.redAccent,
+                onTap: () {},
+              ),
               const SizedBox(height: 24),
             ],
           ),
         ),
       ),
     );
-      },
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context, AuthProvider auth) {
-    final name = auth.user?.name ?? "Worker";
-    final phone = auth.user?.phoneNumber ?? "N/A";
-    
-    return Drawer(
-      child: Column(
-        children: [
-          UserAccountsDrawerHeader(
-            decoration: BoxDecoration(color: primaryColor),
-            accountName: Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            accountEmail: Text("Contact: $phone"),
-            currentAccountPicture: const CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 40, color: Colors.blue),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.dashboard_outlined),
-            title: const Text('Dashboard'),
-            onTap: () => Navigator.pop(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.analytics_outlined),
-            title: const Text('Village Health Report'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const VillageHealthReportScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.person_add_alt_1_outlined),
-            title: const Text('Register Patient'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const VillagePatientsScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.directions_walk),
-            title: const Text('Village Visits'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const VillageVisitsScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.folder_shared_outlined),
-            title: const Text('Health Records'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const HealthRecordsScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.orange,
-            ),
-            title: const Text('Risk Alerts'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const RiskAlertScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.medical_services_outlined,
-              color: Colors.green,
-            ),
-            title: const Text('Consult Doctor'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const ConsultDoctorScreen());
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.settings_outlined),
-            title: const Text('Settings'),
-            onTap: () => Navigator.pop(context),
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.redAccent),
-            ),
-            onTap: () async {
-              await Provider.of<AuthProvider>(context, listen: false).logout();
-              if (context.mounted) {
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/login',
-                  (route) => false,
-                );
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-  String _timeAgo(DateTime dateTime) {
-    final duration = DateTime.now().difference(dateTime);
-    if (duration.inMinutes < 60) return "${duration.inMinutes} mins ago";
-    if (duration.inHours < 24) return "${duration.inHours} hrs ago";
-    return "${duration.inDays} days ago";
   }
 }

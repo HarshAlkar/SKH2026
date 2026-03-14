@@ -25,13 +25,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> login(String phoneNumber, String password) async {
+  Future<bool> login(String phoneNumber, String password, String role) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final response = await _authService.login(phoneNumber, password);
+      final response = await _authService.login(phoneNumber, password, role);
       _user = UserModel.fromJson(response['user']);
       _isLoading = false;
       notifyListeners();

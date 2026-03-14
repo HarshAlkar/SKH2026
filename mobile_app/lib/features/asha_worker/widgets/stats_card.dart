@@ -37,7 +37,7 @@ class StatsCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: () {}, // Can be extended for navigation
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

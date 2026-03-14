@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../widgets/user_sidebar.dart';
-import '../services/medicine_service.dart';
-
-
-
+import '../../../providers/medicine_provider.dart';
+import '../../../models/medicine_model.dart';
 
 class MedicineTrackerScreen extends StatefulWidget {
   const MedicineTrackerScreen({super.key});
@@ -15,67 +15,23 @@ class MedicineTrackerScreen extends StatefulWidget {
 }
 
 class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
-  int _selectedDayIndex = 0;
-  final List<Map<String, dynamic>> _days = [
-    {'day': 'MON', 'date': '12'},
-    {'day': 'TUE', 'date': '13'},
-    {'day': 'WED', 'date': '14'},
-    {'day': 'THU', 'date': '15'},
-    {'day': 'FRI', 'date': '16'},
-  ];
-
-  Map<String, dynamic>? _nextMed;
   DateTime _selectedDate = DateTime.now();
-
-  List<Map<String, dynamic>> _medicines = [];
-  bool _isLoading = true;
-  final MedicineService _medicineService = MedicineService();
+  late List<DateTime> _weekDates;
 
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    _weekDates = _generateWeekDisplayDates(DateTime.now());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MedicineProvider>().loadMedicines();
+    });
   }
 
-  Future<void> _fetchData() async {
-    await Future.wait([
-      _fetchMedicines(),
-      _fetchNextMedicine(),
-    ]);
-  }
-
-  Future<void> _fetchNextMedicine() async {
-    try {
-      final nextMed = await _medicineService.getNextMedicine();
-      setState(() => _nextMed = nextMed);
-    } catch (e) {
-      // Handle error
-    }
-  }
-
-  Future<void> _fetchMedicines() async {
-    try {
-      final meds = await _medicineService.getMedicines();
-      setState(() {
-        _medicines = meds;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      // Handle error
-    }
-  }
-
-  void _toggleMedicineStatus(int index) async {
-    final med = _medicines[index];
-    try {
-      await _medicineService.toggleMedicineStatus(med['id']);
-      setState(() {
-        _medicines[index]['isTaken'] = !(_medicines[index]['isTaken'] as bool);
-      });
-    } catch (e) {
-      // Handle error
-    }
+  List<DateTime> _generateWeekDisplayDates(DateTime date) {
+    // Show full week Monday to Sunday
+    int dayOfWeek = date.weekday; 
+    DateTime monday = date.subtract(Duration(days: dayOfWeek - 1));
+    return List.generate(7, (index) => monday.add(Duration(days: index)));
   }
 
   @override
@@ -92,7 +48,6 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-
         title: const Text(
           'Medicine Tracker',
           style: TextStyle(
@@ -113,50 +68,68 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
                 lastDate: DateTime.now().add(const Duration(days: 365)),
               );
               if (date != null) {
-                setState(() => _selectedDate = date);
-                _fetchMedicines(); // Refresh for selected date
+                setState(() {
+                  _selectedDate = date;
+                  _weekDates = _generateWeekDisplayDates(date);
+                });
               }
             },
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _fetchData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildReminderCard(),
-                const SizedBox(height: 24),
-                _buildDateSelector(),
-                const SizedBox(height: 32),
-                _buildScheduleHeader(),
-                const SizedBox(height: 16),
-                _isLoading 
-                  ? const Center(child: CircularProgressIndicator())
-                  : _medicines.isEmpty 
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 40),
-                          child: Text("No medicines scheduled"),
-                        ),
-                      )
-                    : _buildMedicineList(),
-                const SizedBox(height: 80), // Space for FAB-like button
-              ],
+      body: Consumer<MedicineProvider>(
+        builder: (context, provider, child) {
+          final displayMedicines = provider.getMedicinesForDate(_selectedDate);
+          
+          return RefreshIndicator(
+            onRefresh: provider.loadMedicines,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildReminderCard(provider),
+                    const SizedBox(height: 24),
+                    _buildDateSelector(),
+                    const SizedBox(height: 32),
+                    _buildScheduleHeader(displayMedicines.length, _selectedDate),
+                    const SizedBox(height: 16),
+                    provider.isLoading 
+                      ? const Center(child: CircularProgressIndicator())
+                      : displayMedicines.isEmpty 
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 40),
+                              child: Text(
+                                "No medicines scheduled for this day",
+                                style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          )
+                        : _buildMedicineList(displayMedicines, provider),
+                    const SizedBox(height: 80),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
       floatingActionButton: _buildAddMedicineButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
-  Widget _buildReminderCard() {
+  Widget _buildReminderCard(MedicineProvider provider) {
+    bool isToday = DateFormat('yyyy-MM-dd').format(_selectedDate) == DateFormat('yyyy-MM-dd').format(DateTime.now());
+    
+    MedicineModel? nextMed;
+    if (isToday) {
+      final upcoming = provider.todaysMedicines.where((m) => !m.isTaken).toList();
+      if (upcoming.isNotEmpty) nextMed = upcoming.first;
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -168,73 +141,62 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
           width: 1,
         ),
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(
-            right: 0,
-            top: 0,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.alarm, color: Colors.white, size: 28),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                _nextMed != null 
-                  ? 'Next medicine: ${_nextMed!['time']}'
-                  : 'No upcoming medicines',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      nextMed != null 
+                        ? 'Next: ${nextMed.reminderTime}'
+                        : isToday ? 'No upcoming medicines' : 'Check schedule',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      nextMed != null
+                        ? "Time for ${nextMed.medicineName}"
+                        : isToday ? "You're all set for now!" : "Schedule for ${DateFormat('MMM dd').format(_selectedDate)}",
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                _nextMed != null
-                  ? "Don't forget your scheduled dose of \n${_nextMed!['name']}."
-                  : "All caught up for now! Check your full schedule for later.",
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textSecondary,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Opening detailed schedule...')),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'View Schedule',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
+              Icon(Icons.alarm, color: AppColors.primary.withOpacity(0.2), size: 40),
             ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                 Navigator.pushNamed(context, AppRoutes.medicineSchedule);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 0,
+              ),
+              child: const Text('View Full Schedule', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
           ),
         ],
       ),
@@ -243,172 +205,142 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
 
   Widget _buildDateSelector() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: List.generate(_days.length, (index) {
-          final isSelected = _selectedDayIndex == index;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedDayIndex = index),
-            child: Container(
-              width: 55,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    _days[index]['day'],
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : Colors.grey.shade400,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _weekDates.map((date) {
+            bool isSelected = DateFormat('yyyy-MM-dd').format(date) == DateFormat('yyyy-MM-dd').format(_selectedDate);
+            bool isToday = DateFormat('yyyy-MM-dd').format(date) == DateFormat('yyyy-MM-dd').format(DateTime.now());
+            
+            return GestureDetector(
+              onTap: () => setState(() => _selectedDate = date),
+              child: Container(
+                width: 50,
+                margin: const EdgeInsets.symmetric(horizontal: 6),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: isToday && !isSelected ? Border.all(color: AppColors.primary.withOpacity(0.3)) : null,
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      DateFormat('E').format(date).toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? Colors.white : Colors.grey.shade400,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _days[index]['date'],
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('dd').format(date),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        }),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
 
-  Widget _buildScheduleHeader() {
+  Widget _buildScheduleHeader(int count, DateTime date) {
+    bool isToday = DateFormat('yyyy-MM-dd').format(date) == DateFormat('yyyy-MM-dd').format(DateTime.now());
+    String label = isToday ? "Today's Schedule" : "${DateFormat('MMM dd').format(date)} Schedule";
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          "Today's Schedule",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1E293B),
-          ),
+          label,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
         ),
         Text(
-          "${_medicines.length} Meds Today",
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primary,
-          ),
+          "$count Meds ${isToday ? 'Today' : ''}",
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.primary),
         ),
       ],
     );
   }
 
-  Widget _buildMedicineList() {
+  Widget _buildMedicineList(List<MedicineModel> medicines, MedicineProvider provider) {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _medicines.length,
+      itemCount: medicines.length,
       separatorBuilder: (context, index) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
-        final med = _medicines[index];
-        final isTaken = med['isTaken'] as bool;
-        return InkWell(
-          onTap: () => _toggleMedicineStatus(index),
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey.shade100),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+        final med = medicines[index];
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.grey.shade100),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(med['icon'], color: AppColors.primary, size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        med['name'],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1E293B),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(Icons.link, size: 14, color: Colors.grey.shade400),
-                          const SizedBox(width: 4),
-                          Text(
-                            med['dosage'],
-                            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                          ),
-                          const SizedBox(width: 12),
-                          Icon(Icons.access_time, size: 14, color: Colors.grey.shade400),
-                          const SizedBox(width: 4),
-                          Text(
-                            med['time'],
-                            style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  height: 28,
-                  width: 28,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isTaken ? AppColors.primary : Colors.transparent,
-                    border: Border.all(
-                      color: isTaken ? AppColors.primary : Colors.grey.shade300,
-                      width: 2,
+                child: const Icon(Icons.medication, color: AppColors.primary, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      med.medicineName,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                     ),
-                  ),
-                  child: isTaken
-                      ? const Icon(Icons.check, color: Colors.white, size: 18)
-                      : null,
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, size: 14, color: Colors.grey.shade400),
+                        const SizedBox(width: 4),
+                        Text(med.reminderTime, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.info_outline, size: 14, color: Colors.grey),
+                        const SizedBox(width: 4),
+                        Text(med.dosage, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              IconButton(
+                icon: Icon(
+                  med.isTaken ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: med.isTaken ? AppColors.primary : Colors.grey.shade300,
+                ),
+                onPressed: () => provider.toggleStatus(med.id!),
+              ),
+            ],
           ),
         );
       },
@@ -416,48 +348,17 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
   }
 
   Widget _buildAddMedicineButton() {
-    return Container(
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () async {
-            final result = await Navigator.pushNamed(context, AppRoutes.addMedicine);
-            if (result == true) {
-              _fetchData();
-            }
-          },
-
-          borderRadius: BorderRadius.circular(28),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.add, color: Colors.white),
-              SizedBox(width: 8),
-              Text(
-                'Add Medicine',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return FloatingActionButton.extended(
+      onPressed: () async {
+        final result = await Navigator.pushNamed(context, AppRoutes.addMedicine);
+        if (result == true) {
+          context.read<MedicineProvider>().loadMedicines();
+        }
+      },
+      backgroundColor: AppColors.primary,
+      icon: const Icon(Icons.add, color: Colors.white),
+      label: const Text('Add Medicine', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      elevation: 4,
     );
   }
 }

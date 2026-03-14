@@ -13,7 +13,8 @@ class AppRoutes {
 
   static const String symptomChecker = '/symptom-checker';
   static const String medicineTracker = '/medicine-tracker';
-  static const String videoCall = '/video-call';
+  static const String addMedicine = '/add-medicine';
+  static const String medicineCall = '/medicine-call';
   static const String loginWithOtp = '/login-with-otp';
   static const String forgotPassword = '/forgot-password';
   // User specific routes
@@ -24,7 +25,6 @@ class AppRoutes {
   static const String emergencyHelp = '/emergency-help';
   static const String settings = '/settings';
   static const String profile = '/profile';
-  static const String addMedicine = '/add-medicine';
   static const String medicineSchedule = '/medicine-schedule';
 
   // ASHA Worker portal routes

@@ -1,16 +1,25 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../constants/api_constants.dart';
+import 'storage_service.dart';
 
 class ApiService {
   final http.Client _client = http.Client();
 
+  final StorageService _storageService = StorageService();
+
+  Future<Map<String, String>> _getHeaders(Map<String, String>? extra) async {
+    final token = _storageService.getString('token');
+    return {
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Token $token',
+      ...?extra,
+    };
+  }
+
   Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
     try {
-      final combinedHeaders = {
-        'Accept': 'application/json',
-        ...?headers,
-      };
+      final combinedHeaders = await _getHeaders(headers);
       final response = await _client.get(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
         headers: combinedHeaders,
@@ -27,15 +36,48 @@ class ApiService {
     dynamic body,
   }) async {
     try {
-      final combinedHeaders = {
-        'Accept': 'application/json',
+      final combinedHeaders = await _getHeaders({
         'Content-Type': 'application/json',
         ...?headers,
-      };
+      });
       final response = await _client.post(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
         headers: combinedHeaders,
         body: jsonEncode(body),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> put(
+    String endpoint, {
+    Map<String, String>? headers,
+    dynamic body,
+  }) async {
+    try {
+      final combinedHeaders = await _getHeaders({
+        'Content-Type': 'application/json',
+        ...?headers,
+      });
+      final response = await _client.put(
+        Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+        headers: combinedHeaders,
+        body: jsonEncode(body),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> delete(String endpoint, {Map<String, String>? headers}) async {
+    try {
+      final combinedHeaders = await _getHeaders(headers);
+      final response = await _client.delete(
+        Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+        headers: combinedHeaders,
       );
       return _processResponse(response);
     } catch (e) {

@@ -6,6 +6,7 @@ class ActivityTile extends StatelessWidget {
   final String activity;
   final Color iconBackgroundColor;
   final Color iconColor;
+  final VoidCallback onTap;
 
   const ActivityTile({
     super.key,
@@ -14,6 +15,7 @@ class ActivityTile extends StatelessWidget {
     required this.activity,
     required this.iconBackgroundColor,
     required this.iconColor,
+    required this.onTap,
   });
 
   @override
@@ -36,7 +38,7 @@ class ActivityTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {}, // Extended click behavior if needed
+          onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(

@@ -1,5 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="NONE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="6cb04ef0-19cb-451d-8775-72a1ebecca8d" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/alerts/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/alerts/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/alerts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/alerts/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/alerts/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/alerts/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/consultations/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/consultations/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/doctors/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/doctors/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/doctors/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/doctors/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/doctors/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/doctors/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/patients/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/patients/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/prescriptions/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/prescriptions/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/prescriptions/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/prescriptions/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/symptom_analysis/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/symptom_analysis/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/symptom_analysis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/symptom_analysis/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/users/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/users/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/users/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/users/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/apps/users/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/apps/users/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/config/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/config/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/django_api/config/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/backend/django_api/config/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/android/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/android/app/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/core/constants/api_constants.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/core/constants/api_constants.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/asha_worker/screens/asha_dashboard.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/features/asha_worker/screens/asha_dashboard.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/asha_worker/screens/asha_register_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/asha_worker/screens/login_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/asha_worker/screens/otp_login_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/auth/screens/login_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/features/auth/screens/login_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/auth/screens/register_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/features/auth/screens/register_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/doctor/screens/consult_doctor_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/features/doctor/screens/consult_doctor_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/doctor/screens/doctor_login_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/doctor/screens/doctor_otp_login.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/doctor/screens/doctor_register.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/user/screens/add_medicine_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/features/user/screens/add_medicine_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/user/screens/doctor_consult_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/features/user/screens/doctor_consult_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/user/screens/login_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/user/screens/medicine_tracker_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/features/user/screens/medicine_tracker_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/user/screens/user_dashboard_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/features/user/screens/user_dashboard_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/features/user/widgets/user_sidebar.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/features/user/widgets/user_sidebar.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/models/user_model.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/models/user_model.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/providers/auth_provider.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/providers/auth_provider.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/lib/routes/route_generator.dart" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/lib/routes/route_generator.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/macos/Flutter/GeneratedPluginRegistrant.swift" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/macos/Flutter/GeneratedPluginRegistrant.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/pubspec.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mobile_app/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/mobile_app/pubspec.yaml" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
   <component name="FileEditorManager">
     <leaf>
       <file leaf-file-name="main.dart" pinned="false" current-in-tab="true">
@@ -13,24 +69,67 @@
       </file>
     </leaf>
   </component>
-  <component name="ToolWindowManager">
-    <editor active="true" />
-    <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
-    </layout>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "HarshAlkar"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/HarshAlkar/HS-2026-053_HackStomp2026.git",
+    "accountId": "0f845c37-2dc1-471d-ab53-b1a9607191c6"
+  }
+}]]></component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 4
+}]]></component>
+  <component name="ProjectId" id="3AtwLiPg7XlZre8ulUHH7G6KhZH" />
   <component name="ProjectView">
-    <navigator currentView="ProjectPane" proportions="" version="1">
-    </navigator>
+    <navigator currentView="ProjectPane" proportions="" version="1" />
     <panes>
       <pane id="ProjectPane">
         <option name="show-excluded-files" value="false" />
       </pane>
     </panes>
   </component>
-  <component name="PropertiesComponent">
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="dart.analysis.tool.window.force.activate" value="true" />
-    <property name="show.migrate.to.gradle.popup" value="false" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "dart.analysis.tool.window.visible": "false",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/HARSH/OneDrive/Desktop/Cred/HackStomp/hs053",
+    "show.migrate.to.gradle.popup": "false"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="6cb04ef0-19cb-451d-8775-72a1ebecca8d" name="Changes" comment="" />
+      <created>1773425121728</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1773425121728</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="ToolWindowManager">
+    <editor active="true" />
+    <layout>
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+    </layout>
   </component>
 </project>

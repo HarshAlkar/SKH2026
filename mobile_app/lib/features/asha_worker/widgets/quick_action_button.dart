@@ -5,28 +5,32 @@ class QuickActionButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
+  final Color? color;
+
   const QuickActionButton({
     super.key,
     required this.icon,
     required this.label,
     required this.onTap,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? const Color(0xFF2A7DE1);
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2A7DE1).withOpacity(0.3),
+            color: effectiveColor.withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material(
-        color: const Color(0xFF2A7DE1),
+        color: effectiveColor,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),

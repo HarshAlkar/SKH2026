@@ -4,7 +4,6 @@ import '../widgets/consultation_card.dart';
 import '../widgets/patient_selector.dart';
 import '../widgets/consultation_form.dart';
 
-
 class ConsultDoctorScreen extends StatefulWidget {
   const ConsultDoctorScreen({super.key});
 
@@ -225,7 +224,6 @@ class _ConsultDoctorScreenState extends State<ConsultDoctorScreen> {
             ),
         ],
       ),
-
     );
   }
 }

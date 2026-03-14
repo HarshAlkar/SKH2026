@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-a4c^3j_@1k@po*kh&5e8i444+@xw&o(18vyapdmcc^m))g1f-!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -46,7 +46,17 @@ INSTALLED_APPS = [
     'apps.prescriptions',
     'apps.symptom_analysis',
     'apps.alerts',
+    'apps.medicine_tracker',
+    'apps.health_records',
+    'apps.asha_workers',
+    'rest_framework.authtoken',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',

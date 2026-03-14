@@ -9,6 +9,7 @@ import 'providers/symptom_provider.dart';
 import 'providers/consultation_provider.dart';
 import 'providers/medicine_provider.dart';
 import 'providers/alert_provider.dart';
+import 'main.dart'; // Import to use navigatorKey
 
 class GraminHealthApp extends StatelessWidget {
   const GraminHealthApp({super.key});
@@ -26,6 +27,7 @@ class GraminHealthApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Gramin Health Connect',
+        navigatorKey: navigatorKey, // Set the key here
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         initialRoute: AppRoutes.roleSelection,
