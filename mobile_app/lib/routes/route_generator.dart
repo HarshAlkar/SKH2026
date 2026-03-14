@@ -3,12 +3,11 @@ import 'app_routes.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/role_selection_screen.dart';
+import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/user/screens/user_dashboard_screen.dart';
 import '../features/asha_worker/screens/asha_dashboard.dart';
 import '../features/doctor/screens/doctor_dashboard.dart';
-import '../features/user/screens/login_screen.dart' as user_login;
-import '../features/asha_worker/screens/login_screen.dart' as asha_login;
-import '../features/doctor/screens/doctor_login_screen.dart' as doctor_login;
+
 import '../features/user/screens/symptom_checker_screen.dart';
 import '../features/user/screens/doctor_consult_screen.dart';
 import '../features/user/screens/medicine_tracker_screen.dart';
@@ -20,18 +19,14 @@ import '../features/user/screens/emergency_help_screen.dart';
 // ASHA Feature Screens
 import '../features/reports/screens/village_health_report_screen.dart';
 import '../features/patient/screens/village_patients_screen.dart';
-import '../features/patient/models/patient_model.dart';
+
 import '../features/patient/screens/register_patient_screen.dart';
-import '../features/patient/screens/edit_patient_screen.dart';
 import '../features/asha_worker/screens/update_health_screen.dart';
 import '../features/alerts/screens/risk_alert_screen.dart';
 import '../features/doctor/screens/consult_doctor_screen.dart';
 import '../features/health_records/screens/health_records_screen.dart';
 import '../features/visits/screens/village_visits_screen.dart';
 import '../features/visits/screens/schedule_visit_screen.dart';
-import '../features/referral/screens/emergency_referral_screen.dart';
-import '../features/referral/screens/referral_history_screen.dart';
-import '../features/settings/screens/settings_screen.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -39,13 +34,10 @@ class RouteGenerator {
       case AppRoutes.roleSelection:
         return _fadeRoute(const RoleSelectionScreen());
       case AppRoutes.login:
-        return _fadeRoute(const LoginScreen());
       case AppRoutes.userLogin:
-        return _fadeRoute(const user_login.UserLoginScreen());
       case AppRoutes.ashaLogin:
-        return _fadeRoute(const asha_login.AshaLoginScreen());
       case AppRoutes.doctorLogin:
-        return _fadeRoute(const doctor_login.DoctorLoginScreen());
+        return _fadeRoute(const LoginScreen());
       case AppRoutes.register:
         return _fadeRoute(const RegisterScreen());
       case AppRoutes.userDashboard:
@@ -57,7 +49,7 @@ class RouteGenerator {
       case AppRoutes.loginWithOtp:
         return _fadeRoute(_PlaceholderScreen(title: 'Login with OTP'));
       case AppRoutes.forgotPassword:
-        return _fadeRoute(_PlaceholderScreen(title: 'Forgot Password'));
+        return _fadeRoute(const ForgotPasswordScreen());
       case AppRoutes.symptomChecker:
         return _fadeRoute(const SymptomCheckerScreen());
       case AppRoutes.medicineTracker:
@@ -87,8 +79,7 @@ class RouteGenerator {
       case AppRoutes.registerPatient:
         return _fadeRoute(const RegisterPatientScreen());
       case AppRoutes.editPatient:
-        final patient = settings.arguments as PatientModel;
-        return _fadeRoute(EditPatientScreen(patient: patient));
+        return _fadeRoute(const _PlaceholderScreen(title: 'Edit Patient'));
       case AppRoutes.updateHealth:
         return _fadeRoute(const UpdateHealthScreen());
       case AppRoutes.riskAlerts:
@@ -102,11 +93,13 @@ class RouteGenerator {
       case AppRoutes.scheduleVisit:
         return _fadeRoute(const ScheduleVisitScreen());
       case AppRoutes.emergencyReferral:
-        return _fadeRoute(const EmergencyReferralScreen());
+        return _fadeRoute(
+          const _PlaceholderScreen(title: 'Emergency Referral'),
+        );
       case AppRoutes.referralHistory:
-        return _fadeRoute(const ReferralHistoryScreen());
+        return _fadeRoute(const _PlaceholderScreen(title: 'Referral History'));
       case AppRoutes.ashaSettings:
-        return _fadeRoute(const SettingsScreen());
+        return _fadeRoute(const _PlaceholderScreen(title: 'Settings'));
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

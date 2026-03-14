@@ -1,34 +1,122 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
+import '../core/services/authentication_service.dart';
 
 class AuthProvider extends ChangeNotifier {
+  final AuthenticationService _authService = AuthenticationService();
   UserModel? _user;
   bool _isLoading = false;
+  String? _error;
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
+  String? get error => _error;
   bool get isAuthenticated => _user != null;
 
-  Future<void> login(String email, String password) async {
+  AuthProvider() {
+    _loadCachedUser();
+  }
+
+  Future<void> _loadCachedUser() async {
+    final cachedData = await _authService.getCachedUser();
+    if (cachedData != null) {
+      _user = UserModel.fromJson(cachedData['user']);
+      notifyListeners();
+    }
+  }
+
+  Future<bool> login(String phoneNumber, String password) async {
     _isLoading = true;
+    _error = null;
     notifyListeners();
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 2));
-    _user = UserModel(
-      id: '1',
-      name: 'John Doe',
-      email: email,
-      role: 'villager',
-      phoneNumber: '1234567890',
-    );
+    try {
+      final response = await _authService.login(phoneNumber, password);
+      _user = UserModel.fromJson(response['user']);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 
-    _isLoading = false;
+  Future<bool> register(Map<String, dynamic> data) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _authService.register(data);
+      _user = UserModel.fromJson(response['user']);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> logout() async {
+    await _authService.logout();
+    _user = null;
     notifyListeners();
   }
 
-  void logout() {
-    _user = null;
+  Future<bool> sendOtp(String phoneNumber) async {
+    _isLoading = true;
+    _error = null;
     notifyListeners();
+    try {
+      await _authService.sendOtp(phoneNumber);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> verifyOtp(String phoneNumber, String otpCode) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _authService.verifyOtp(phoneNumber, otpCode);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> resetPassword(String phoneNumber, String otpCode, String newPassword) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _authService.resetPassword(phoneNumber, otpCode, newPassword);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 }

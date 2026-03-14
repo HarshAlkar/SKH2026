@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../widgets/user_sidebar.dart';
+import '../services/medicine_service.dart';
 
 
 
@@ -23,45 +24,58 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
     {'day': 'FRI', 'date': '16'},
   ];
 
-  final List<Map<String, dynamic>> _medicines = [
-    {
-      'id': '1',
-      'name': 'Paracetamol',
-      'dosage': '1 Tablet',
-      'time': '08:00 AM',
-      'icon': Icons.medication_outlined,
-      'isTaken': true
-    },
-    {
-      'id': '2',
-      'name': 'Insulin Dose',
-      'dosage': '5 Units',
-      'time': '12:30 PM',
-      'icon': Icons.vaccines_outlined,
-      'isTaken': false
-    },
-    {
-      'id': '3',
-      'name': 'Vitamin C',
-      'dosage': '1 Tablet',
-      'time': '04:00 PM',
-      'icon': Icons.medical_services_outlined,
-      'isTaken': false
-    },
-    {
-      'id': '4',
-      'name': 'Cough Syrup',
-      'dosage': '5ml',
-      'time': '09:00 PM',
-      'icon': Icons.water_drop_outlined,
-      'isTaken': false
-    },
-  ];
+  Map<String, dynamic>? _nextMed;
+  DateTime _selectedDate = DateTime.now();
 
-  void _toggleMedicineStatus(int index) {
-    setState(() {
-      _medicines[index]['isTaken'] = !(_medicines[index]['isTaken'] as bool);
-    });
+  List<Map<String, dynamic>> _medicines = [];
+  bool _isLoading = true;
+  final MedicineService _medicineService = MedicineService();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    await Future.wait([
+      _fetchMedicines(),
+      _fetchNextMedicine(),
+    ]);
+  }
+
+  Future<void> _fetchNextMedicine() async {
+    try {
+      final nextMed = await _medicineService.getNextMedicine();
+      setState(() => _nextMed = nextMed);
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+  Future<void> _fetchMedicines() async {
+    try {
+      final meds = await _medicineService.getMedicines();
+      setState(() {
+        _medicines = meds;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      // Handle error
+    }
+  }
+
+  void _toggleMedicineStatus(int index) async {
+    final med = _medicines[index];
+    try {
+      await _medicineService.toggleMedicineStatus(med['id']);
+      setState(() {
+        _medicines[index]['isTaken'] = !(_medicines[index]['isTaken'] as bool);
+      });
+    } catch (e) {
+      // Handle error
+    }
   }
 
   @override
@@ -91,29 +105,49 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_month_outlined, color: Color(0xFF1E293B)),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Opening medicine calendar...')),
+            onPressed: () async {
+              final date = await showDatePicker(
+                context: context,
+                initialDate: _selectedDate,
+                firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                lastDate: DateTime.now().add(const Duration(days: 365)),
               );
+              if (date != null) {
+                setState(() => _selectedDate = date);
+                _fetchMedicines(); // Refresh for selected date
+              }
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildReminderCard(),
-              const SizedBox(height: 24),
-              _buildDateSelector(),
-              const SizedBox(height: 32),
-              _buildScheduleHeader(),
-              const SizedBox(height: 16),
-              _buildMedicineList(),
-              const SizedBox(height: 80), // Space for FAB-like button
-            ],
+      body: RefreshIndicator(
+        onRefresh: _fetchData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildReminderCard(),
+                const SizedBox(height: 24),
+                _buildDateSelector(),
+                const SizedBox(height: 32),
+                _buildScheduleHeader(),
+                const SizedBox(height: 16),
+                _isLoading 
+                  ? const Center(child: CircularProgressIndicator())
+                  : _medicines.isEmpty 
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: Text("No medicines scheduled"),
+                        ),
+                      )
+                    : _buildMedicineList(),
+                const SizedBox(height: 80), // Space for FAB-like button
+              ],
+            ),
           ),
         ),
       ),
@@ -158,18 +192,22 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Next medicine in 2 hours',
-                style: TextStyle(
+              Text(
+                _nextMed != null 
+                  ? 'Next medicine: ${_nextMed!['time']}'
+                  : 'No upcoming medicines',
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: AppColors.primary,
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                "Don't forget your scheduled dose of \nParacetamol.",
-                style: TextStyle(
+              Text(
+                _nextMed != null
+                  ? "Don't forget your scheduled dose of \n${_nextMed!['name']}."
+                  : "All caught up for now! Check your full schedule for later.",
+                style: const TextStyle(
                   fontSize: 14,
                   color: AppColors.textSecondary,
                   height: 1.5,
@@ -260,7 +298,7 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
   }
 
   Widget _buildScheduleHeader() {
-    return const Row(
+    return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
@@ -272,7 +310,7 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
           ),
         ),
         Text(
-          "4 Meds Today",
+          "${_medicines.length} Meds Today",
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
@@ -395,8 +433,11 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            Navigator.pushNamed(context, AppRoutes.addMedicine);
+          onTap: () async {
+            final result = await Navigator.pushNamed(context, AppRoutes.addMedicine);
+            if (result == true) {
+              _fetchData();
+            }
           },
 
           borderRadius: BorderRadius.circular(28),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
+import '../../../providers/auth_provider.dart';
 import '../widgets/user_sidebar.dart';
 
 
@@ -82,30 +84,35 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
 
 
   Widget _buildWelcomeSection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-      decoration: const BoxDecoration(
-        color: Color(0xFFE8F1FF),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Hello Ramesh 👋',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        final name = auth.user?.name ?? 'User';
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+          decoration: const BoxDecoration(
+            color: Color(0xFFE8F1FF),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+            ),
           ),
-          SizedBox(height: 4),
-          Text(
-            'How are you feeling today?',
-            style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Hello $name 👋',
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'How are you feeling today?',
+                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

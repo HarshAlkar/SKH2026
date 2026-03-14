@@ -4,8 +4,10 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../../providers/alert_provider.dart';
+import '../../../providers/symptom_provider.dart';
 import '../../../models/alert_model.dart';
 import '../widgets/user_sidebar.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 
 
@@ -30,6 +32,62 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
   bool _isAnalyzing = false;
   bool _showResult = false;
 
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _isListening = false;
+  String _voiceText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _initSpeech();
+  }
+
+  void _initSpeech() async {
+    try {
+      bool hasSpeech = await _speech.initialize(
+        onError: (errorNotification) => debugPrint('STT Error: $errorNotification'),
+        onStatus: (status) => debugPrint('STT Status: $status'),
+      );
+      if (mounted) setState(() {});
+      if (!hasSpeech) {
+        debugPrint('The user has denied the use of speech recognition.');
+      }
+    } catch (e) {
+      debugPrint('Speech init failed: $e');
+    }
+  }
+
+  void _toggleListening() async {
+    if (!_isListening) {
+      bool available = await _speech.initialize();
+      if (available) {
+        setState(() {
+          _isListening = true;
+          _voiceText = '';
+        });
+        _speech.listen(
+          onResult: (val) => setState(() {
+            _voiceText = val.recognizedWords;
+            // Provide visual feedback if we got final results
+            if (val.finalResult) {
+              _isListening = false;
+            }
+          }),
+          listenFor: const Duration(seconds: 30),
+          pauseFor: const Duration(seconds: 5),
+          partialResults: true,
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Speech recognition not available or permission denied')),
+        );
+      }
+    } else {
+      setState(() => _isListening = false);
+      _speech.stop();
+    }
+  }
+
   void _toggleSymptom(String symptom) {
     setState(() {
       if (_selectedSymptoms.contains(symptom)) {
@@ -40,10 +98,10 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     });
   }
 
-  void _analyzeSymptoms() {
-    if (_selectedSymptoms.isEmpty) {
+  Future<void> _analyzeSymptoms() async {
+    if (_selectedSymptoms.isEmpty && _voiceText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select at least one symptom')),
+        const SnackBar(content: Text('Please select symptoms or use voice input')),
       );
       return;
     }
@@ -53,15 +111,33 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       _showResult = false;
     });
 
-    // Simulate AI Analysis
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      final symptomProvider = Provider.of<SymptomProvider>(context, listen: false);
+      
+      final String input = _selectedSymptoms.join(', ') + 
+                          (_voiceText.isNotEmpty ? ', $_voiceText' : '');
+      
+      await symptomProvider.analyzeSymptoms(
+        symptomsText: input,
+        recognizedText: _voiceText,
+      );
+
       if (mounted) {
         setState(() {
           _isAnalyzing = false;
           _showResult = true;
         });
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isAnalyzing = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Analysis failed: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -305,18 +381,29 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
               ),
               child: IconButton(
                 iconSize: 40,
-                icon: const Icon(Icons.mic, color: Colors.white),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Voice input triggered...')),
-                  );
-                },
+                onPressed: _toggleListening,
+                icon: Icon(
+                  _isListening ? Icons.stop : Icons.mic,
+                  color: Colors.white,
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Tap to Speak',
-              style: TextStyle(
+            if (_voiceText.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Text(
+                  'Recognized: $_voiceText',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            Text(
+              _isListening ? 'Listening...' : 'Tap for Voice Input',
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
@@ -329,6 +416,13 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
   }
 
   Widget _buildResultCard() {
+    final analysis = Provider.of<SymptomProvider>(context).lastAnalysis;
+    if (analysis == null) return const SizedBox.shrink();
+
+    final String disease = analysis['disease'] ?? 'Unknown';
+    final String severity = analysis['severity'] ?? 'Moderate';
+    final bool alertSent = analysis['alert_sent'] ?? false;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -362,17 +456,26 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7EF),
+                  color: severity == 'High' || severity == 'Critical' 
+                      ? const Color(0xFFFFEEEE) 
+                      : const Color(0xFFFFF7EF),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    CircleAvatar(radius: 4, backgroundColor: Colors.orange),
-                    SizedBox(width: 8),
+                    CircleAvatar(
+                      radius: 4, 
+                      backgroundColor: severity == 'High' || severity == 'Critical' 
+                          ? Colors.red 
+                          : Colors.orange
+                    ),
+                    const SizedBox(width: 8),
                     Text(
-                      'MODERATE',
+                      severity.toUpperCase(),
                       style: TextStyle(
-                        color: Colors.orange,
+                        color: severity == 'High' || severity == 'Critical' 
+                            ? Colors.red 
+                            : Colors.orange,
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
@@ -383,9 +486,9 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Viral Fever',
-            style: TextStyle(
+          Text(
+            disease,
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
@@ -399,7 +502,9 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Possible seasonal viral infection. Maintain hydration and rest.',
+                  alertSent 
+                      ? 'Potentially serious condition detected. ASHA worker and doctor have been notified.'
+                      : 'Maintain hydration and rest. Monitor symptoms carefully.',
                   style: TextStyle(
                     color: Colors.grey.shade600,
                     fontSize: 14,
@@ -415,31 +520,33 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
   }
 
   Widget _buildSeverityIndicators() {
+    final analysis = Provider.of<SymptomProvider>(context).lastAnalysis;
+    final String currentSeverity = analysis != null ? analysis['severity'] ?? 'Moderate' : 'Moderate';
+    
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildStatusChip('MILD', Colors.green),
-        _buildStatusChip('MODERATE', Colors.orange),
-        _buildStatusChip('URGENT', Colors.red),
+        _buildStatusChip('Low', Colors.green, currentSeverity == 'Low'),
+        _buildStatusChip('Moderate', Colors.orange, currentSeverity == 'Moderate'),
+        _buildStatusChip('High', Colors.red, currentSeverity == 'High' || currentSeverity == 'Critical'),
       ],
     );
   }
 
-  Widget _buildStatusChip(String label, Color color) {
-    bool isResult = label == 'MODERATE';
+  Widget _buildStatusChip(String label, Color color, bool isCurrent) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: isResult ? Border.all(color: color.withOpacity(0.3), width: 1.5) : null,
+        border: isCurrent ? Border.all(color: color.withOpacity(0.3), width: 1.5) : null,
       ),
       child: Row(
         children: [
           CircleAvatar(radius: 3, backgroundColor: color),
           const SizedBox(width: 8),
           Text(
-            label,
+            label.toUpperCase(),
             style: TextStyle(
               color: color,
               fontSize: 11,

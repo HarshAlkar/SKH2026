@@ -7,9 +7,13 @@ class ApiService {
 
   Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
     try {
+      final combinedHeaders = {
+        'Accept': 'application/json',
+        ...?headers,
+      };
       final response = await _client.get(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
-        headers: headers,
+        headers: combinedHeaders,
       );
       return _processResponse(response);
     } catch (e) {
@@ -23,9 +27,14 @@ class ApiService {
     dynamic body,
   }) async {
     try {
+      final combinedHeaders = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        ...?headers,
+      };
       final response = await _client.post(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
-        headers: headers,
+        headers: combinedHeaders,
         body: jsonEncode(body),
       );
       return _processResponse(response);
@@ -35,10 +44,33 @@ class ApiService {
   }
 
   dynamic _processResponse(http.Response response) {
+    dynamic body;
+    try {
+      body = jsonDecode(response.body);
+    } catch (e) {
+      // Not JSON
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response.body; 
+      }
+      throw Exception('Server returned invalid response (${response.statusCode})');
+    }
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return jsonDecode(response.body);
+      return body;
     } else {
-      throw Exception('API Error: ${response.statusCode}');
+      String message = 'API Error: ${response.statusCode}';
+      if (body is Map && body.containsKey('error')) {
+        message = body['error'];
+      } else if (body is Map && body.isNotEmpty) {
+        // Handle DRF serializer errors
+        final firstValue = body.values.first;
+        if (firstValue is List) {
+          message = firstValue.first.toString();
+        } else {
+          message = firstValue.toString();
+        }
+      }
+      throw Exception(message);
     }
   }
 }

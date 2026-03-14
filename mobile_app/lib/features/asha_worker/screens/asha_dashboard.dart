@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/alert_provider.dart';
 import '../../patient/screens/village_patients_screen.dart';
 import '../../patient/screens/register_patient_screen.dart';
 import 'update_health_screen.dart';
@@ -32,70 +35,80 @@ class AshaDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: lightBackground,
-      appBar: AppBar(
-        backgroundColor: lightBackground,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        actions: [
-          IconButton(
-            icon: CircleAvatar(
-              backgroundColor: primaryColor.withOpacity(0.1),
-              child: Icon(Icons.person_outline, color: primaryColor),
-            ),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      drawer: _buildDrawer(context),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateTo(context, const RegisterPatientScreen()),
-        backgroundColor: const Color(0xFF2F4DB6),
-        tooltip: 'Register New Patient',
-        child: const Icon(Icons.person_add, color: Colors.white),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Greeting Section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Good Morning Sunita 👋",
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "Village Health Overview",
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, color: primaryColor, size: 28),
-                  ),
-                ],
+    // Fetch alerts on load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AlertProvider>(context, listen: false).fetchAlerts();
+    });
+
+    return Consumer2<AuthProvider, AlertProvider>(
+      builder: (context, auth, alertProvider, _) {
+        final name = auth.user?.name ?? 'Worker';
+        final alertCount = alertProvider.alerts.length.toString().padLeft(2, '0');
+        
+        return Scaffold(
+          backgroundColor: lightBackground,
+          appBar: AppBar(
+            backgroundColor: lightBackground,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.black87),
+            actions: [
+              IconButton(
+                icon: CircleAvatar(
+                  backgroundColor: primaryColor.withOpacity(0.1),
+                  child: Icon(Icons.person_outline, color: primaryColor),
+                ),
+                onPressed: () {},
               ),
+              const SizedBox(width: 8),
+            ],
+          ),
+          drawer: _buildDrawer(context, auth),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () => _navigateTo(context, const RegisterPatientScreen()),
+            backgroundColor: const Color(0xFF2F4DB6),
+            tooltip: 'Register New Patient',
+            child: const Icon(Icons.person_add, color: Colors.white),
+          ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Greeting Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Good Morning $name 👋",
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Village Health Overview",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.person, color: primaryColor, size: 28),
+                      ),
+                    ],
+                  ),
               const SizedBox(height: 24),
 
               // Stats Cards Grid
@@ -130,7 +143,7 @@ class AshaDashboard extends StatelessWidget {
                   ),
                   StatsCard(
                     icon: Icons.notifications_none_outlined,
-                    number: "03",
+                    number: alertCount,
                     label: "NEW ALERTS",
                     iconColor: secondaryBlue,
                     iconBackgroundColor: secondaryBlue.withOpacity(0.1),
@@ -226,48 +239,42 @@ class AshaDashboard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-
-              ActivityTile(
-                icon: Icons.content_paste,
-                name: "Ramesh Patil",
-                activity: "Fever reported • 10 mins ago",
-                iconBackgroundColor: const Color(0xFFE8F1FF), // Light Blue
-                iconColor: primaryColor,
-              ),
-              ActivityTile(
-                icon: Icons.check_circle_outline,
-                name: "Sita Devi",
-                activity: "Vaccination completed • 2 hrs ago",
-                iconBackgroundColor: const Color(0xFFE8F5E9), // Light Green
-                iconColor: Colors.green,
-              ),
-              ActivityTile(
-                icon: Icons.error_outline,
-                name: "Amit Shinde",
-                activity: "High BP Alert • 4 hrs ago",
-                iconBackgroundColor: const Color(0xFFFFEBEE), // Light Red
-                iconColor: Colors.redAccent,
-              ),
+              if (alertProvider.alerts.isEmpty)
+                const Center(child: Text("No recent health alerts"))
+              else
+                ...alertProvider.alerts.take(3).map((alert) => ActivityTile(
+                  icon: alert.severity == 'Emergency' ? Icons.error_outline : Icons.warning_amber_rounded,
+                  name: alert.title,
+                  activity: "${alert.message} • ${_timeAgo(alert.timestamp)}",
+                  iconBackgroundColor: alert.severity == 'Emergency' 
+                      ? const Color(0xFFFFEBEE) 
+                      : const Color(0xFFFFF3E0),
+                  iconColor: alert.severity == 'Emergency' ? Colors.redAccent : Colors.orange,
+                )),
               const SizedBox(height: 24),
             ],
           ),
         ),
       ),
     );
+      },
+    );
   }
 
-  Widget _buildDrawer(BuildContext context) {
+  Widget _buildDrawer(BuildContext context, AuthProvider auth) {
+    final name = auth.user?.name ?? "Worker";
+    final phone = auth.user?.phoneNumber ?? "N/A";
+    
     return Drawer(
       child: Column(
         children: [
           UserAccountsDrawerHeader(
             decoration: BoxDecoration(color: primaryColor),
-            accountName: const Text(
-              "Sunita Sharma",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            accountName: Text(
+              name,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
-            accountEmail: const Text("Worker ID: AW-208154"),
+            accountEmail: Text("Contact: $phone"),
             currentAccountPicture: const CircleAvatar(
               backgroundColor: Colors.white,
               child: Icon(Icons.person, size: 40, color: Colors.blue),
@@ -344,10 +351,24 @@ class AshaDashboard extends StatelessWidget {
               'Logout',
               style: TextStyle(color: Colors.redAccent),
             ),
-            onTap: () => Navigator.pop(context),
+            onTap: () async {
+              await Provider.of<AuthProvider>(context, listen: false).logout();
+              if (context.mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/login',
+                  (route) => false,
+                );
+              }
+            },
           ),
         ],
       ),
     );
+  }
+  String _timeAgo(DateTime dateTime) {
+    final duration = DateTime.now().difference(dateTime);
+    if (duration.inMinutes < 60) return "${duration.inMinutes} mins ago";
+    if (duration.inHours < 24) return "${duration.inHours} hrs ago";
+    return "${duration.inDays} days ago";
   }
 }

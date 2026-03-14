@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/user_sidebar.dart';
+import '../services/doctor_service.dart';
 
 class DoctorConsultScreen extends StatefulWidget {
   const DoctorConsultScreen({super.key});
@@ -14,43 +15,56 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
   final TextEditingController _searchController = TextEditingController();
   
   final List<String> _specialties = [
-    'All Doctors',
-    'Physician',
-    'Cardiology',
-    'Pediatrics',
-    'Dermatology',
     'Neurology'
   ];
 
-  final List<Map<String, dynamic>> _doctors = [
-    {
-      'name': 'Dr. Aryan Sharma',
-      'specialty': 'Senior Cardiologist',
-      'experience': '12 Years Experience',
-      'reviews': '2.5k Reviews',
-      'rating': 4.9,
-      'image': 'https://i.pravatar.cc/150?u=1',
-      'isOnline': true,
-    },
-    {
-      'name': 'Dr. Priya Verma',
-      'specialty': 'Physician',
-      'experience': '8 Years Experience',
-      'reviews': '1.2k Reviews',
-      'rating': 4.7,
-      'image': 'https://i.pravatar.cc/150?u=2',
-      'isOnline': true,
-    },
-    {
-      'name': 'Dr. Rohan Gupta',
-      'specialty': 'Pediatrics',
-      'experience': '10 Years Experience',
-      'reviews': '900 Reviews',
-      'rating': 4.8,
-      'image': 'https://i.pravatar.cc/150?u=3',
-      'isOnline': false,
-    },
-  ];
+  List<Map<String, dynamic>> _doctors = [];
+  bool _isLoading = true;
+  final DoctorService _doctorService = DoctorService();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDoctors();
+  }
+
+  Future<void> _fetchDoctors() async {
+    try {
+      final docs = await _doctorService.getDoctors();
+      setState(() {
+        _doctors = docs;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _scheduleDoctor(Map<String, dynamic> doctor) async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 30)),
+    );
+
+    if (date != null) {
+      try {
+        await _doctorService.scheduleAppointment(doctor['id'], date);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Appointment scheduled with ${doctor['full_name']}')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error scheduling appointment')),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -211,15 +225,19 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
             // Doctor List
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: _doctors
-                    .where((doc) =>
-                        (_selectedSpecialty == 'All Doctors' ||
-                            doc['specialty'].toString().contains(_selectedSpecialty)) &&
-                        (doc['name'].toString().toLowerCase().contains(_searchController.text.toLowerCase())))
-                    .map((doctor) => _buildDoctorCard(doctor))
-                    .toList(),
-              ),
+              child: _isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : _doctors.isEmpty
+                  ? const Center(child: Text("No doctors found"))
+                  : Column(
+                      children: _doctors
+                          .where((doc) =>
+                              (_selectedSpecialty == 'All Doctors' ||
+                                  doc['specialization'].toString().contains(_selectedSpecialty)) &&
+                              (doc['full_name'].toString().toLowerCase().contains(_searchController.text.toLowerCase())))
+                          .map((doctor) => _buildDoctorCard(doctor))
+                          .toList(),
+                    ),
             ),
             const SizedBox(height: 30),
           ],
@@ -253,10 +271,10 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
                 children: [
                   CircleAvatar(
                     radius: 35,
-                    backgroundImage: NetworkImage(doctor['image']),
+                    backgroundImage: NetworkImage(doctor['image'] ?? 'https://i.pravatar.cc/150?u=${doctor['id']}'),
                     backgroundColor: AppColors.lightBlue,
                   ),
-                  if (doctor['isOnline'])
+                  if (doctor['is_available'] ?? true)
                     Positioned(
                       right: 2,
                       bottom: 2,
@@ -278,7 +296,7 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      doctor['name'],
+                      doctor['full_name'],
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -287,7 +305,7 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      doctor['specialty'],
+                      doctor['specialization'],
                       style: const TextStyle(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w600,
@@ -300,7 +318,7 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
                         const Icon(Icons.history, size: 14, color: Colors.grey),
                         const SizedBox(width: 4),
                         Text(
-                          doctor['experience'],
+                          '${doctor['experience_years']} Years Experience',
                           style: const TextStyle(color: Colors.grey, fontSize: 12),
                         ),
                       ],
@@ -311,7 +329,7 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
                         const Icon(Icons.star, size: 14, color: Colors.amber),
                         const SizedBox(width: 4),
                         Text(
-                          '${doctor['rating']} (${doctor['reviews']})',
+                          '${doctor['rating'] ?? "4.5"} (${doctor['reviews'] ?? "100"} Reviews)',
                           style: const TextStyle(
                             color: Color(0xFF1E293B),
                             fontWeight: FontWeight.bold,
@@ -334,7 +352,7 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () => _scheduleDoctor(doctor),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,

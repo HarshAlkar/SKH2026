@@ -48,22 +48,31 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      try {
-        await authProvider.login(
-          _phoneController.text,
-          _passwordController.text,
+      final success = await authProvider.login(
+        _phoneController.text,
+        _passwordController.text,
+      );
+      
+      if (success && mounted) {
+        final user = authProvider.user;
+        if (user != null) {
+          switch (user.role) {
+            case 'doctor':
+              Navigator.pushReplacementNamed(context, AppRoutes.doctorDashboard);
+              break;
+            case 'asha_worker':
+              Navigator.pushReplacementNamed(context, AppRoutes.ashaDashboard);
+              break;
+            default:
+              Navigator.pushReplacementNamed(context, AppRoutes.userDashboard);
+          }
+        }
+      } else if (mounted) {
+        Helpers.showSnackBar(
+          context,
+          authProvider.error ?? 'Login failed. Please check your credentials.',
+          isError: true,
         );
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, AppRoutes.userDashboard);
-        }
-      } catch (e) {
-        if (mounted) {
-          Helpers.showSnackBar(
-            context,
-            'Login failed. Please try again.',
-            isError: true,
-          );
-        }
       }
     }
   }
@@ -214,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen>
         TextFormField(
           controller: _passwordController,
           obscureText: _obscurePassword,
-          validator: (value) => Validators.validateRequired(value, 'Password'),
+          validator: (value) => Validators.validatePassword(value),
           decoration: InputDecoration(
             hintText: 'Enter your password',
             prefixIcon: const Icon(
