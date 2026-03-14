@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/common_appbar.dart';
+import '../../../routes/app_routes.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 import '../models/health_record_model.dart';
 import '../widgets/health_record_card.dart';
 import '../../patient/screens/register_patient_screen.dart';
@@ -95,34 +98,10 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          "Health Records",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
+      appBar: const CommonAppBar(
+        title: "Health Records",
       ),
+      drawer: const AshaDrawer(currentRoute: AppRoutes.healthRecords),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(

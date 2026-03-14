@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/common_appbar.dart';
+import '../../../routes/app_routes.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 
 class ScheduleVisitScreen extends StatelessWidget {
   const ScheduleVisitScreen({super.key});
@@ -6,26 +9,10 @@ class ScheduleVisitScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Schedule New Visit",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: const Color(0xFF2F4DB6),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+      appBar: const CommonAppBar(
+        title: "Schedule New Visit",
       ),
+      drawer: const AshaDrawer(currentRoute: AppRoutes.scheduleVisit),
       body: const Center(child: Text("Scheduling feature coming soon...")),
     );
   }

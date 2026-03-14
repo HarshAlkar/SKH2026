@@ -17,6 +17,10 @@ class ConsultationCard extends StatelessWidget {
         statusColor = Colors.orange;
         statusText = "Pending";
         break;
+      case ConsultationStatus.approved:
+        statusColor = Colors.purple;
+        statusText = "Approved";
+        break;
       case ConsultationStatus.adviceProvided:
         statusColor = Colors.blue;
         statusText = "Advice Provided";
@@ -24,6 +28,10 @@ class ConsultationCard extends StatelessWidget {
       case ConsultationStatus.completed:
         statusColor = Colors.green;
         statusText = "Completed";
+        break;
+      case ConsultationStatus.rejected:
+        statusColor = Colors.red;
+        statusText = "Rejected";
         break;
     }
 

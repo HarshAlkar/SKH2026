@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/common_appbar.dart';
+import '../../../routes/app_routes.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 import '../models/alert_model.dart';
 import '../widgets/alert_card.dart';
 import 'create_alert_screen.dart';
@@ -76,38 +79,11 @@ class _RiskAlertScreenState extends State<RiskAlertScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          "Health Risk Alerts",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const CircleAvatar(
-              backgroundColor: Colors.white24,
-              radius: 16,
-              child: Icon(Icons.person, color: Colors.white, size: 20),
-            ),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
+      appBar: const CommonAppBar(
+        title: "Health Risk Alerts",
+        showProfile: true,
       ),
+      drawer: const AshaDrawer(currentRoute: AppRoutes.riskAlerts),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(

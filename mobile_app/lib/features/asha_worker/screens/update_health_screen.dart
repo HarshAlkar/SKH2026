@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/common_appbar.dart';
+import '../../../routes/app_routes.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 import '../../patient/widgets/custom_input_field.dart';
 
 class UpdateHealthScreen extends StatefulWidget {
@@ -67,28 +70,10 @@ class _UpdateHealthScreenState extends State<UpdateHealthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
-      // APP BAR
-      appBar: AppBar(
-        title: const Text(
-          "Update Health Data",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+      appBar: const CommonAppBar(
+        title: "Update Health Data",
       ),
+      drawer: const AshaDrawer(currentRoute: AppRoutes.updateHealth),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),

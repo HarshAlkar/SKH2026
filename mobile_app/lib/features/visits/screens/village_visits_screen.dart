@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/common_appbar.dart';
+import '../../../routes/app_routes.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 import '../models/visit_model.dart';
 import '../widgets/visit_card.dart';
 import 'schedule_visit_screen.dart';
@@ -21,6 +24,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
       patientName: 'Sita Devi',
       village: 'Rampur',
       visitTime: '10:30 AM',
+      visitDate: DateTime.now(),
       status: VisitStatus.pending,
     ),
     VisitModel(
@@ -28,6 +32,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
       patientName: 'Ramesh Patil',
       village: 'Kaman',
       visitTime: '11:45 AM',
+      visitDate: DateTime.now(),
       status: VisitStatus.completed,
     ),
     VisitModel(
@@ -35,6 +40,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
       patientName: 'Amit Shinde',
       village: 'Rampur',
       visitTime: '01:15 PM',
+      visitDate: DateTime.now(),
       status: VisitStatus.pending,
     ),
     VisitModel(
@@ -42,6 +48,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
       patientName: 'Shanti Devi',
       village: 'Kaman',
       visitTime: '02:30 PM',
+      visitDate: DateTime.now(),
       status: VisitStatus.missed,
     ),
     VisitModel(
@@ -49,6 +56,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
       patientName: 'Gopal Krishan',
       village: 'Vikhroli',
       visitTime: '04:00 PM',
+      visitDate: DateTime.now(),
       status: VisitStatus.pending,
     ),
   ];
@@ -89,26 +97,8 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          "Village Visits",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+      appBar: CommonAppBar(
+        title: "Village Visits",
         actions: [
           IconButton(
             icon: const Icon(
@@ -120,6 +110,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
           const SizedBox(width: 8),
         ],
       ),
+      drawer: const AshaDrawer(currentRoute: AppRoutes.villageVisits),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(

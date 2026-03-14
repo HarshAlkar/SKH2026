@@ -1,19 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../patient/screens/village_patients_screen.dart';
-import 'update_health_screen.dart';
-import '../../alerts/screens/risk_alert_screen.dart';
-import '../../doctor/screens/consult_doctor_screen.dart';
-// import '../../referral/screens/emergency_referral_screen.dart'; // Missing
+import '../../../routes/app_routes.dart';
+import '../../../core/widgets/common_appbar.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/quick_action_button.dart';
-import '../widgets/activity_tile.dart';
 import '../widgets/emergency_button.dart';
 import '../widgets/asha_drawer.dart';
-// import '../../activity/screens/all_activity_screen.dart'; // Missing
-// import '../../activity/screens/activity_details_screen.dart'; // Missing
-// import '../../activity/models/activity_model.dart'; // Missing
-// import '../../notifications/screens/notification_screen.dart'; // Missing
-// import '../../notifications/widgets/notification_badge.dart'; // Missing
+import '../widgets/activity_tile.dart';
+import '../../notifications/widgets/notification_badge.dart';
+import '../../activity/models/activity_model.dart';
 
 class AshaDashboard extends StatelessWidget {
   const AshaDashboard({super.key});
@@ -22,34 +16,19 @@ class AshaDashboard extends StatelessWidget {
   final Color secondaryBlue = const Color(0xFF4A90E2);
   final Color lightBackground = const Color(0xFFF5F7FA);
 
-  void _navigateTo(BuildContext context, Widget screen) {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => screen,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    const Color backgroundColor = Color(0xFFF5F7FA);
     return Scaffold(
-      backgroundColor: lightBackground,
-      appBar: AppBar(
-        backgroundColor: lightBackground,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        actions: const [SizedBox(width: 8)],
+      backgroundColor: backgroundColor,
+      appBar: const CommonAppBar(
+        title: "ASHA Dashboard",
+        showNotification: false,
       ),
-      drawer: const AshaDrawer(),
+      drawer: const AshaDrawer(currentRoute: AppRoutes.ashaDashboard),
       floatingActionButton: EmergencyButton(
         onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Emergency Referral feature coming soon')),
-          );
+          Navigator.pushNamed(context, AppRoutes.emergencyReferral);
         },
       ),
       body: SafeArea(
@@ -85,13 +64,20 @@ class AshaDashboard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Notifications feature coming soon')),
-                      );
-                    },
+                  Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined),
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.ashaNotifications);
+                        },
+                      ),
+                      const Positioned(
+                        right: 8,
+                        top: 8,
+                        child: NotificationBadge(count: 3),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -106,33 +92,45 @@ class AshaDashboard extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 childAspectRatio: 1.0,
                 children: [
-                  StatsCard(
-                    icon: Icons.people_alt_outlined,
-                    number: "142",
-                    label: "TOTAL PATIENTS",
-                    iconColor: primaryColor,
-                    iconBackgroundColor: primaryColor.withOpacity(0.1),
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.villagePatients),
+                    child: StatsCard(
+                      icon: Icons.people_alt_outlined,
+                      number: "142",
+                      label: "TOTAL PATIENTS",
+                      iconColor: primaryColor,
+                      iconBackgroundColor: primaryColor.withOpacity(0.1),
+                    ),
                   ),
-                  StatsCard(
-                    icon: Icons.monitor_heart_outlined,
-                    number: "08",
-                    label: "HIGH RISK",
-                    iconColor: Colors.redAccent,
-                    iconBackgroundColor: Colors.redAccent.withOpacity(0.1),
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.riskAlerts),
+                    child: StatsCard(
+                      icon: Icons.monitor_heart_outlined,
+                      number: "08",
+                      label: "HIGH RISK",
+                      iconColor: Colors.redAccent,
+                      iconBackgroundColor: Colors.redAccent.withOpacity(0.1),
+                    ),
                   ),
-                  StatsCard(
-                    icon: Icons.calendar_month_outlined,
-                    number: "12",
-                    label: "PENDING VISITS",
-                    iconColor: Colors.orange,
-                    iconBackgroundColor: Colors.orange.withOpacity(0.1),
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.villageVisits),
+                    child: StatsCard(
+                      icon: Icons.calendar_month_outlined,
+                      number: "12",
+                      label: "PENDING VISITS",
+                      iconColor: Colors.orange,
+                      iconBackgroundColor: Colors.orange.withOpacity(0.1),
+                    ),
                   ),
-                  StatsCard(
-                    icon: Icons.notifications_none_outlined,
-                    number: "03",
-                    label: "NEW ALERTS",
-                    iconColor: secondaryBlue,
-                    iconBackgroundColor: secondaryBlue.withOpacity(0.1),
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(context, AppRoutes.ashaNotifications),
+                    child: StatsCard(
+                      icon: Icons.notifications_none_outlined,
+                      number: "03",
+                      label: "NEW ALERTS",
+                      iconColor: secondaryBlue,
+                      iconBackgroundColor: secondaryBlue.withOpacity(0.1),
+                    ),
                   ),
                 ],
               ),
@@ -157,10 +155,7 @@ class AshaDashboard extends StatelessWidget {
                         child: QuickActionButton(
                           icon: Icons.person_add_outlined,
                           label: "Register Patient",
-                          onTap: () => _navigateTo(
-                            context,
-                            const VillagePatientsScreen(),
-                          ),
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.villagePatients),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -168,8 +163,7 @@ class AshaDashboard extends StatelessWidget {
                         child: QuickActionButton(
                           icon: Icons.edit_document,
                           label: "Update Health",
-                          onTap: () =>
-                              _navigateTo(context, const UpdateHealthScreen()),
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.updateHealth),
                         ),
                       ),
                     ],
@@ -181,8 +175,7 @@ class AshaDashboard extends StatelessWidget {
                         child: QuickActionButton(
                           icon: Icons.warning_amber_rounded,
                           label: "View Risk Alerts",
-                          onTap: () =>
-                              _navigateTo(context, const RiskAlertScreen()),
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.riskAlerts),
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -190,8 +183,7 @@ class AshaDashboard extends StatelessWidget {
                         child: QuickActionButton(
                           icon: Icons.medical_services_outlined,
                           label: "Consult Doctor",
-                          onTap: () =>
-                              _navigateTo(context, const ConsultDoctorScreen()),
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.ashaConsultDoctor),
                         ),
                       ),
                     ],
@@ -215,9 +207,7 @@ class AshaDashboard extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Activity history coming soon')),
-                      );
+                      Navigator.pushNamed(context, AppRoutes.ashaAllActivity);
                     },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
@@ -243,7 +233,21 @@ class AshaDashboard extends StatelessWidget {
                 activity: "Fever reported • 10 mins ago",
                 iconBackgroundColor: const Color(0xFFE8F1FF), // Light Blue
                 iconColor: primaryColor,
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.ashaActivityDetails,
+                    arguments: ActivityModel(
+                      id: '1',
+                      patientName: 'Ramesh Patil',
+                      activityType: 'Health Update',
+                      description: 'Fever reported (101°F). Advised paracetamol and rest.',
+                      timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
+                      village: 'Rampur',
+                      reportedBy: 'Sunita (ASHA)',
+                    ),
+                  );
+                },
               ),
               ActivityTile(
                 icon: Icons.check_circle_outline,
@@ -251,7 +255,21 @@ class AshaDashboard extends StatelessWidget {
                 activity: "Vaccination completed • 2 hrs ago",
                 iconBackgroundColor: const Color(0xFFE8F5E9), // Light Green
                 iconColor: Colors.green,
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.ashaActivityDetails,
+                    arguments: ActivityModel(
+                      id: '2',
+                      patientName: 'Sita Devi',
+                      activityType: 'Vaccination',
+                      description: 'Polio drops administered to child (3 yrs).',
+                      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+                      village: 'Rampur',
+                      reportedBy: 'Sunita (ASHA)',
+                    ),
+                  );
+                },
               ),
               ActivityTile(
                 icon: Icons.error_outline,
@@ -259,7 +277,21 @@ class AshaDashboard extends StatelessWidget {
                 activity: "High BP Alert • 4 hrs ago",
                 iconBackgroundColor: const Color(0xFFFFEBEE), // Light Red
                 iconColor: Colors.redAccent,
-                onTap: () {},
+                onTap: () {
+                  Navigator.pushNamed(
+                    context,
+                    AppRoutes.ashaActivityDetails,
+                    arguments: ActivityModel(
+                      id: '3',
+                      patientName: 'Amit Shinde',
+                      activityType: 'Risk Alert',
+                      description: 'High BP detected (160/100). Emergency referral created.',
+                      timestamp: DateTime.now().subtract(const Duration(hours: 4)),
+                      village: 'Kaman',
+                      reportedBy: 'AI System',
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 24),
             ],

@@ -78,10 +78,7 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: const Icon(Icons.health_and_safety, color: Color(0xFF1FA67A), size: 28),
         title: const Text(
           "Gramin Health Connect",
           style: TextStyle(

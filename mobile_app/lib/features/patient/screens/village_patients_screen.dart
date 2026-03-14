@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/common_appbar.dart';
+import '../../../routes/app_routes.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 import '../models/patient_model.dart';
 import '../widgets/patient_card.dart';
 import '../widgets/add_patient_button.dart';
@@ -71,23 +74,10 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: Text(
-          'Village Patients',
-          style: TextStyle(color: darkBlue, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        iconTheme: IconThemeData(color: darkBlue),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            color: darkBlue,
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
+      appBar: const CommonAppBar(
+        title: 'Village Patients',
       ),
+      drawer: const AshaDrawer(currentRoute: AppRoutes.villagePatients),
       body: Column(
         children: [
           // Search Bar Section

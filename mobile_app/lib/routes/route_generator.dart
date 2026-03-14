@@ -29,8 +29,19 @@ import '../features/asha_worker/screens/update_health_screen.dart';
 import '../features/alerts/screens/risk_alert_screen.dart';
 import '../features/doctor/screens/consult_doctor_screen.dart';
 import '../features/health_records/screens/health_records_screen.dart';
+import '../features/referral/screens/emergency_referral_screen.dart';
+import '../features/referral/screens/referral_history_screen.dart';
+import '../features/asha_worker/screens/asha_settings_screen.dart';
 import '../features/visits/screens/village_visits_screen.dart';
 import '../features/visits/screens/schedule_visit_screen.dart';
+
+import '../features/patient/screens/patient_details_screen.dart';
+import '../features/notifications/screens/notification_screen.dart';
+import '../features/activity/screens/all_activity_screen.dart';
+import '../features/activity/screens/activity_details_screen.dart';
+import '../features/activity/models/activity_model.dart';
+import '../features/asha_worker/widgets/asha_drawer.dart';
+import '../core/widgets/common_appbar.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -97,7 +108,7 @@ class RouteGenerator {
       case AppRoutes.registerPatient:
         return _fadeRoute(const RegisterPatientScreen());
       case AppRoutes.editPatient:
-        return _fadeRoute(const _PlaceholderScreen(title: 'Edit Patient'));
+        return _fadeRoute(AshaPlaceholderScreen(title: 'Edit Patient', route: settings.name!));
       case AppRoutes.updateHealth:
         return _fadeRoute(const UpdateHealthScreen());
       case AppRoutes.riskAlerts:
@@ -111,13 +122,20 @@ class RouteGenerator {
       case AppRoutes.scheduleVisit:
         return _fadeRoute(const ScheduleVisitScreen());
       case AppRoutes.emergencyReferral:
-        return _fadeRoute(
-          const _PlaceholderScreen(title: 'Emergency Referral'),
-        );
+        return _fadeRoute(const EmergencyReferralScreen());
       case AppRoutes.referralHistory:
-        return _fadeRoute(const _PlaceholderScreen(title: 'Referral History'));
+        return _fadeRoute(const ReferralHistoryScreen());
       case AppRoutes.ashaSettings:
-        return _fadeRoute(const _PlaceholderScreen(title: 'Settings'));
+        return _fadeRoute(const AshaSettingsScreen());
+      case AppRoutes.ashaNotifications:
+        return _fadeRoute(const NotificationScreen());
+      case AppRoutes.ashaAllActivity:
+        return _fadeRoute(const AllActivityScreen());
+      case AppRoutes.ashaActivityDetails:
+        final activity = settings.arguments as ActivityModel;
+        return _fadeRoute(ActivityDetailsScreen(activity: activity));
+      case AppRoutes.ashaPatientDetails:
+        return _fadeRoute(const PatientDetailsScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
@@ -146,6 +164,21 @@ class _PlaceholderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
+      body: Center(child: Text('This is the $title screen')),
+    );
+  }
+}
+
+class AshaPlaceholderScreen extends StatelessWidget {
+  final String title;
+  final String route;
+  const AshaPlaceholderScreen({super.key, required this.title, required this.route});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: CommonAppBar(title: title),
+      drawer: AshaDrawer(currentRoute: route),
       body: Center(child: Text('This is the $title screen')),
     );
   }
