@@ -53,6 +53,16 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
     }
   }
 
+  void _handleDemoLogin(BuildContext context) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.demoLogin('asha_worker');
+    
+    if (success && mounted) {
+      Navigator.pushReplacementNamed(context, AppRoutes.ashaDashboard);
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -367,18 +377,34 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(
-                            0xFFE8F5E9,
-                          ), // Light green tint
+                          backgroundColor: const Color(0xFFE8F5E9),
                           foregroundColor: Colors.teal,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: Colors.teal.shade200,
-                              width: 1,
-                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Demo Access Button
+                      OutlinedButton.icon(
+                        onPressed: () => _handleDemoLogin(context),
+                        icon: const Icon(Icons.flash_on, color: Colors.orange, size: 20),
+                        label: const Text(
+                          "Demo Access (No Login)",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(color: Colors.orange, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                       ),
@@ -386,6 +412,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 48),
 
               // Bottom Feature Icons
