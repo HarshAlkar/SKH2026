@@ -81,9 +81,21 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
       }
     });
     // Navigation to patient details screen
+    final request = _requests.firstWhere((r) => r.id == id);
+    PatientData patientData;
+    if (request.patientName.contains('Ramesh')) {
+      patientData = PatientData.getDummyRamesh();
+    } else if (request.patientName.contains('Sunita')) {
+      patientData = PatientData.getDummySunita();
+    } else {
+      patientData = PatientData.getDummySarah();
+    }
+
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const PatientDetailsScreen()),
+      MaterialPageRoute(
+        builder: (context) => PatientDetailsScreen(patient: patientData),
+      ),
     );
   }
 

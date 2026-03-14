@@ -1,15 +1,123 @@
 import 'package:flutter/material.dart';
 import 'video_consultation_screen.dart';
+import 'create_prescription_screen.dart';
+
+
+class PatientData {
+  final String name;
+  final String age;
+  final String gender;
+  final String village;
+  final String bloodType;
+  final String chronicConditions;
+  final String pastSurgeries;
+  final String allergies;
+  final List<SymptomData> symptoms;
+  final String aiInsights;
+
+  PatientData({
+    required this.name,
+    required this.age,
+    required this.gender,
+    required this.village,
+    required this.bloodType,
+    required this.chronicConditions,
+    required this.pastSurgeries,
+    required this.allergies,
+    required this.symptoms,
+    required this.aiInsights,
+  });
+
+  static PatientData getDummySarah() {
+    return PatientData(
+      name: 'Sarah Jenkins',
+      age: '28',
+      gender: 'Female',
+      village: 'Green Valley, North District',
+      bloodType: 'O Positive',
+      chronicConditions: 'No known chronic conditions reported.',
+      pastSurgeries: 'Appendectomy (2018)',
+      allergies: 'Penicillin, Peanuts',
+      symptoms: [
+        SymptomData(label: 'High Fever (102°F)', bgColor: const Color(0xFFFFE4E6), textColor: const Color(0xFFE11D48)),
+        SymptomData(label: 'Persistent Cough', bgColor: const Color(0xFFFFEDD5), textColor: const Color(0xFFEA580C)),
+        SymptomData(label: 'Shortness of breath', bgColor: const Color(0xFFF1F5F9), textColor: const Color(0xFF475569)),
+      ],
+      aiInsights: 'Symptoms reported 48 hours ago. Pattern suggests upper respiratory infection. Recommended immediate vitals check and chest auscultation.',
+    );
+  }
+
+  static PatientData getDummyRamesh() {
+    return PatientData(
+      name: 'Ramesh Patil',
+      age: '45',
+      gender: 'Male',
+      village: 'Kaman Village, Sector 2',
+      bloodType: 'A Positive',
+      chronicConditions: 'Type 2 Diabetes (Managed)',
+      pastSurgeries: 'None',
+      allergies: 'Dust, Pollen',
+      symptoms: [
+        SymptomData(label: 'Joint Pain', bgColor: const Color(0xFFE0F2FE), textColor: const Color(0xFF0369A1)),
+        SymptomData(label: 'Mild Fever', bgColor: const Color(0xFFFEF3C7), textColor: const Color(0xFFB45309)),
+      ],
+      aiInsights: 'History of diabetes. Recent joint pains could indicate inflammatory response. Monitor blood sugar levels and markers for rheumatoid factors.',
+    );
+  }
+
+  static PatientData getDummyAmitabh() {
+    return PatientData(
+      name: 'Amitabh Bachchan',
+      age: '78',
+      gender: 'Male',
+      village: 'Mumbai South, Juhu',
+      bloodType: 'B Positive',
+      chronicConditions: 'Hypertension, Asthma',
+      pastSurgeries: 'Abdominal Surgery (2005)',
+      allergies: 'None reported',
+      symptoms: [
+        SymptomData(label: 'Dizziness', bgColor: const Color(0xFFF3E8FF), textColor: const Color(0xFF7E22CE)),
+        SymptomData(label: 'Chest Tightness', bgColor: const Color(0xFFFEE2E2), textColor: const Color(0xFFDC2626)),
+      ],
+      aiInsights: 'Patient is high-risk due to age and respiratory history. Chest tightness requires immediate ECG and vital monitoring.',
+    );
+  }
+
+  static PatientData getDummySunita() {
+    return PatientData(
+      name: 'Sunita Deshmukh',
+      age: '32',
+      gender: 'Female',
+      village: 'Pelhar, East District',
+      bloodType: 'AB Positive',
+      chronicConditions: 'None reported',
+      pastSurgeries: 'C-Section (2020)',
+      allergies: 'Sulfa Drugs',
+      symptoms: [
+        SymptomData(label: 'Headache', bgColor: const Color(0xFFF1F5F9), textColor: const Color(0xFF475569)),
+        SymptomData(label: 'Nausea', bgColor: const Color(0xFFECFDF5), textColor: const Color(0xFF059669)),
+      ],
+      aiInsights: 'Possible migraine or hormonal imbalance. Check blood pressure and stress levels.',
+    );
+  }
+}
+
+class SymptomData {
+  final String label;
+  final Color bgColor;
+  final Color textColor;
+
+  SymptomData({required this.label, required this.bgColor, required this.textColor});
+}
 
 class PatientDetailsScreen extends StatelessWidget {
-  const PatientDetailsScreen({super.key});
+  final PatientData patient;
+
+  const PatientDetailsScreen({super.key, required this.patient});
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color(0xFF2A7DE1);
     const textPrimary = Color(0xFF1F2937);
-    const textSecondary = Color(0xFF6B7280);
-    const cardBg = Color(0xFFFFFFFF);
     const backgroundColor = Color(0xFFF8FAFC);
 
     return Scaffold(
@@ -75,15 +183,13 @@ class PatientDetailsScreen extends StatelessWidget {
         children: [
           const CircleAvatar(
             radius: 40,
-            backgroundColor: Color(0xFFE8F1FF), // Light Blue
+            backgroundColor: Color(0xFFE8F1FF),
             child: Icon(Icons.person, size: 50, color: primaryBlue),
-            // Placeholder for the actual image. The design uses an image, but
-            // keeping an icon fallback. We'll add a clip behavior if image was provided.
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Sarah Jenkins',
-            style: TextStyle(
+          Text(
+            patient.name,
+            style: const TextStyle(
               color: textPrimary,
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -94,17 +200,14 @@ class PatientDetailsScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: primaryBlue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'Female',
-                  style: TextStyle(
+                child: Text(
+                  patient.gender,
+                  style: const TextStyle(
                     color: primaryBlue,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -113,17 +216,14 @@ class PatientDetailsScreen extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.grey.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  '28 years old',
-                  style: TextStyle(
+                child: Text(
+                  '${patient.age} years old',
+                  style: const TextStyle(
                     color: textSecondary,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -133,17 +233,20 @@ class PatientDetailsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.location_on_outlined, size: 16, color: textSecondary),
-              SizedBox(width: 4),
-              Text(
-                'Village: Green Valley, North District',
-                style: TextStyle(
-                  color: textSecondary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+              const Icon(Icons.location_on_outlined, size: 16, color: textSecondary),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  'Village: ${patient.village}',
+                  style: const TextStyle(
+                    color: textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -212,6 +315,34 @@ class PatientDetailsScreen extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CreatePrescriptionScreen(patientName: patient.name),
+                ),
+              );
+            },
+            icon: const Icon(Icons.assignment_outlined, size: 20),
+            label: const Text(
+              'Create Prescription',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -222,13 +353,13 @@ class PatientDetailsScreen extends StatelessWidget {
       iconUrl: Icons.person_outline,
       child: Column(
         children: [
-          _buildInfoRow('Full Name', 'Sarah Jenkins'),
+          _buildInfoRow('Full Name', patient.name),
           const Divider(height: 24, color: Color(0xFFF1F5F9)),
-          _buildInfoRow('Age', '28'),
+          _buildInfoRow('Age', patient.age),
           const Divider(height: 24, color: Color(0xFFF1F5F9)),
-          _buildInfoRow('Location', 'Green Valley, Sector 4'),
+          _buildInfoRow('Location', patient.village),
           const Divider(height: 24, color: Color(0xFFF1F5F9)),
-          _buildInfoRow('Blood Type', 'O Positive'),
+          _buildInfoRow('Blood Type', patient.bloodType),
         ],
       ),
     );
@@ -242,12 +373,12 @@ class PatientDetailsScreen extends StatelessWidget {
         children: [
           _buildHistorySection(
             'CHRONIC CONDITIONS',
-            'No known chronic conditions reported.',
+            patient.chronicConditions,
           ),
           const SizedBox(height: 12),
-          _buildHistorySection('PAST SURGERIES', 'Appendectomy (2018)'),
+          _buildHistorySection('PAST SURGERIES', patient.pastSurgeries),
           const SizedBox(height: 12),
-          _buildHistorySection('ALLERGIES', 'Penicillin, Peanuts'),
+          _buildHistorySection('ALLERGIES', patient.allergies),
         ],
       ),
     );
@@ -278,27 +409,9 @@ class PatientDetailsScreen extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: [
-              _buildSymptomChip(
-                'High Fever (102°F)',
-                const Color(0xFFFFE4E6),
-                const Color(0xFFE11D48),
-              ),
-              _buildSymptomChip(
-                'Persistent Cough',
-                const Color(0xFFFFEDD5),
-                const Color(0xFFEA580C),
-              ),
-              _buildSymptomChip(
-                'Shortness of breath',
-                const Color(0xFFF1F5F9),
-                const Color(0xFF475569),
-              ),
-            ],
+            children: patient.symptoms.map((s) => _buildSymptomChip(s.label, s.bgColor, s.textColor)).toList(),
           ),
           const SizedBox(height: 24),
-
-          // AI Insights Panel
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -307,14 +420,14 @@ class PatientDetailsScreen extends StatelessWidget {
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: RichText(
-              text: const TextSpan(
-                style: TextStyle(
+              text: TextSpan(
+                style: const TextStyle(
                   color: Color(0xFF475569),
                   fontSize: 13,
                   height: 1.5,
                 ),
                 children: [
-                  TextSpan(
+                  const TextSpan(
                     text: 'AI Insights: ',
                     style: TextStyle(
                       color: Color(0xFF2A7DE1),
@@ -322,8 +435,7 @@ class PatientDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   TextSpan(
-                    text:
-                        'Symptoms reported 48 hours ago. Pattern suggests upper respiratory infection. Recommended immediate vitals check and chest auscultation.',
+                    text: patient.aiInsights,
                   ),
                 ],
               ),
@@ -421,7 +533,7 @@ class PatientDetailsScreen extends StatelessWidget {
           Text(
             title,
             style: const TextStyle(
-              color: Color(0xFF3B82F6), // Blue 500
+              color: Color(0xFF3B82F6),
               fontSize: 11,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
@@ -431,7 +543,7 @@ class PatientDetailsScreen extends StatelessWidget {
           Text(
             content,
             style: const TextStyle(
-              color: Color(0xFF334155), // Slate 700
+              color: Color(0xFF334155),
               fontSize: 13,
             ),
           ),

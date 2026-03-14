@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/doctor_navigation_drawer.dart';
 
 class HealthReportsScreen extends StatelessWidget {
   const HealthReportsScreen({super.key});
@@ -11,6 +12,7 @@ class HealthReportsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F6),
+      drawer: const DoctorNavigationDrawer(activeRoute: 'Reports'),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -22,9 +24,13 @@ class HealthReportsScreen extends StatelessWidget {
               color: const Color(0xFFE8F1FF),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: IconButton(
-              icon: Icon(Icons.analytics_outlined, color: primaryBlue, size: 20),
-              onPressed: () => Navigator.pop(context),
+            child: Builder(
+              builder: (context) => IconButton(
+                icon: Icon(Icons.menu, color: primaryBlue, size: 20),
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
+                },
+              ),
             ),
           ),
         ),
@@ -58,14 +64,7 @@ class HealthReportsScreen extends StatelessWidget {
               )
             ],
           ),
-          const Padding(
-            padding: EdgeInsets.only(right: 16.0, left: 4.0),
-            child: CircleAvatar(
-              radius: 17,
-              backgroundColor: Color(0xFF1F2937),
-              child: Icon(Icons.person, color: Colors.white, size: 20),
-            ),
-          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SingleChildScrollView(

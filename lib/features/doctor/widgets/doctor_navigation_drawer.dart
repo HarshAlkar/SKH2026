@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import '../screens/doctor_dashboard.dart';
-import '../screens/doctor_login_screen.dart';
+import '../../../routes/app_routes.dart';
 import '../screens/patient_requests_screen.dart';
 import '../screens/create_prescription_screen.dart';
 import '../screens/consultation_history_screen.dart';
 import '../screens/health_reports_screen.dart';
+import '../screens/my_patients_screen.dart';
+import '../screens/doctor_settings_screen.dart';
+
+
 
 class DoctorNavigationDrawer extends StatelessWidget {
   final String activeRoute;
@@ -151,6 +155,14 @@ class DoctorNavigationDrawer extends StatelessWidget {
                       isActive: activeRoute == 'My Patients',
                       onTap: () {
                         Navigator.pop(context);
+                        if (activeRoute != 'My Patients') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MyPatientsScreen(),
+                            ),
+                          );
+                        }
                       },
                     ),
                     _buildMenuItem(
@@ -211,6 +223,14 @@ class DoctorNavigationDrawer extends StatelessWidget {
                       isActive: activeRoute == 'Settings',
                       onTap: () {
                         Navigator.pop(context);
+                        if (activeRoute != 'Settings') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const DoctorSettingsScreen(),
+                            ),
+                          );
+                        }
                       },
                     ),
                   ],
@@ -226,11 +246,9 @@ class DoctorNavigationDrawer extends StatelessWidget {
               child: InkWell(
                 onTap: () {
                   Navigator.pop(context); // Close drawer
-                  Navigator.pushAndRemoveUntil(
+                  Navigator.pushNamedAndRemoveUntil(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const DoctorLoginScreen(),
-                    ),
+                    AppRoutes.roleSelection,
                     (route) => false,
                   );
                 },

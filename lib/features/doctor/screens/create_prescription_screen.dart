@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class CreatePrescriptionScreen extends StatefulWidget {
-  const CreatePrescriptionScreen({super.key});
+  final String? patientName;
+  const CreatePrescriptionScreen({super.key, this.patientName});
 
   @override
   State<CreatePrescriptionScreen> createState() => _CreatePrescriptionScreenState();
@@ -10,6 +11,7 @@ class CreatePrescriptionScreen extends StatefulWidget {
 class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
   final _formKey = GlobalKey<FormState>();
 
+  late TextEditingController _patientNameController;
   final _medicineNameController = TextEditingController();
   final _dosageController = TextEditingController();
   final _durationController = TextEditingController();
@@ -24,7 +26,14 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
   final Color borderColor = const Color(0xFFE2E8F0);
 
   @override
+  void initState() {
+    super.initState();
+    _patientNameController = TextEditingController(text: widget.patientName ?? 'Sarah Jenkins');
+  }
+
+  @override
   void dispose() {
+    _patientNameController.dispose();
     _medicineNameController.dispose();
     _dosageController.dispose();
     _durationController.dispose();
@@ -34,16 +43,129 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
 
   void _generatePrescription() {
     if (_formKey.currentState!.validate()) {
-      // Logic to save the prescription
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Prescription Generated Successfully'),
-          backgroundColor: primaryBlue,
-          behavior: SnackBarBehavior.floating,
-        ),
+      showDialog(
+        context: context,
+        builder: (context) => _buildPrescriptionSummaryDialog(),
       );
-      Navigator.pop(context);
     }
+  }
+
+  Widget _buildPrescriptionSummaryDialog() {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: primaryBlue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.description, color: primaryBlue, size: 24),
+                ),
+                const SizedBox(width: 16),
+                const Text(
+                  'Prescription',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildSummaryRow('PATIENT', _patientNameController.text.toUpperCase()),
+            const Divider(height: 24),
+            Text(
+              'Rx',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                fontStyle: FontStyle.italic,
+                color: primaryBlue,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _buildSummaryRow('MEDICINE', _medicineNameController.text),
+            _buildSummaryRow('DOSAGE', _dosageController.text),
+            _buildSummaryRow('DURATION', _durationController.text),
+            const SizedBox(height: 12),
+            Text(
+              'INSTRUCTIONS',
+              style: TextStyle(
+                color: textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _instructionsController.text,
+              style: const TextStyle(fontSize: 14, height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            if (_selectedTimings.isNotEmpty)
+              Wrap(
+                spacing: 8,
+                children: _selectedTimings.map((t) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: primaryBlue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    t,
+                    style: TextStyle(color: primaryBlue, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                )).toList(),
+              ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context); // Back to previous screen
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Prescription Saved & Sent'),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryBlue,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Confirm & Send', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: textSecondary, fontSize: 11, fontWeight: FontWeight.bold)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        ],
+      ),
+    );
   }
 
   @override
@@ -190,31 +312,22 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
 
   Widget _buildPatientInfoCard() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F8FB), // Very light soft blue/grey matching reference #E8F1FF tone
+        color: const Color(0xFFF4F8FB),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFEBF1F6)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Patient Name',
-                style: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
-              ),
-              Text(
-                'John Doe',
-                style: TextStyle(color: textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
-              ),
-            ],
+          _buildLabel('Patient Name'),
+          _buildTextField(
+            controller: _patientNameController,
+            placeholder: 'Enter patient name',
+            validatorError: 'Please enter patient name',
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(height: 1, color: Color(0xFFE2E8F0)),
-          ),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -223,7 +336,7 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
                 style: TextStyle(color: textSecondary, fontSize: 13, fontWeight: FontWeight.w500),
               ),
               Text(
-                'Oct 24, 2023',
+                'Mar 14, 2026',
                 style: TextStyle(color: textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
               ),
             ],

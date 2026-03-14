@@ -99,7 +99,7 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> w
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const PatientDetailsScreen(),
+                  builder: (context) => PatientDetailsScreen(patient: PatientData.getDummySarah()),
                 ),
               );
             }),
@@ -170,7 +170,7 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> w
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const PatientDetailsScreen(),
+                  builder: (context) => PatientDetailsScreen(patient: PatientData.getDummySarah()),
                 ),
               );
             }),

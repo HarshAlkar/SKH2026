@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'doctor_dashboard.dart';
 import 'forgot_password_screen.dart';
-import 'doctor_otp_login.dart';
+import 'doctor_otp_login_screen.dart';
 import 'doctor_register.dart';
 
 class DoctorLoginScreen extends StatefulWidget {

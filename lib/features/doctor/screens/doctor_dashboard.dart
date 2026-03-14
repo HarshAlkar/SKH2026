@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'consult_doctor_screen.dart';
-import 'patient_requests_screen.dart';
 import 'consultation_history_screen.dart';
 import 'create_prescription_screen.dart';
 import 'doctor_notifications_screen.dart';
+import 'my_patients_screen.dart';
+import 'upcoming_consultations_screen.dart';
+import 'schedule_screen.dart';
+import 'doctor_profile_screen.dart';
+
 import '../widgets/doctor_navigation_drawer.dart';
 
 class DoctorDashboard extends StatefulWidget {
@@ -27,6 +30,13 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     setState(() {
       _selectedIndex = index;
     });
+    if (index == 1) {
+      _navigateTo(const MyPatientsScreen());
+    } else if (index == 2) {
+      _navigateTo(const ScheduleScreen());
+    } else if (index == 3) {
+      _navigateTo(const DoctorProfileScreen());
+    }
   }
 
   void _navigateTo(Widget screen) {
@@ -352,7 +362,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           title: 'Start Consultation',
           isPrimary: true,
           onTap: () {
-            _navigateTo(const ConsultDoctorScreen());
+            _navigateTo(const UpcomingConsultationsScreen());
           },
         ),
         const SizedBox(height: 12),
@@ -360,7 +370,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           icon: Icons.person_search_outlined,
           title: 'View Patient List',
           onTap: () {
-            _navigateTo(const PatientRequestsScreen());
+            _navigateTo(const MyPatientsScreen());
           },
         ),
         const SizedBox(height: 12),
@@ -464,12 +474,15 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                Text(
-                  'View all',
-                  style: TextStyle(
-                    color: primaryBlue,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
+                InkWell(
+                  onTap: () => _navigateTo(const MyPatientsScreen()),
+                  child: Text(
+                    'View all',
+                    style: TextStyle(
+                      color: primaryBlue,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
