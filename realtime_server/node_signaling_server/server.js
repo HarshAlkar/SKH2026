@@ -18,7 +18,13 @@ const io = new Server(server, {
 const consultationHandler = require('./modules/socket_handlers/consultation_socket');
 
 io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
+  const userId = socket.handshake.query.userId;
+  console.log('User connected:', socket.id, 'UserId:', userId);
+
+  if (userId) {
+    socket.join(`user-${userId}`);
+    console.log(`Socket ${socket.id} joined room user-${userId}`);
+  }
 
   consultationHandler(io, socket);
 

@@ -5,6 +5,18 @@ module.exports = (io, socket) => {
     console.log(`User ${socket.id} joined consultation ${consultationId}`);
   });
 
+  // Notify a specific user of an incoming call
+  socket.on('call-request', (data) => {
+    const { receiverId, consultationId, callerName, callType } = data;
+    console.log(`Call request from ${callerName} to ${receiverId} for consultation ${consultationId}`);
+    socket.to(`user-${receiverId}`).emit('incoming-call', {
+      consultationId,
+      callerName,
+      callType,
+      senderId: socket.id
+    });
+  });
+
   // WebRTC Signaling: Offer
   socket.on('offer', (data) => {
     socket.to(`consultation-${data.consultationId}`).emit('offer', {

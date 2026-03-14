@@ -6,6 +6,8 @@ import '../../../providers/auth_provider.dart';
 import '../widgets/user_sidebar.dart';
 
 
+import '../../../providers/consultation_provider.dart';
+
 class UserDashboardScreen extends StatefulWidget {
   const UserDashboardScreen({super.key});
 
@@ -15,6 +17,17 @@ class UserDashboardScreen extends StatefulWidget {
 
 class _UserDashboardScreenState extends State<UserDashboardScreen> {
   bool _showReminder = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<AuthProvider>().user;
+      if (user != null) {
+        context.read<ConsultationProvider>().initSignaling(user.id.toString());
+      }
+    });
+  }
 
 
   @override

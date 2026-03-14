@@ -10,6 +10,8 @@ import 'doctor_profile_screen.dart';
 import '../../../providers/auth_provider.dart';
 import '../widgets/doctor_navigation_drawer.dart';
 
+import '../../../providers/consultation_provider.dart';
+
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({super.key});
 
@@ -19,6 +21,17 @@ class DoctorDashboard extends StatefulWidget {
 
 class _DoctorDashboardState extends State<DoctorDashboard> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<AuthProvider>().user;
+      if (user != null) {
+        context.read<ConsultationProvider>().initSignaling(user.id.toString());
+      }
+    });
+  }
 
   final Color primaryBlue = const Color(0xFF2A7DE1);
   final Color lightBlue = const Color(0xFFE8F1FF);

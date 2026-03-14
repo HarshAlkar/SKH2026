@@ -42,6 +42,7 @@ urlpatterns = [
     path('api/users/', include('apps.users.urls')),
     path('api/symptoms/', include('apps.symptom_analysis.urls')),
     path('api/medicines/', include('apps.medicine_tracker.urls')),
+    path('api/doctors/', include('apps.doctors.urls')),
     path('api/consultations/', include('apps.consultations.urls')),
     path('api/prescriptions/', include('apps.prescriptions.urls')),
     path('api/alerts/', include('apps.alerts.urls')),

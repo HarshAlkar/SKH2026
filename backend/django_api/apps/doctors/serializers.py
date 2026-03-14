@@ -2,8 +2,12 @@ from rest_framework import serializers
 from .models import Doctor
 
 class DoctorSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    full_name = serializers.SerializerMethodField()
+    phone_number = serializers.CharField(source='user.phone_number', read_only=True)
+
+    def get_full_name(self, obj):
+        return obj.user.name or obj.user.username or f"Doctor #{obj.id}"
     
     class Meta:
         model = Doctor
-        fields = ['id', 'full_name', 'specialization', 'qualification', 'experience_years', 'bio', 'is_available']
+        fields = ['id', 'user_id', 'full_name', 'phone_number', 'specialization', 'qualification', 'experience_years', 'hospital_name', 'bio', 'is_available']

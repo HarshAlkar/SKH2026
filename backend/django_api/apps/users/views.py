@@ -9,6 +9,7 @@ from django.utils import timezone
 from .models import User, OTP
 from apps.doctors.models import Doctor
 from apps.asha_workers.models import ASHAWorker
+from apps.patients.models import Patient
 import re
 import random
 import datetime
@@ -29,11 +30,12 @@ class RegisterSerializer(serializers.ModelSerializer):
     hospital_name = serializers.CharField(required=False, allow_blank=True)
     assigned_village = serializers.CharField(required=False, allow_blank=True)
     phc_center = serializers.CharField(required=False, allow_blank=True)
+    license_number = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'role', 'phone_number', 'village', 'name',
-                  'specialization', 'experience_years', 'hospital_name', 'assigned_village', 'phc_center']
+                  'specialization', 'experience_years', 'hospital_name', 'assigned_village', 'phc_center', 'license_number']
     
     def validate_phone_number(self, value):
         if not re.match(r'^\d{10}$', value):
@@ -59,6 +61,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         hospital_name = validated_data.pop('hospital_name', None)
         assigned_village = validated_data.pop('assigned_village', None)
         phc_center = validated_data.pop('phc_center', None)
+        license_number = validated_data.pop('license_number', None)
         
         # Use phone_number as username if username not provided
         if not validated_data.get('username'):
@@ -71,13 +74,21 @@ class RegisterSerializer(serializers.ModelSerializer):
                 user=user,
                 specialization=specialization or "General",
                 experience_years=experience_years or 0,
-                hospital_name=hospital_name or "General Hospital"
+                hospital_name=hospital_name or "General Hospital",
+                license_number=license_number
             )
         elif user.role == 'asha_worker':
             ASHAWorker.objects.create(
                 user=user,
                 assigned_village=assigned_village or user.village,
                 phc_center=phc_center or "Local PHC"
+            )
+        elif user.role == 'user':
+            Patient.objects.create(
+                user=user,
+                age=0,
+                gender="Not Set",
+                address=user.village or "Not Set"
             )
         
         return user

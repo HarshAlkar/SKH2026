@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import '../../../core/theme/app_colors.dart';
 import '../widgets/user_sidebar.dart';
 
@@ -16,58 +18,127 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
   String _selectedCategory = 'Hospitals';
   final TextEditingController _searchController = TextEditingController();
   
-  // Mock data for locations
-  final List<Map<String, dynamic>> _allLocations = [
-    {
-      'id': '1',
-      'name': 'City General Hospital',
-      'category': 'Hospitals',
-      'rating': 4.8,
-      'distance': '0.8 km away',
-      'address': 'Sector 14, Main Road',
-      'position': const LatLng(28.6139, 77.2090),
-      'isOpen247': true,
-    },
-    {
-      'id': '2',
-      'name': 'Apollo Clinic',
-      'category': 'Clinics',
-      'rating': 4.5,
-      'distance': '1.2 km away',
-      'address': 'Block B, Connaught Place',
-      'position': const LatLng(28.6280, 77.2180),
-      'isOpen247': false,
-    },
-    {
-      'id': '3',
-      'name': 'MediCare Store',
-      'category': 'Medical Stores',
-      'rating': 4.2,
-      'distance': '0.5 km away',
-      'address': 'Market Yard, Gate 2',
-      'position': const LatLng(28.6100, 77.2000),
-      'isOpen247': true,
-    },
-  ];
-
+  List<Map<String, dynamic>> _nearbyPlaces = [];
   Map<String, dynamic>? _selectedLocation;
   Set<Marker> _markers = {};
+  Position? _currentPosition;
+  bool _isLoading = false;
+  MapType _currentMapType = MapType.normal;
+
+  final Map<String, String> _categoryToAmenity = {
+    'Hospitals': 'hospital',
+    'Clinics': 'clinic',
+    'Medical Stores': 'pharmacy',
+    'Laboratories': 'laboratory',
+  };
 
   @override
   void initState() {
     super.initState();
-    _updateMarkers();
+    _initLocationAndFetch();
+  }
+
+  Future<void> _initLocationAndFetch() async {
+    setState(() => _isLoading = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw 'Location services are disabled.';
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw 'Location permissions are denied.';
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw 'Location permissions are permanently denied.';
+      }
+
+      Position position = await Geolocator.getCurrentPosition();
+      setState(() {
+        _currentPosition = position;
+      });
+
+      // Move camera to user location
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(position.latitude, position.longitude),
+          14.0,
+        ),
+      );
+
+      await _fetchPlaces();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchPlaces() async {
+    if (_currentPosition == null) return;
+
+    final amenity = _categoryToAmenity[_selectedCategory] ?? 'hospital';
+    final query = _selectedCategory == 'Clinics' 
+        ? '["amenity"~"clinic|doctors"]' 
+        : '["amenity"="$amenity"]';
+
+    final url = 'https://overpass-api.de/api/interpreter?data=[out:json];node(around:5000,${_currentPosition!.latitude},${_currentPosition!.longitude})$query;out;';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final List nodes = data['elements'];
+
+        setState(() {
+          _nearbyPlaces = nodes.map((node) {
+            final lat = node['lat'] as double;
+            final lon = node['lon'] as double;
+            final distanceInMeters = Geolocator.distanceBetween(
+              _currentPosition!.latitude,
+              _currentPosition!.longitude,
+              lat,
+              lon,
+            );
+
+            return {
+              'id': node['id'].toString(),
+              'name': node['tags']['name'] ?? 'Unnamed ${_selectedCategory.substring(0, _selectedCategory.length - 1)}',
+              'category': _selectedCategory,
+              'rating': 4.0 + (node['id'] % 10) / 10, // Mock rating based on ID
+              'distance': '${(distanceInMeters / 1000).toStringAsFixed(1)} km away',
+              'address': node['tags']['addr:street'] ?? 'Nearby ${_currentPosition!.latitude.toStringAsFixed(2)}, ${_currentPosition!.longitude.toStringAsFixed(2)}',
+              'position': LatLng(lat, lon),
+              'isOpen247': node['tags']['opening_hours'] == '24/7',
+            };
+          }).toList();
+          
+          _updateMarkers();
+        });
+      }
+    } catch (e) {
+      print('Error fetching places: $e');
+    }
   }
 
   void _updateMarkers() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      _markers = _allLocations
+      _markers = _nearbyPlaces
           .where((loc) => 
-              loc['category'] == _selectedCategory && 
-              (query.isEmpty || loc['name'].toLowerCase().contains(query) || loc['address'].toLowerCase().contains(query)))
+              (query.isEmpty || 
+               loc['name'].toLowerCase().contains(query) || 
+               loc['address'].toLowerCase().contains(query)))
           .map((loc) {
-
         return Marker(
           markerId: MarkerId(loc['id']),
           position: loc['position'],
@@ -76,6 +147,9 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
             setState(() {
               _selectedLocation = loc;
             });
+            _mapController?.animateCamera(
+              CameraUpdate.newLatLng(loc['position']),
+            );
           },
         );
       }).toSet();
@@ -88,33 +162,19 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
         return BitmapDescriptor.hueGreen;
       case 'Medical Stores':
         return BitmapDescriptor.hueAzure;
+      case 'Laboratories':
+        return BitmapDescriptor.hueViolet;
       default:
         return BitmapDescriptor.hueBlue;
     }
   }
 
-  Future<void> _currentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return;
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) return;
-    }
-
-    Position position = await Geolocator.getCurrentPosition();
-    _mapController?.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: LatLng(position.latitude, position.longitude),
-          zoom: 15,
-        ),
-      ),
-    );
+  void _toggleMapType() {
+    setState(() {
+      _currentMapType = _currentMapType == MapType.normal 
+          ? MapType.satellite 
+          : MapType.normal;
+    });
   }
 
   @override
@@ -144,11 +204,21 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
         children: [
           // Map Background
           GoogleMap(
-            initialCameraPosition: const CameraPosition(
-              target: LatLng(28.6139, 77.2090),
-              zoom: 13,
+            initialCameraPosition: CameraPosition(
+              target: _currentPosition != null 
+                  ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+                  : const LatLng(28.6139, 77.2090),
+              zoom: 14,
             ),
-            onMapCreated: (controller) => _mapController = controller,
+            mapType: _currentMapType,
+            onMapCreated: (controller) {
+              _mapController = controller;
+              if (_currentPosition != null) {
+                _mapController!.animateCamera(
+                  CameraUpdate.newLatLng(LatLng(_currentPosition!.latitude, _currentPosition!.longitude)),
+                );
+              }
+            },
             markers: _markers,
             myLocationEnabled: true,
             myLocationButtonEnabled: false,
@@ -160,6 +230,9 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
               });
             },
           ),
+
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator()),
 
           // Search Bar
           Positioned(
@@ -182,13 +255,10 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
               child: TextField(
                 controller: _searchController,
                 onChanged: (value) {
-                  setState(() {
-                    _updateMarkers();
-                  });
+                  _updateMarkers();
                 },
                 decoration: const InputDecoration(
-
-                  hintText: 'Search hospitals, doctors...',
+                  hintText: 'Search nearby healthcare...',
                   hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
                   border: InputBorder.none,
                   icon: Icon(Icons.search, color: AppColors.primary),
@@ -212,6 +282,8 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
                   _buildFilterChip('Clinics', Icons.medical_services),
                   const SizedBox(width: 12),
                   _buildFilterChip('Medical Stores', Icons.medication),
+                  const SizedBox(width: 12),
+                  _buildFilterChip('Laboratories', Icons.science),
                 ],
               ),
             ),
@@ -223,17 +295,16 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
             top: 160,
             child: Column(
               children: [
-                _buildMapActionButton(Icons.my_location, _currentLocation),
+                _buildMapActionButton(Icons.my_location, _initLocationAndFetch),
                 const SizedBox(height: 12),
-                _buildMapActionButton(Icons.layers_outlined, () {}),
+                _buildMapActionButton(Icons.layers_outlined, _toggleMapType),
               ],
             ),
           ),
 
-          // Hospital Info Card
+          // Info Card
           if (_selectedLocation != null)
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 300),
+            Positioned(
               bottom: 20,
               left: 20,
               right: 20,
@@ -247,12 +318,14 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
   Widget _buildFilterChip(String label, IconData icon) {
     final isSelected = _selectedCategory == label;
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         setState(() {
           _selectedCategory = label;
           _selectedLocation = null;
+          _isLoading = true;
         });
-        _updateMarkers();
+        await _fetchPlaces();
+        setState(() => _isLoading = false);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -317,7 +390,7 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
 
   Widget _buildLocationCard() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
@@ -347,64 +420,41 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
                           color: const Color(0xFFEFFFFA),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          'OPEN 24/7',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: const Text('OPEN 24/7', style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
                       ),
                     const SizedBox(height: 8),
                     Text(
                       _selectedLocation?['name'] ?? '',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF1E293B),
-                      ),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
                         const Icon(Icons.star, color: Colors.orange, size: 16),
                         const SizedBox(width: 4),
-                        Text(
-                          '${_selectedLocation?['rating'] ?? ''}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
+                        Text('${_selectedLocation?['rating'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                         const SizedBox(width: 12),
                         const Icon(Icons.location_on, color: Colors.grey, size: 16),
                         const SizedBox(width: 4),
-                        Text(
-                          _selectedLocation?['distance'] ?? '',
-                          style: const TextStyle(color: Colors.grey, fontSize: 13),
-                        ),
+                        Text(_selectedLocation?['distance'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 13)),
                       ],
                     ),
                   ],
                 ),
               ),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                   width: 80,
-                   height: 80,
-                   color: AppColors.lightBlue,
-                   child: const Icon(Icons.business, color: AppColors.primary, size: 40),
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: AppColors.lightBlue,
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                child: const Icon(Icons.business, color: AppColors.primary, size: 30),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            _selectedLocation?['address'] ?? '',
-            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-          ),
+          Text(_selectedLocation?['address'] ?? '', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
           const SizedBox(height: 20),
           Row(
             children: [
@@ -416,11 +466,8 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
@@ -433,11 +480,8 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.lightBlue,
                     foregroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
               ),
