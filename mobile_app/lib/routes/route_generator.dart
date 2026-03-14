@@ -39,9 +39,11 @@ class RouteGenerator {
         return _fadeRoute(const RoleSelectionScreen());
       case AppRoutes.login:
       case AppRoutes.userLogin:
-      case AppRoutes.ashaLogin:
-      case AppRoutes.doctorLogin:
         return _fadeRoute(const LoginScreen());
+      case AppRoutes.ashaLogin:
+        return _fadeRoute(const AshaLoginScreen());
+      case AppRoutes.doctorLogin:
+        return _fadeRoute(const DoctorLoginScreen());
       case AppRoutes.register:
         return _fadeRoute(const RegisterScreen());
       case AppRoutes.userDashboard:
