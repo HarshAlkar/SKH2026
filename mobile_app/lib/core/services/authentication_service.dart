@@ -27,6 +27,10 @@ class AuthenticationService {
           includeToken: false,
         );
 
+        if (response.containsKey('two_factor_required') && response['two_factor_required'] == true) {
+          return response;
+        }
+
         // Success
         String token = response['token'];
         Map<String, dynamic> userData = response['user'];

@@ -38,7 +38,19 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
       );
       
       if (success && mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.doctorDashboard);
+        if (authProvider.twoFactorRequired) {
+          Navigator.pushNamed(
+            context,
+            AppRoutes.loginWithOtp,
+            arguments: {
+              'phoneNumber': authProvider.tempPhoneNumber ?? _emailPhoneController.text,
+              'role': 'doctor',
+              'isForgotPassword': false,
+            },
+          );
+        } else {
+          Navigator.pushReplacementNamed(context, AppRoutes.doctorDashboard);
+        }
       } else if (mounted) {
         Helpers.showSnackBar(
           context,

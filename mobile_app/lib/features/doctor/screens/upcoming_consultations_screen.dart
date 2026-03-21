@@ -261,6 +261,25 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                               fontSize: 12,
                             ),
                           ),
+                          const SizedBox(height: 6),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.healing, size: 14, color: textSecondary),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  'Symptoms: ${consultation['recent_symptoms'] ?? 'None reported'}',
+                                  style: TextStyle(
+                                    color: textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
                     ),

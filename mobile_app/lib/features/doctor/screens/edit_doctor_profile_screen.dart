@@ -16,11 +16,15 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
 
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
+  late TextEditingController _emailController;
   late TextEditingController _specializationController;
   late TextEditingController _hospitalController;
   late TextEditingController _experienceController;
   late TextEditingController _licenseController;
   late TextEditingController _qualificationController;
+  late TextEditingController _consultationModeController;
+  late TextEditingController _clinicLocationController;
+  late TextEditingController _workingHoursController;
 
   bool _isLoading = false;
 
@@ -29,6 +33,7 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
     super.initState();
     _nameController = TextEditingController(text: widget.currentProfile['full_name']);
     _phoneController = TextEditingController(text: widget.currentProfile['phone_number']);
+    _emailController = TextEditingController(text: widget.currentProfile['email']);
     _specializationController = TextEditingController(text: widget.currentProfile['specialization']);
     _hospitalController = TextEditingController(text: widget.currentProfile['hospital_name']);
     
@@ -37,17 +42,25 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
     
     _licenseController = TextEditingController(text: widget.currentProfile['license_number']);
     _qualificationController = TextEditingController(text: widget.currentProfile['qualification']);
+    
+    _consultationModeController = TextEditingController(text: widget.currentProfile['consultation_mode']);
+    _clinicLocationController = TextEditingController(text: widget.currentProfile['clinic_location']);
+    _workingHoursController = TextEditingController(text: widget.currentProfile['working_hours']);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
     _specializationController.dispose();
     _hospitalController.dispose();
     _experienceController.dispose();
     _licenseController.dispose();
     _qualificationController.dispose();
+    _consultationModeController.dispose();
+    _clinicLocationController.dispose();
+    _workingHoursController.dispose();
     super.dispose();
   }
 
@@ -59,11 +72,15 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
     final data = {
       'full_name': _nameController.text,
       'phone_number': _phoneController.text,
+      'email': _emailController.text,
       'specialization': _specializationController.text,
       'hospital_name': _hospitalController.text,
       'experience_years': int.tryParse(_experienceController.text) ?? 0,
       'license_number': _licenseController.text,
       'qualification': _qualificationController.text,
+      'consultation_mode': _consultationModeController.text,
+      'clinic_location': _clinicLocationController.text,
+      'working_hours': _workingHoursController.text,
     };
 
     final result = await _doctorService.updateDoctorProfile(data);
@@ -117,6 +134,13 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildTextFormField(
+                      controller: _emailController,
+                      label: 'Email',
+                      icon: Icons.email,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextFormField(
                       controller: _specializationController,
                       label: 'Specialization',
                       icon: Icons.local_hospital,
@@ -129,9 +153,27 @@ class _EditDoctorProfileScreenState extends State<EditDoctorProfileScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildTextFormField(
+                      controller: _consultationModeController,
+                      label: 'Consultation Mode (e.g. Video, Offline)',
+                      icon: Icons.chat,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextFormField(
                       controller: _hospitalController,
                       label: 'Clinic / Hospital Name',
                       icon: Icons.business,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextFormField(
+                      controller: _clinicLocationController,
+                      label: 'Clinic Location / Address',
+                      icon: Icons.location_on,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextFormField(
+                      controller: _workingHoursController,
+                      label: 'Working Hours',
+                      icon: Icons.access_time,
                     ),
                     const SizedBox(height: 16),
                     _buildTextFormField(

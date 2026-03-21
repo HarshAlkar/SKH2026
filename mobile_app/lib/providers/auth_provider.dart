@@ -7,11 +7,15 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   String? _error;
+  bool _twoFactorRequired = false;
+  String? _tempPhoneNumber;
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _user != null;
+  bool get twoFactorRequired => _twoFactorRequired;
+  String? get tempPhoneNumber => _tempPhoneNumber;
 
   AuthProvider() {
     _loadCachedUser();
@@ -28,10 +32,21 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> login(String phoneNumber, String password, String role) async {
     _isLoading = true;
     _error = null;
+    _twoFactorRequired = false;
+    _tempPhoneNumber = null;
     notifyListeners();
 
     try {
       final response = await _authService.login(phoneNumber, password, role);
+      
+      if (response.containsKey('two_factor_required') && response['two_factor_required'] == true) {
+        _twoFactorRequired = true;
+        _tempPhoneNumber = response['phone_number'];
+        _isLoading = false;
+        notifyListeners();
+        return true; // We return true but the UI should check twoFactorRequired
+      }
+
       _user = UserModel.fromJson(response['user']);
       _isLoading = false;
       notifyListeners();

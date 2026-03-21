@@ -124,7 +124,7 @@ class ConsultationProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _upcomingConsultations = await _doctorService.getPendingConsultations();
+      _upcomingConsultations = await _doctorService.getAcceptedConsultations();
     } catch (e) {
       print('Error fetching upcoming consultations: $e');
     } finally {

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../user/services/doctor_service.dart';
 import 'patient_details_screen.dart';
 import '../widgets/doctor_navigation_drawer.dart';
+import 'my_patients_screen.dart';
+import 'upcoming_consultations_screen.dart';
+import 'doctor_profile_screen.dart';
+import 'doctor_dashboard.dart';
 
 class PatientRequest {
   final String id;
@@ -33,38 +38,23 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _bottomNavIndex = 0; // Requests is index 0
-
-  final List<PatientRequest> _requests = [
-    PatientRequest(
-      id: "1",
-      patientName: "Ramesh Patil",
-      age: 45,
-      village: "Kaman",
-      symptoms: "Fever, Cough, Mild Headache",
-      priority: "Urgent",
-    ),
-    PatientRequest(
-      id: "2",
-      patientName: "Sunita Deshmukh",
-      age: 28,
-      village: "Pelhar",
-      symptoms: "Back Pain, Fatigue",
-      priority: "General",
-    ),
-    PatientRequest(
-      id: "3",
-      patientName: "Lata Bai",
-      age: 62,
-      village: "Vasai",
-      symptoms: "Knee Swelling, Difficulty Walking",
-      priority: "Follow-up",
-    ),
-  ];
+  
+  final DoctorService _doctorService = DoctorService();
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _pendingRequests = [];
+  List<Map<String, dynamic>> _acceptedRequests = [];
+  List<Map<String, dynamic>> _rejectedRequests = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        _fetchAllRequests();
+      }
+    });
+    _fetchAllRequests();
   }
 
   @override
@@ -73,39 +63,43 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
     super.dispose();
   }
 
-  void _acceptRequest(String id) {
-    setState(() {
-      final index = _requests.indexWhere((r) => r.id == id);
-      if (index != -1) {
-        _requests[index].status = 'Accepted';
-      }
-    });
-    // Navigation to patient details screen
-    final request = _requests.firstWhere((r) => r.id == id);
-    PatientData patientData;
-    if (request.patientName.contains('Ramesh')) {
-      patientData = PatientData.getDummyRamesh();
-    } else if (request.patientName.contains('Sunita')) {
-      patientData = PatientData.getDummySunita();
-    } else {
-      patientData = PatientData.getDummySarah();
+  Future<void> _fetchAllRequests() async {
+    setState(() => _isLoading = true);
+    
+    final pending = await _doctorService.getPendingConsultations();
+    final accepted = await _doctorService.getAcceptedConsultations();
+    final rejected = await _doctorService.getRejectedConsultations();
+    
+    if (mounted) {
+      setState(() {
+        _pendingRequests = pending;
+        _acceptedRequests = accepted;
+        _rejectedRequests = rejected;
+        _isLoading = false;
+      });
     }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PatientDetailsScreen(patient: patientData),
-      ),
-    );
   }
 
-  void _rejectRequest(String id) {
-    setState(() {
-      final index = _requests.indexWhere((r) => r.id == id);
-      if (index != -1) {
-        _requests[index].status = 'Rejected';
-      }
-    });
+  Future<void> _acceptRequest(int id) async {
+    setState(() => _isLoading = true);
+    final success = await _doctorService.acceptConsultation(id);
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Consultation accepted successfully.')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to accept consultation.')));
+    }
+    await _fetchAllRequests();
+  }
+
+  Future<void> _rejectRequest(int id) async {
+    setState(() => _isLoading = true);
+    final success = await _doctorService.rejectConsultation(id);
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Consultation rejected.')));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to reject consultation.')));
+    }
+    await _fetchAllRequests();
   }
 
   @override
@@ -167,22 +161,50 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
         ),
       ),
       drawer: const DoctorNavigationDrawer(activeRoute: 'Patient Requests'),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildRequestList('Pending'),
-          _buildRequestList('Accepted'),
-          _buildRequestList('Rejected'),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 600;
+          return Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isWide ? 600 : constraints.maxWidth,
+              ),
+              child: PopScope(
+                canPop: false,
+                onPopInvoked: (didPop) {
+                  if (didPop) return;
+                  Navigator.pushReplacementNamed(context, '/doctor_dashboard');
+                },
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildRequestList('Pending'),
+                    _buildRequestList('Accepted'),
+                    _buildRequestList('Rejected'),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
   Widget _buildRequestList(String status) {
-    final filteredRequests = _requests
-        .where((r) => r.status == status)
-        .toList();
+    List<Map<String, dynamic>> filteredRequests;
+    if (status == 'Pending') {
+      filteredRequests = _pendingRequests;
+    } else if (status == 'Accepted') {
+      filteredRequests = _acceptedRequests;
+    } else {
+      filteredRequests = _rejectedRequests;
+    }
+
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     if (filteredRequests.isEmpty) {
       return const Center(
@@ -197,23 +219,35 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       itemCount: filteredRequests.length,
       itemBuilder: (context, index) {
-        return _buildPatientRequestCard(filteredRequests[index]);
+        return _buildPatientRequestCard(filteredRequests[index], status);
       },
     );
   }
 
-  Widget _buildPatientRequestCard(PatientRequest request) {
+  Widget _buildPatientRequestCard(Map<String, dynamic> request, String currentStatus) {
     const primaryBlue = Color(0xFF2A7DE1);
     const textPrimary = Color(0xFF1F2937);
     const textSecondary = Color(0xFF6B7280);
 
+    final patientName = request['patient_name'] ?? 'Unknown';
+    final age = request['patient_age'] ?? '--';
+    final village = request['patient_village'] ?? 'Unknown';
+    final symptoms = request['recent_symptoms'] ?? 'None reported';
+    
+    // Determine priority (could be from backend in future)
+    String priority = "General";
+    if (symptoms.toString().toLowerCase().contains('fever') ||
+        symptoms.toString().toLowerCase().contains('pain')) {
+      priority = "Urgent";
+    }
+
     Color badgeBgColor;
     Color badgeTextColor;
 
-    if (request.priority == 'Urgent') {
+    if (priority == 'Urgent') {
       badgeBgColor = const Color(0xFFE0E7FF); // Light blue/indigo
       badgeTextColor = primaryBlue;
-    } else if (request.priority == 'General') {
+    } else if (priority == 'General') {
       badgeBgColor = const Color(0xFFD1FAE5); // Light green
       badgeTextColor = const Color(0xFF059669); // Dark green
     } else {
@@ -260,7 +294,7 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      request.patientName,
+                      patientName,
                       style: const TextStyle(
                         color: textPrimary,
                         fontSize: 16,
@@ -269,7 +303,7 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Age: ${request.age} · Village: ${request.village}',
+                      'Age: $age · Village: $village',
                       style: const TextStyle(
                         color: textSecondary,
                         fontSize: 13,
@@ -290,7 +324,7 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  request.priority,
+                  priority,
                   style: TextStyle(
                     color: badgeTextColor,
                     fontSize: 11,
@@ -320,7 +354,7 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Symptoms: ${request.symptoms}',
+                    'Symptoms: $symptoms',
                     style: const TextStyle(
                       color: textPrimary,
                       fontSize: 13,
@@ -332,7 +366,7 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
             ),
           ),
 
-          if (request.status == 'Pending') ...[
+          if (currentStatus == 'Pending') ...[
             const SizedBox(height: 16),
             // Action Buttons
             Row(
@@ -341,7 +375,7 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
                   child: SizedBox(
                     height: 44,
                     child: ElevatedButton(
-                      onPressed: () => _acceptRequest(request.id),
+                      onPressed: () => _acceptRequest(request['id']),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: primaryBlue,
                         foregroundColor: Colors.white,
@@ -365,7 +399,7 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
                   child: SizedBox(
                     height: 44,
                     child: OutlinedButton(
-                      onPressed: () => _rejectRequest(request.id),
+                      onPressed: () => _rejectRequest(request['id']),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: textPrimary,
                         side: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -405,10 +439,42 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
       ),
       child: BottomNavigationBar(
         currentIndex: _bottomNavIndex,
-        onTap: (index) {
+        onTap: (index) async {
+          if (index == _bottomNavIndex) return;
+          
+          if (index == 0) {
+            // Home - goes back to Dashboard
+            Navigator.pushReplacementNamed(context, '/doctor_dashboard');
+            return;
+          }
+          
           setState(() {
             _bottomNavIndex = index;
           });
+
+          if (index == 1) {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MyPatientsScreen()),
+            );
+          } else if (index == 2) {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const UpcomingConsultationsScreen()),
+            );
+          } else if (index == 3) {
+            // Use push so back button returns here
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DoctorProfileScreen()),
+            );
+          }
+          
+          if (mounted) {
+            setState(() {
+              _bottomNavIndex = 0; // 'REQUESTS' is at index 0 in this bar? Wait.
+            });
+          }
         },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF2A7DE1),

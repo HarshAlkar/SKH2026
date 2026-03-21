@@ -1,8 +1,41 @@
 import 'package:flutter/material.dart';
 import '../widgets/doctor_navigation_drawer.dart';
 
-class HealthReportsScreen extends StatelessWidget {
+import 'package:hs053/features/user/services/doctor_service.dart' as user_service;
+
+class HealthReportsScreen extends StatefulWidget {
   const HealthReportsScreen({super.key});
+
+  @override
+  State<HealthReportsScreen> createState() => _HealthReportsScreenState();
+}
+
+class _HealthReportsScreenState extends State<HealthReportsScreen> {
+  final user_service.DoctorService _doctorService = user_service.DoctorService();
+  Map<String, dynamic> _stats = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchStats();
+  }
+
+  Future<void> _fetchStats() async {
+    try {
+      final stats = await _doctorService.getReportsStats();
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   final Color primaryBlue = const Color(0xFF2A7DE1);
   final Color textPrimary = const Color(0xFF1F2937);
@@ -10,6 +43,12 @@ class HealthReportsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF3F4F6),
       drawer: const DoctorNavigationDrawer(activeRoute: 'Reports'),
@@ -74,33 +113,33 @@ class HealthReportsScreen extends StatelessWidget {
           children: [
             _buildSummaryCard(
               title: 'TOTAL PATIENTS',
-              value: '1,482',
-              indicator: '+12%',
-              subtext: 'From last month',
+              value: _stats['total_patients']?['value'] ?? '0',
+              indicator: _stats['total_patients']?['indicator'] ?? '0%',
+              subtext: _stats['total_patients']?['subtext'] ?? '',
               icon: Icons.people_alt,
               iconColor: primaryBlue,
-              isPositive: true,
+              isPositive: _stats['total_patients']?['is_positive'] ?? true,
             ),
             const SizedBox(height: 12),
             _buildSummaryCard(
               title: 'CRITICAL ALERTS',
-              value: '08',
-              indicator: '-5%',
-              subtext: '2 resolved today',
+              value: _stats['critical_alerts']?['value'] ?? '00',
+              indicator: _stats['critical_alerts']?['indicator'] ?? '0%',
+              subtext: _stats['critical_alerts']?['subtext'] ?? '',
               icon: Icons.warning_amber_rounded,
               iconColor: const Color(0xFFEF4444),
-              isPositive: false,
+              isPositive: _stats['critical_alerts']?['is_positive'] ?? true,
               isAlert: true,
             ),
             const SizedBox(height: 12),
             _buildSummaryCard(
               title: 'AVG. CONSULTATION',
-              value: '18m',
-              indicator: '+2%',
-              subtext: 'Efficiency stable',
+              value: _stats['avg_consultation']?['value'] ?? '0m',
+              indicator: _stats['avg_consultation']?['indicator'] ?? '0%',
+              subtext: _stats['avg_consultation']?['subtext'] ?? '',
               icon: Icons.timer_outlined,
               iconColor: primaryBlue,
-              isPositive: true,
+              isPositive: _stats['avg_consultation']?['is_positive'] ?? true,
             ),
             const SizedBox(height: 32),
             Row(

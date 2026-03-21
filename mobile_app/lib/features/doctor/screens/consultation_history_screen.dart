@@ -68,53 +68,34 @@ class _ConsultationHistoryScreenState extends State<ConsultationHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: lightBg,
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: textPrimary),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Text(
-            'Consultation History',
-            style: TextStyle(
-              color: textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          bottom: TabBar(
-            labelColor: primaryBlue,
-            unselectedLabelColor: textSecondary,
-            indicatorColor: primaryBlue,
-            tabs: const [
-              Tab(text: "Pending"),
-              Tab(text: "Completed"),
-            ],
+    return Scaffold(
+      backgroundColor: lightBg,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Consultation History',
+          style: TextStyle(
+            color: textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
         ),
-        body: Consumer<ConsultationProvider>(
-          builder: (context, provider, child) {
-            if (provider.isLoading && provider.upcomingConsultations.isEmpty && provider.history.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
-            }
+      ),
+      body: Consumer<ConsultationProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading && provider.history.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-            final pending = provider.upcomingConsultations;
-            final completed = provider.history;
-
-            return TabBarView(
-              children: [
-                _buildList(pending, isUpcoming: true),
-                _buildList(completed, isUpcoming: false),
-              ],
-            );
-          },
-        ),
+          final completed = provider.history;
+          return _buildList(completed, isUpcoming: false);
+        },
       ),
     );
   }

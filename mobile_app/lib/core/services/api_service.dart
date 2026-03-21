@@ -74,6 +74,56 @@ class ApiService {
     }
   }
 
+  Future<dynamic> patch(
+    String endpoint, {
+    Map<String, String>? headers,
+    dynamic body,
+    bool includeToken = true,
+  }) async {
+    try {
+      final combinedHeaders = await _getHeaders(extra: {
+        'Content-Type': 'application/json',
+        ...?headers,
+      }, includeToken: includeToken);
+      final response = await _client.patch(
+        Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+        headers: combinedHeaders,
+        body: jsonEncode(body),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> putMultipart(
+    String endpoint, {
+    Map<String, String>? headers,
+    required Map<String, String> fields,
+    String? filePath,
+    String? fileField,
+    bool includeToken = true,
+  }) async {
+    try {
+      final combinedHeaders = await _getHeaders(extra: headers, includeToken: includeToken);
+      final uri = Uri.parse('${ApiConstants.baseUrl}$endpoint');
+      final request = http.MultipartRequest('PUT', uri);
+      
+      request.headers.addAll(combinedHeaders);
+      request.fields.addAll(fields);
+      
+      if (filePath != null && fileField != null) {
+        request.files.add(await http.MultipartFile.fromPath(fileField, filePath));
+      }
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<dynamic> delete(String endpoint, {Map<String, String>? headers, bool includeToken = true}) async {
     try {
       final combinedHeaders = await _getHeaders(extra: headers, includeToken: includeToken);

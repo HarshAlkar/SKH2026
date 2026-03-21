@@ -8,10 +8,14 @@ import 'upcoming_consultations_screen.dart';
 import 'schedule_screen.dart';
 import 'doctor_profile_screen.dart';
 import '../../../providers/auth_provider.dart';
+import 'doctor_settings_screen.dart';
+import '../services/settings_service.dart';
+import 'package:hs053/features/user/services/doctor_service.dart';
 import '../widgets/doctor_navigation_drawer.dart';
 import 'prescription_history_screen.dart';
 
 import '../../../providers/consultation_provider.dart';
+import '../../../core/utils/app_translations.dart';
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({super.key});
@@ -22,16 +26,60 @@ class DoctorDashboard extends StatefulWidget {
 
 class _DoctorDashboardState extends State<DoctorDashboard> {
   int _selectedIndex = 0;
+  final DoctorService _doctorService = DoctorService();
+  Map<String, dynamic> _stats = {
+    'pending_count': 0,
+    'appointments_today': 0,
+    'total_patients': 0,
+    'emergency_count': 0,
+  };
+  bool _isLoadingStats = true;
+  List<dynamic> _appointments = [];
+  bool _isLoadingAppointments = true;
 
   @override
   void initState() {
     super.initState();
+    _fetchDashboardStats();
+    _fetchTodayAppointments();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().user;
       if (user != null) {
         context.read<ConsultationProvider>().initSignaling(user.id.toString());
       }
     });
+  }
+
+  Future<void> _fetchDashboardStats() async {
+    try {
+      final stats = await _doctorService.getDashboardStats();
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingStats = false);
+      }
+    }
+  }
+
+  Future<void> _fetchTodayAppointments() async {
+    try {
+      final appointments = await _doctorService.getTodayAppointments();
+      if (mounted) {
+        setState(() {
+          _appointments = appointments;
+          _isLoadingAppointments = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingAppointments = false);
+      }
+    }
   }
 
   final Color primaryBlue = const Color(0xFF2A7DE1);
@@ -41,21 +89,30 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   final Color textPrimary = const Color(0xFF1F2937);
   final Color textSecondary = const Color(0xFF6B7280);
 
-  void _onItemTapped(int index) {
+  void _onItemTapped(int index) async {
+    if (index == 0) return;
+    
     setState(() {
       _selectedIndex = index;
     });
+
     if (index == 1) {
-      _navigateTo(const MyPatientsScreen());
+      await _navigateTo(const MyPatientsScreen());
     } else if (index == 2) {
-      _navigateTo(const ScheduleScreen());
+      await _navigateTo(const ScheduleScreen());
     } else if (index == 3) {
-      _navigateTo(const DoctorProfileScreen());
+      await _navigateTo(const DoctorProfileScreen());
+    }
+    
+    if (mounted) {
+      setState(() {
+        _selectedIndex = 0;
+      });
     }
   }
 
-  void _navigateTo(Widget screen) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+  Future<void> _navigateTo(Widget screen) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
   }
 
   @override
@@ -72,11 +129,11 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             children: [
               _buildWelcomeSection(),
               const SizedBox(height: 32),
-              _buildSectionTitle('PERFORMANCE SUMMARY'),
+              _buildSectionTitle('perf_summary'.tr(context)),
               const SizedBox(height: 16),
               _buildPerformanceGrid(),
               const SizedBox(height: 32),
-              _buildSectionTitle('QUICK ACTIONS'),
+              _buildSectionTitle('quick_actions'.tr(context)),
               const SizedBox(height: 16),
               _buildQuickActions(),
               const SizedBox(height: 32),
@@ -96,7 +153,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       elevation: 0,
       centerTitle: true,
       title: Text(
-        'Doctor Dashboard',
+        'doctor_dashboard'.tr(context),
         style: TextStyle(
           color: textPrimary,
           fontSize: 18,
@@ -151,12 +208,20 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             ),
           ],
         ),
-        Padding(
-          padding: const EdgeInsets.only(right: 16.0, left: 4.0),
-          child: CircleAvatar(
-            radius: 17,
-            backgroundColor: Colors.teal.shade700,
-            child: const Icon(Icons.person, color: Colors.white, size: 20),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DoctorProfileScreen()),
+            ).then((_) => _fetchDashboardStats());
+          },
+          child: Padding(
+            padding: const EdgeInsets.only(right: 16.0, left: 4.0),
+            child: CircleAvatar(
+              radius: 17,
+              backgroundColor: Colors.teal.shade700,
+              child: const Icon(Icons.person, color: Colors.white, size: 20),
+            ),
           ),
         ),
       ],
@@ -171,7 +236,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Welcome back, Dr. ${(user?.name ?? 'Sharma').split(' ').last}',
+          '${'welcome'.tr(context)}, Dr. ${user?.name ?? 'doctor'.tr(context)}',
           style: TextStyle(
             color: textPrimary,
             fontSize: 22,
@@ -213,10 +278,10 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 icon: Icons.assignment_outlined,
                 iconColor: Colors.orange,
                 iconBgColor: Colors.orange.withOpacity(0.1),
-                title: 'PENDING',
-                value: '5',
-                subtitle: 'Waiting for approval',
-                badgeText: 'Urgent',
+                title: 'pending'.tr(context),
+                value: _stats['pending_count'].toString(),
+                subtitle: 'waiting_approval'.tr(context),
+                badgeText: _stats['pending_count'] > 0 ? 'urgent'.tr(context) : null,
                 badgeColor: Colors.orange,
               ),
             ),
@@ -226,9 +291,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 icon: Icons.calendar_today_outlined,
                 iconColor: primaryBlue,
                 iconBgColor: lightBlue,
-                title: 'APPOINTMENTS',
-                value: '12',
-                subtitle: 'Scheduled for today',
+                title: 'appointments'.tr(context),
+                value: _stats['appointments_today'].toString(),
+                subtitle: 'scheduled_today'.tr(context),
               ),
             ),
           ],
@@ -241,9 +306,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 icon: Icons.people_outline,
                 iconColor: Colors.teal,
                 iconBgColor: Colors.teal.withOpacity(0.1),
-                title: 'TOTAL PATIENTS',
-                value: '1,240',
-                subtitle: '+12 this week',
+                title: 'total_patients'.tr(context),
+                value: _stats['total_patients'].toString(),
+                subtitle: 'patients_increase'.tr(context),
                 subtitleColor: Colors.teal,
               ),
             ),
@@ -253,9 +318,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 icon: Icons.local_hospital_outlined,
                 iconColor: Colors.redAccent,
                 iconBgColor: Colors.white,
-                title: 'EMERGENCY',
-                value: '2',
-                subtitle: 'Action required now',
+                title: 'emergency'.tr(context),
+                value: _stats['emergency_count'].toString(),
+                subtitle: 'action_required'.tr(context),
                 subtitleColor: Colors.redAccent,
                 cardBackgroundColor: emergencyCardBg,
               ),
@@ -377,7 +442,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       children: [
         _buildActionCard(
           icon: Icons.video_call_outlined,
-          title: 'Start Consultation',
+          title: 'start_consultation'.tr(context),
           isPrimary: true,
           onTap: () {
             _navigateTo(const UpcomingConsultationsScreen());
@@ -386,7 +451,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         const SizedBox(height: 12),
         _buildActionCard(
           icon: Icons.person_search_outlined,
-          title: 'View Patient List',
+          title: 'view_patient_list'.tr(context),
           onTap: () {
             _navigateTo(const MyPatientsScreen());
           },
@@ -488,7 +553,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Upcoming Appointments',
+                  'upcoming_appointments'.tr(context),
                   style: TextStyle(
                     color: textPrimary,
                     fontSize: 16,
@@ -496,9 +561,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   ),
                 ),
                 InkWell(
-                  onTap: () => _navigateTo(const MyPatientsScreen()),
+                  onTap: () => _onItemTapped(2), // Navigate to Schedule
                   child: Text(
-                    'View all',
+                    'view_all'.tr(context),
                     style: TextStyle(
                       color: primaryBlue,
                       fontSize: 13,
@@ -510,25 +575,39 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             ),
           ),
           const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          _buildAppointmentItem(
-            name: 'Amitabh Bachchan',
-            condition: 'General Checkup',
-            time: '10:30 AM',
-            statusText: 'CONFIRMED',
-            statusColor: Colors.green.shade700,
-            statusBgColor: const Color(0xFFE8FDF0),
-            isLast: false,
-          ),
-          const Divider(height: 1, indent: 70, color: Color(0xFFF1F5F9)),
-          _buildAppointmentItem(
-            name: 'Priyanka Chopra',
-            condition: 'Fever & Cold',
-            time: '11:15 AM',
-            statusText: 'VIDEO CALL',
-            statusColor: primaryBlue,
-            statusBgColor: lightBlue,
-            isLast: true,
-          ),
+          if (_isLoadingAppointments)
+            const Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_appointments.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Center(
+                child: Text(
+                  'no_appointments_today'.tr(context),
+                  style: TextStyle(color: textSecondary),
+                ),
+              ),
+            )
+          else
+            ..._appointments.take(3).map((appt) {
+              final isLast = _appointments.indexOf(appt) == (_appointments.length < 3 ? _appointments.length - 1 : 2);
+              return Column(
+                children: [
+                  _buildAppointmentItem(
+                    name: appt['patient_name'],
+                    condition: appt['notes']?.isNotEmpty == true ? appt['notes'] : 'General Checkup',
+                    time: appt['time'],
+                    statusText: appt['type'] == 'VIDEO' ? 'VIDEO CALL' : 'AUDIO CALL',
+                    statusColor: appt['type'] == 'VIDEO' ? primaryBlue : Colors.green.shade700,
+                    statusBgColor: appt['type'] == 'VIDEO' ? lightBlue : const Color(0xFFE8FDF0),
+                    isLast: isLast,
+                  ),
+                  if (!isLast) const Divider(height: 1, indent: 70, color: Color(0xFFF1F5F9)),
+                ],
+              );
+            }).toList(),
         ],
       ),
     );
@@ -625,50 +704,50 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         showUnselectedLabels: true,
         backgroundColor: Colors.white,
         elevation: 0,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Padding(
+            icon: const Padding(
               padding: EdgeInsets.only(bottom: 4.0),
               child: Icon(Icons.home_outlined),
             ),
-            activeIcon: Padding(
+            activeIcon: const Padding(
               padding: EdgeInsets.only(bottom: 4.0),
               child: Icon(Icons.home),
             ),
-            label: 'HOME',
+            label: 'home'.tr(context),
           ),
           BottomNavigationBarItem(
-            icon: Padding(
+            icon: const Padding(
               padding: EdgeInsets.only(bottom: 4.0),
               child: Icon(Icons.people_alt_outlined),
             ),
-            activeIcon: Padding(
+            activeIcon: const Padding(
               padding: EdgeInsets.only(bottom: 4.0),
               child: Icon(Icons.people),
             ),
-            label: 'PATIENTS',
+            label: 'my_patients'.tr(context),
           ),
           BottomNavigationBarItem(
-            icon: Padding(
+            icon: const Padding(
               padding: EdgeInsets.only(bottom: 4.0),
               child: Icon(Icons.calendar_month_outlined),
             ),
-            activeIcon: Padding(
+            activeIcon: const Padding(
               padding: EdgeInsets.only(bottom: 4.0),
               child: Icon(Icons.calendar_month),
             ),
-            label: 'SCHEDULE',
+            label: 'schedule'.tr(context),
           ),
           BottomNavigationBarItem(
-            icon: Padding(
+            icon: const Padding(
               padding: EdgeInsets.only(bottom: 4.0),
               child: Icon(Icons.person_outline),
             ),
-            activeIcon: Padding(
+            activeIcon: const Padding(
               padding: EdgeInsets.only(bottom: 4.0),
               child: Icon(Icons.person),
             ),
-            label: 'PROFILE',
+            label: 'profile'.tr(context),
           ),
         ],
       ),

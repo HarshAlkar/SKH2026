@@ -185,21 +185,6 @@ class DoctorNavigationDrawer extends StatelessWidget {
                         }
                       },
                     ),
-                    _buildMenuItem(
-                      context: context,
-                      icon: Icons.assignment_outlined,
-                      title: 'Prescriptions',
-                      isActive: activeRoute == 'Prescriptions',
-                      onTap: () {
-                        Navigator.pop(context);
-                        if (activeRoute != 'Prescriptions') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const PrescriptionHistoryScreen()),
-                          );
-                        }
-                      },
-                    ),
 
                     const SizedBox(height: 24),
 
