@@ -17,7 +17,10 @@ import datetime
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'created_at']
+        fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'created_at',
+                  'two_factor_enabled', 'consultation_requests_enabled', 'emergency_alerts_enabled',
+                  'prescription_updates_enabled', 'auto_switch_to_audio', 'default_consultation_type',
+                  'consultation_duration_limit', 'app_language', 'font_size']
 
 class RegisterSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=False, allow_blank=True)
@@ -148,6 +151,25 @@ class UserViewSet(viewsets.ModelViewSet):
 
         user = authenticate(username=username, password=password)
         if user:
+            # Check for Two-Factor Authentication
+            if user.two_factor_enabled:
+                otp_code = str(random.randint(100000, 999999))
+                expiry_time = timezone.now() + datetime.timedelta(minutes=5)
+                
+                OTPVerification.objects.create(
+                    phone_number=user.phone_number, 
+                    otp_code=otp_code, 
+                    expiry_time=expiry_time
+                )
+                
+                print(f"DEBUG: 2FA OTP for {user.phone_number} is {otp_code}")
+                
+                return Response({
+                    "two_factor_required": True,
+                    "phone_number": user.phone_number,
+                    "message": "Two-factor authentication required. OTP sent to your registered number."
+                }, status=status.HTTP_200_OK)
+
             token, created = Token.objects.get_or_create(user=user)
             return Response({
                 "token": token.key,
@@ -264,3 +286,44 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get', 'put', 'patch'], url_path='settings')
+    def user_settings(self, request):
+        user = request.user
+        if request.method == 'GET':
+            return Response({
+                "two_factor_enabled": user.two_factor_enabled,
+                "consultation_requests_enabled": user.consultation_requests_enabled,
+                "emergency_alerts_enabled": user.emergency_alerts_enabled,
+                "prescription_updates_enabled": user.prescription_updates_enabled,
+                "auto_switch_to_audio": user.auto_switch_to_audio,
+                "default_consultation_type": user.default_consultation_type,
+                "consultation_duration_limit": user.consultation_duration_limit,
+                "app_language": user.app_language,
+                "font_size": user.font_size
+            })
+        
+        # update settings
+        for key, value in request.data.items():
+            if hasattr(user, key) and key not in ['id', 'username', 'email', 'role', 'password']:
+                setattr(user, key, value)
+        user.save()
+        return Response({"message": "Settings updated successfully", "settings": UserSerializer(user).data})
+
+    @action(detail=False, methods=['post'], url_path='change-password')
+    def change_password(self, request):
+        old_password = request.data.get('old_password')
+        new_password = request.data.get('new_password')
+        
+        if not old_password or not new_password:
+            return Response({"error": "Old and new password are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if not request.user.check_password(old_password):
+            return Response({"error": "Incorrect old password"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if len(new_password) < 6:
+            return Response({"error": "New password must be at least 6 characters"}, status=status.HTTP_400_BAD_REQUEST)
+
+        request.user.set_password(new_password)
+        request.user.save()
+        return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)

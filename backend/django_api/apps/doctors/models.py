@@ -10,6 +10,14 @@ class Doctor(models.Model):
     qualification = models.CharField(max_length=200, null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
     is_available = models.BooleanField(default=True)
+    
+    # New fields for profile display
+    consultation_mode = models.CharField(max_length=100, null=True, blank=True)
+    clinic_location = models.CharField(max_length=200, null=True, blank=True)
+    working_hours = models.CharField(max_length=100, null=True, blank=True)
+    
+    # Profile photo
+    profile_photo = models.ImageField(upload_to='doctor_profiles/', null=True, blank=True)
 
     def __str__(self):
         return f"Dr. {self.user.name or self.user.username} ({self.specialization})"

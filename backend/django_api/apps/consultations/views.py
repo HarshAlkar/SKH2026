@@ -70,7 +70,8 @@ class ConsultationViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
         
         consultation.status = new_status
-        # consultation.end_time = timezone.now() # Added end_time if needed, but and_time is not in models yet
+        if new_status == 'COMPLETED':
+            consultation.ended_at = timezone.now()
         consultation.save()
         return Response({'status': f'Consultation ended with status: {new_status}'})
 
@@ -87,3 +88,33 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         print(f"DEBUG: pending action found {queryset.count()} records for user {request.user.username}")
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def accepted(self, request):
+        queryset = self.get_queryset().filter(status='ACCEPTED').order_by('-created_at')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def rejected(self, request):
+        queryset = self.get_queryset().filter(status='REJECTED').order_by('-created_at')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def accept_request(self, request, pk=None):
+        consultation = self.get_object()
+        if consultation.status != 'PENDING':
+            return Response({'error': 'Only pending requests can be accepted'}, status=status.HTTP_400_BAD_REQUEST)
+        consultation.status = 'ACCEPTED'
+        consultation.save()
+        return Response({'status': 'Request accepted'})
+
+    @action(detail=True, methods=['post'])
+    def reject_request(self, request, pk=None):
+        consultation = self.get_object()
+        if consultation.status != 'PENDING':
+            return Response({'error': 'Only pending requests can be rejected'}, status=status.HTTP_400_BAD_REQUEST)
+        consultation.status = 'REJECTED'
+        consultation.save()
+        return Response({'status': 'Request rejected'})

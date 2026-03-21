@@ -5,6 +5,8 @@ from apps.doctors.models import Doctor
 class Consultation(models.Model):
     STATUS_CHOICES = (
         ('PENDING', 'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('REJECTED', 'Rejected'),
         ('ONGOING', 'Ongoing'),
         ('COMPLETED', 'Completed'),
         ('CANCELLED', 'Cancelled'),
@@ -22,6 +24,8 @@ class Consultation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     meeting_link = models.URLField(blank=True, null=True)
     notes = models.TextField(blank=True)
+    is_emergency = models.BooleanField(default=False)
+    ended_at = models.DateTimeField(null=True, blank=True)
 
     @property
     def prescription_summary(self):

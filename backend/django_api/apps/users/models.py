@@ -14,6 +14,17 @@ class User(AbstractUser):
     name = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Settings and Security fields
+    two_factor_enabled = models.BooleanField(default=False)
+    consultation_requests_enabled = models.BooleanField(default=True)
+    emergency_alerts_enabled = models.BooleanField(default=True)
+    prescription_updates_enabled = models.BooleanField(default=True)
+    auto_switch_to_audio = models.BooleanField(default=True)
+    default_consultation_type = models.CharField(max_length=50, default='Video Call')
+    consultation_duration_limit = models.CharField(max_length=50, default='15 minutes')
+    app_language = models.CharField(max_length=50, default='English')
+    font_size = models.FloatField(default=1.0)
+
     def __str__(self):
         return f"{self.name or self.username} ({self.role})"
 
