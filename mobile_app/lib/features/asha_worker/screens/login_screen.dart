@@ -448,11 +448,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
 
               // Footer Text
               Text(
-<<<<<<< HEAD
-                "© 2024 VitalReach. Healthcare reaching everywhere.",
-=======
                 "© 2024 VitalReach. Empowering healthcare in every village.",
->>>>>>> a29c117 (Prescription and Consultatncy)
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,

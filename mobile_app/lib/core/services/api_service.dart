@@ -7,6 +7,8 @@ class ApiService {
   final http.Client _client = http.Client();
 
   final StorageService _storageService = StorageService();
+  String get baseUrl => ApiConstants.baseUrl;
+  Future<String?> getToken() async => _storageService.getString('token');
 
   Future<Map<String, String>> _getHeaders({Map<String, String>? extra, bool includeToken = true}) async {
     final token = includeToken ? _storageService.getString('token') : null;

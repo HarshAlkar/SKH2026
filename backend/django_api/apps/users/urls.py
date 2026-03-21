@@ -1,10 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import UserViewSet
+from .views import UserViewSet, delete_family_member
 
 router = DefaultRouter()
 router.register(r'', UserViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('family-members/<int:pk>/', delete_family_member, name='delete-family-member'),
 ]

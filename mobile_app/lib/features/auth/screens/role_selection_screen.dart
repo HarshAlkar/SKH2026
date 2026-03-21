@@ -53,13 +53,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 10),
-<<<<<<< HEAD
-              Center(
-                child: Image.asset(
-                  'assets/images/VitalReach_logo.png',
-                  height: 180,
-                  fit: BoxFit.contain,
-=======
               const Text(
                 'Welcome to VitalReach',
                 style: TextStyle(
@@ -67,7 +60,6 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF1E293B),
                   height: 1.2,
->>>>>>> a29c117 (Prescription and Consultatncy)
                 ),
               ),
               const SizedBox(height: 10),

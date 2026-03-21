@@ -1,0 +1,16 @@
+dr_sharma | pass123: True | role: DOCTOR | phone: None
+dr_priya | pass123: True | role: DOCTOR | phone: None
+9876543210 | pass123: True | role: user | phone: 9876543210
+9876543211 | pass123: True | role: user | phone: 9876543211
+9876543212 | pass123: True | role: user | phone: 9876543212
+9876543213 | pass123: True | role: user | phone: 9876543213
+9999999990 | pass123: True | role: doctor | phone: 9999999990
+9999999991 | pass123: True | role: doctor | phone: 9999999991
+9999999992 | pass123: True | role: doctor | phone: 9999999992
+8888888880 | pass123: True | role: asha_worker | phone: 8888888880
+8888888881 | pass123: True | role: asha_worker | phone: 8888888881
+8591274978 | pass123: False | role: user | phone: 8591274978
+1234567890 | pass123: False | role: asha_worker | phone: 1234567890
+8108210981 | pass123: False | role: doctor | phone: 8108210981
+9821797965 | pass123: False | role: doctor | phone: 9821797965
+1212121212 | pass123: False | role: doctor | phone: 1212121212

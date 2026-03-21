@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import '../features/user/services/doctor_service.dart';
 import '../core/services/signaling_service.dart';
-<<<<<<< HEAD
-import '../features/user/screens/incoming_call_screen.dart';
-=======
 import '../features/user/screens/call_screen.dart';
 import '../features/doctor/screens/video_consultation_screen.dart';
->>>>>>> a29c117 (Prescription and Consultatncy)
-import '../main.dart';
+import '../core/keys/navigator_key.dart';
 
 class ConsultationProvider extends ChangeNotifier {
   final DoctorService _doctorService = DoctorService();
@@ -37,16 +33,6 @@ class ConsultationProvider extends ChangeNotifier {
     
     final context = navigatorKey.currentContext;
     if (context != null) {
-<<<<<<< HEAD
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => IncomingCallScreen(
-            consultationId: consultationId,
-            callerName: callerName,
-            callType: callType,
-          ),
-=======
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -64,8 +50,11 @@ class ConsultationProvider extends ChangeNotifier {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => VideoConsultationScreen(
+                    builder: (context) => CallScreen(
                       consultationId: consultationId,
+                      doctorName: callerName,
+                      isVideo: callType == 'VIDEO',
+                      isOfferer: false,
                     ),
                   ),
                 );
@@ -73,7 +62,6 @@ class ConsultationProvider extends ChangeNotifier {
               child: const Text('Accept'),
             ),
           ],
->>>>>>> a29c117 (Prescription and Consultatncy)
         ),
       );
     }

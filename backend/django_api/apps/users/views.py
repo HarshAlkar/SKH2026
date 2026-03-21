@@ -9,7 +9,10 @@ from django.utils import timezone
 from .models import User, OTPVerification
 from apps.doctors.models import Doctor
 from apps.asha_workers.models import ASHAWorker
-from apps.patients.models import Patient
+from apps.patients.models import Patient, FamilyMember, EmergencyContact
+from apps.prescriptions.serializers import PrescriptionSerializer
+from apps.symptom_analysis.models import SymptomAnalysis
+from apps.symptom_analysis.serializers import SymptomAnalysisSerializer
 import re
 import random
 import datetime
@@ -19,7 +22,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'created_at', 'profile_details']
+        fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'abha_id', 'created_at', 'profile_details']
 
     def get_profile_details(self, obj):
         if obj.role == 'doctor' and hasattr(obj, 'doctor_profile'):
@@ -40,11 +43,25 @@ class UserSerializer(serializers.ModelSerializer):
                 "age": obj.patient_profile.age,
                 "gender": obj.patient_profile.gender,
                 "address": obj.patient_profile.address,
-                "blood_group": obj.patient_profile.blood_group
+                "blood_group": obj.patient_profile.blood_group,
+                "abha_id": obj.patient_profile.abha_id
             }
         return None
 
+class FamilyMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        from apps.patients.models import FamilyMember
+        model = FamilyMember
+        fields = '__all__'
+
+class EmergencyContactSerializer(serializers.ModelSerializer):
+    class Meta:
+        from apps.patients.models import EmergencyContact
+        model = EmergencyContact
+        fields = '__all__'
+
 class RegisterSerializer(serializers.ModelSerializer):
+
     username = serializers.CharField(required=False, allow_blank=True)
     password = serializers.CharField(write_only=True, min_length=6)
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
@@ -142,13 +159,18 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='login')
     def login(self, request):
+        print(f"DEBUG LOGIN request.data: {request.data}")
         identifier = request.data.get('phone_number') or request.data.get('email') or request.data.get('username')
+        if identifier:
+            identifier = str(identifier).strip()
         password = request.data.get('password')
         role = request.data.get('role')
         
         if not role:
+            print("DEBUG: missing role")
             return Response({"error": "Role is required"}, status=status.HTTP_400_BAD_REQUEST)
         if not identifier or not password:
+            print("DEBUG: missing identifier or password")
             return Response({"error": "Identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Try to find user by phone number, email, or username
@@ -306,9 +328,141 @@ class UserViewSet(viewsets.ModelViewSet):
             user.set_password(new_password)
             user.save()
             
-            # Delete record after use
+            # Delete record
             otp_record.delete()
             
             return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get', 'put'], url_path='profile/me')
+    def profile_me(self, request):
+        user = request.user
+        if request.method == 'GET':
+            serializer = self.get_serializer(user)
+            return Response(serializer.data)
+        
+        # Handle profile update
+        data = request.data
+        user.name = data.get('name', user.name)
+        user.email = data.get('email', user.email)
+        user.village = data.get('village', user.village)
+        user.save()
+        
+        if user.role == 'user' and hasattr(user, 'patient_profile'):
+            profile = user.patient_profile
+            profile.age = data.get('age', profile.age)
+            profile.gender = data.get('gender', profile.gender)
+            profile.address = data.get('address', profile.address)
+            profile.blood_group = data.get('blood_group', profile.blood_group)
+            profile.abha_id = data.get('abha_id', profile.abha_id)
+            profile.save()
+            
+        return Response(self.get_serializer(user).data)
+
+    @action(detail=False, methods=['get', 'post'], url_path='family-members')
+    def family_members(self, request):
+        if not hasattr(request.user, 'patient_profile'):
+            return Response({"error": "Only patients have family members"}, status=400)
+            
+        patient = request.user.patient_profile
+        if request.method == 'GET':
+            members = patient.family_members.all()
+            serializer = FamilyMemberSerializer(members, many=True)
+            return Response(serializer.data)
+            
+        # POST: Create new family member
+        data = request.data.copy()
+        data['patient'] = patient.id
+        serializer = FamilyMemberSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+    @action(detail=False, methods=['get', 'post', 'put'], url_path='emergency-info')
+    def emergency_info(self, request):
+        if not hasattr(request.user, 'patient_profile'):
+            return Response({"error": "Only patients have emergency info"}, status=400)
+            
+        patient = request.user.patient_profile
+        
+        if request.method == 'GET':
+            try:
+                contact = patient.emergency_contact
+                serializer = EmergencyContactSerializer(contact)
+                return Response(serializer.data)
+            except:
+                return Response({"error": "No emergency contact found"}, status=404)
+        
+        # POST/PUT: Update emergency info
+        try:
+            contact = patient.emergency_contact
+            serializer = EmergencyContactSerializer(contact, data=request.data, partial=True)
+        except:
+            data = request.data.copy()
+            data['patient'] = patient.id
+            serializer = EmergencyContactSerializer(data=data)
+            
+        if serializer.is_valid():
+            serializer.save()  # Fix: was missing .save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+
+    @action(detail=False, methods=['get'], url_path='profile-by-abha')
+    def profile_by_abha(self, request):
+        abha_id = request.query_params.get('abha_id')
+        if not abha_id:
+            return Response({"error": "ABHA ID is required"}, status=400)
+        try:
+            user = User.objects.get(abha_id=abha_id)
+            serializer = self.get_serializer(user)
+            data = dict(serializer.data)
+
+            if user.role == 'user' and hasattr(user, 'patient_profile'):
+                profile = user.patient_profile
+                # Fetch detailed history
+                data['prescriptions'] = PrescriptionSerializer(profile.prescriptions.all().order_by('-issued_at'), many=True).data
+                data['reports'] = [
+                    {
+                        "id": r.id,
+                        "title": r.title, 
+                        "type": r.report_type, 
+                        "date": str(r.created_at),
+                        "file_url": request.build_absolute_uri(r.file.url) if r.file else None
+                    } 
+                    for r in profile.reports.all().order_by('-created_at')
+                ]
+                
+                # AI History
+                ai_history = SymptomAnalysis.objects.filter(user=user).order_by('-created_at')
+                data['ai_history'] = SymptomAnalysisSerializer(ai_history, many=True).data
+                
+                try:
+                    ec = profile.emergency_contact
+                    data['emergency_contact'] = EmergencyContactSerializer(ec).data
+                except Exception:
+                    data['emergency_contact'] = None
+                data['family_members'] = FamilyMemberSerializer(profile.family_members.all(), many=True).data
+            
+            return Response(data)
+        except User.DoesNotExist:
+            return Response({"error": "User with this ABHA ID not found"}, status=404)
+
+
+# ── Standalone view for DELETE /users/family-members/<pk>/ ──
+
+from rest_framework.decorators import api_view, permission_classes
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_family_member(request, pk):
+    from apps.patients.models import FamilyMember
+    try:
+        member = FamilyMember.objects.get(pk=pk, patient=request.user.patient_profile)
+        member.delete()
+        return Response({"message": "Family member deleted"}, status=204)
+    except FamilyMember.DoesNotExist:
+        return Response({"error": "Family member not found"}, status=404)
+    except Exception:
+        return Response({"error": "Patient profile not found"}, status=400)

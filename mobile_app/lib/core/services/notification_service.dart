@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import '../../routes/app_routes.dart';
-import '../../main.dart';
+import '../keys/navigator_key.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();

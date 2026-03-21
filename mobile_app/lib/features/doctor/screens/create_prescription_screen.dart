@@ -1,23 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-<<<<<<< HEAD
-import '../../../core/services/api_service.dart';
-import '../../../providers/auth_provider.dart';
-
-class CreatePrescriptionScreen extends StatefulWidget {
-  final String? patientName;
-  final String? patientId;
-  const CreatePrescriptionScreen({super.key, this.patientName, this.patientId});
-=======
 import '../../../features/user/services/doctor_service.dart';
 import '../../../models/medicine_model.dart';
 import '../../../providers/consultation_provider.dart';
+import '../../../core/services/api_service.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/realtime_provider.dart';
 
 class CreatePrescriptionScreen extends StatefulWidget {
   final String? patientName;
   final String? consultationId;
-  const CreatePrescriptionScreen({super.key, this.patientName, this.consultationId});
->>>>>>> a29c117 (Prescription and Consultatncy)
+  final String? patientId;
+  const CreatePrescriptionScreen({super.key, this.patientName, this.consultationId, this.patientId});
 
   @override
   State<CreatePrescriptionScreen> createState() => _CreatePrescriptionScreenState();
@@ -36,13 +30,9 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
   final _routeController = TextEditingController();
   final _durationController = TextEditingController();
   final _instructionsController = TextEditingController();
-<<<<<<< HEAD
-  final _diagnosisController = TextEditingController();
-=======
   
   final DoctorService _doctorService = DoctorService();
   bool _isSaving = false;
->>>>>>> a29c117 (Prescription and Consultatncy)
 
   final List<String> _timingOptions = ['Before Breakfast', 'After Meals', 'At Bedtime'];
   final Set<String> _selectedTimings = {};
@@ -226,9 +216,6 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-<<<<<<< HEAD
-                onPressed: _isLoading ? null : _savePrescription,
-=======
                 onPressed: _isSaving ? null : () async {
                   setState(() => _isSaving = true);
                   
@@ -255,9 +242,19 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
                       ],
                     };
                     
-                    await _doctorService.createPrescription(prescriptionData);
+                    final createdPrescription = await _doctorService.createPrescription(prescriptionData);
                     
                     if (mounted) {
+                      // Send realtime notification to patient
+                      final auth = context.read<AuthProvider>();
+                      context.read<RealtimeProvider>().sendPrescription(
+                        _selectedPatientId!, 
+                        {
+                          ...createdPrescription,
+                          'doctor_name': auth.user!.name 
+                        }
+                      );
+
                       // Refresh consultation history
                       context.read<ConsultationProvider>().fetchHistory();
                       
@@ -284,20 +281,13 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
                     if (mounted) setState(() => _isSaving = false);
                   }
                 },
->>>>>>> a29c117 (Prescription and Consultatncy)
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryBlue,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-<<<<<<< HEAD
-                child: _isLoading 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Confirm & Send', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-=======
                 child: _isSaving 
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Text('Confirm & Send', style: TextStyle(fontWeight: FontWeight.bold)),
->>>>>>> a29c117 (Prescription and Consultatncy)
               ),
             ),
           ],
@@ -352,19 +342,6 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
               _buildPatientInfoCard(),
               const SizedBox(height: 32),
               
-<<<<<<< HEAD
-              _buildSectionTitle(Icons.add_box_outlined, 'DIAGNOSIS'),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _diagnosisController,
-                placeholder: 'Enter diagnosis findings...',
-                validatorError: 'Please enter diagnosis',
-                maxLines: 2,
-              ),
-              const SizedBox(height: 24),
-
-              _buildSectionTitle(Icons.medication_outlined, 'MEDICATION DETAILS'),
-=======
               _buildLabel('Diagnosis'),
               _buildTextField(
                 controller: _diagnosisController,
@@ -383,7 +360,6 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
               const SizedBox(height: 32),
               
               _buildSectionTitle(Icons.add_box_outlined, 'MEDICATION DETAILS'),
->>>>>>> a29c117 (Prescription and Consultatncy)
               const SizedBox(height: 16),
               
               _buildLabel('Medicine Name'),

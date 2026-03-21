@@ -14,4 +14,15 @@ class Helpers {
       ),
     );
   }
+
+  static String formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return 'N/A';
+    try {
+      final date = DateTime.parse(dateStr);
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${date.day} ${months[date.month - 1]}, ${date.year}';
+    } catch (_) {
+      return dateStr;
+    }
+  }
 }

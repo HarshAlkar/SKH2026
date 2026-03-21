@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'patient_details_screen.dart';
+import '../../user/services/doctor_service.dart';
 
 class DoctorNotificationsScreen extends StatefulWidget {
   const DoctorNotificationsScreen({super.key});
@@ -15,10 +16,29 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> w
   final Color textPrimary = const Color(0xFF1F2937);
   final Color textSecondary = const Color(0xFF6B7280);
 
+  final DoctorService _doctorService = DoctorService();
+  List<Map<String, dynamic>> _notifications = [];
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _fetchNotifications();
+  }
+
+  Future<void> _fetchNotifications() async {
+    setState(() => _isLoading = true);
+    try {
+      final data = await _doctorService.getNotifications();
+      setState(() {
+        _notifications = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching notifications: $e');
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -29,6 +49,12 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> w
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Notifications')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -47,19 +73,12 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> w
             fontWeight: FontWeight.bold,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.more_vert, color: textPrimary),
-            onPressed: () {},
-          ),
-        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: primaryBlue,
           unselectedLabelColor: textSecondary,
           indicatorColor: primaryBlue,
           indicatorWeight: 3,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
           tabs: const [
             Tab(text: 'All'),
             Tab(text: 'Requests'),
@@ -70,141 +89,63 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> w
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildAllTab(),
-          _buildRequestsTab(),
-          _buildAlertsTab(),
+          _buildNotificationList('all'),
+          _buildNotificationList('request'),
+          _buildNotificationList('alert'),
         ],
       ),
     );
   }
 
+  Widget _buildNotificationList(String type) {
+    final filtered = _notifications.where((n) {
+      if (type == 'all') return true;
+      return (n['type'] ?? '').toString().toLowerCase() == type;
+    }).toList();
 
-  Widget _buildAllTab() {
-    return ListView(
-      children: [
-        _buildSectionHeader('TODAY'),
-        NotificationCard(
-          iconContent: _buildIconContainer(
-            icon: Icons.medical_services_outlined,
-            color: primaryBlue,
-            bgColor: const Color(0xFFE8F1FF), // Light blue
-          ),
-          title: 'New consultation request',
-          message: 'Patient John Doe has requested a video consultation for post-surgery follow-up.',
-          time: '10:30 AM',
-          hasUnreadDot: true,
-          unreadDotColor: primaryBlue,
-          actionButtons: [
-            _buildAcceptButton(() {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PatientDetailsScreen(patient: PatientData.getDummySarah()),
-                ),
-              );
-            }),
-            const SizedBox(width: 12),
-            _buildDeclineButton(),
-          ],
-        ),
-        const Divider(height: 1, color: Color(0xFFF3F4F6)),
-        NotificationCard(
-          iconContent: _buildIconContainer(
-            icon: Icons.link, // Fits the capsule/link design from reference
-            color: const Color(0xFF10B981), // Green
-            bgColor: const Color(0xFFECFDF5), // Light green
-          ),
-          title: 'Prescription sent successfully',
-          message: 'The prescription for Sarah Jenkins has been verified and sent to LifeCare Pharmacy.',
-          time: '09:15 AM',
-        ),
-        NotificationCard(
-          iconContent: _buildIconContainer(
-            icon: Icons.emergency,
-            color: const Color(0xFFEF4444), // Red
-            bgColor: const Color(0xFFFEE2E2), // Light red
-          ),
-          title: 'Emergency alert from ASHA worker',
-          titleColor: const Color(0xFFDC2626), // Emergency red text
-          message: 'Village 4: Critical heart rate reported for Patient Robert Wilson. Immediate attention required.',
-          time: '08:45 AM',
-          backgroundColor: const Color(0xFFFFE9E9), // Light red bg
-          hasUnreadDot: true,
-          unreadDotColor: const Color(0xFFEF4444),
-          actionButtons: [
-            _buildEmergencyButton(),
-          ],
-        ),
-        _buildSectionHeader('YESTERDAY'),
-        NotificationCard(
-          iconContent: _buildIconContainer(
-            icon: Icons.description_outlined,
-            color: const Color(0xFF9CA3AF), // Grey
-            bgColor: const Color(0xFFF3F4F6), // Light grey
-          ),
-          title: 'Lab results uploaded',
-          message: 'MRI results for Michael Smith are now available for review.',
-          time: 'Yesterday',
-        ),
-      ],
+    if (filtered.isEmpty) {
+      return const Center(child: Text('No notifications found'));
+    }
+
+    return ListView.builder(
+      itemCount: filtered.length,
+      itemBuilder: (context, index) {
+        final n = filtered[index];
+        return NotificationCard(
+          iconContent: _buildIconForType(n['type'] ?? ''),
+          title: n['title'] ?? 'Notification',
+          message: n['message'] ?? '',
+          time: n['created_at'] != null 
+              ? n['created_at'].toString().split('T').first 
+              : 'Recently',
+          hasUnreadDot: !(n['is_read'] ?? true),
+          unreadDotColor: (n['type'] == 'emergency' || n['type'] == 'alert') 
+              ? Colors.red 
+              : primaryBlue,
+          backgroundColor: (n['type'] == 'emergency' || n['type'] == 'alert')
+              ? const Color(0xFFFFE9E9)
+              : Colors.white,
+        );
+      },
     );
   }
 
-  Widget _buildRequestsTab() {
-    return ListView(
-      children: [
-        _buildSectionHeader('TODAY'),
-        NotificationCard(
-          iconContent: _buildIconContainer(
-            icon: Icons.medical_services_outlined,
-            color: primaryBlue,
-            bgColor: const Color(0xFFE8F1FF), // Light blue
-          ),
-          title: 'New consultation request',
-          message: 'Patient John Doe has requested a video consultation for post-surgery follow-up.',
-          time: '10:30 AM',
-          hasUnreadDot: true,
-          unreadDotColor: primaryBlue,
-          actionButtons: [
-            _buildAcceptButton(() {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PatientDetailsScreen(patient: PatientData.getDummySarah()),
-                ),
-              );
-            }),
-            const SizedBox(width: 12),
-            _buildDeclineButton(),
-          ],
-        ),
-      ],
-    );
-  }
+  Widget _buildIconForType(String type) {
+    IconData icon = Icons.notifications;
+    Color color = primaryBlue;
+    Color bgColor = const Color(0xFFE8F1FF);
 
-  Widget _buildAlertsTab() {
-    return ListView(
-      children: [
-        _buildSectionHeader('TODAY'),
-        NotificationCard(
-          iconContent: _buildIconContainer(
-            icon: Icons.emergency,
-            color: const Color(0xFFEF4444), // Red
-            bgColor: const Color(0xFFFEE2E2), // Light red
-          ),
-          title: 'Emergency alert from ASHA worker',
-          titleColor: const Color(0xFFDC2626), // Emergency red text
-          message: 'Village 4: Critical heart rate reported for Patient Robert Wilson. Immediate attention required.',
-          time: '08:45 AM',
-          backgroundColor: const Color(0xFFFFE9E9), // Light red bg
-          hasUnreadDot: true,
-          unreadDotColor: const Color(0xFFEF4444),
-          actionButtons: [
-            _buildEmergencyButton(),
-          ],
-        ),
-      ],
-    );
+    if (type == 'emergency' || type == 'alert') {
+      icon = Icons.emergency;
+      color = const Color(0xFFEF4444);
+      bgColor = const Color(0xFFFEE2E2);
+    } else if (type == 'request') {
+      icon = Icons.medical_services;
+      color = Colors.teal;
+      bgColor = Colors.teal.withOpacity(0.1);
+    }
+
+    return _buildIconContainer(icon: icon, color: color, bgColor: bgColor);
   }
 
   Widget _buildSectionHeader(String title) {

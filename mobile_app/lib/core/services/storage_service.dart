@@ -21,6 +21,8 @@ class StorageService {
     await _prefs.remove(key);
   }
 
+  Future<void> delete(String key) async => await remove(key);
+
   // Hive Box for Offline Cache
   Future<Box> openBox(String boxName) async {
     return await Hive.openBox(boxName);

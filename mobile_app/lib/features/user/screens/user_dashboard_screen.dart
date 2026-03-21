@@ -4,9 +4,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../../providers/auth_provider.dart';
 import '../widgets/user_sidebar.dart';
-
-
+import '../../../core/services/storage_service.dart';
+import '../../../core/utils/helpers.dart';
 import '../../../providers/consultation_provider.dart';
+import '../../../providers/realtime_provider.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   const UserDashboardScreen({super.key});
@@ -21,19 +22,37 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    _initSignaling();
+  }
+
+  void _initSignaling() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().user;
       if (user != null) {
         context.read<ConsultationProvider>().initSignaling(user.id.toString());
+        context.read<RealtimeProvider>().initialize(user.id.toString());
       }
     });
+  }
+
+  void _openVoiceAssistant() {
+    Navigator.pushNamed(context, AppRoutes.voiceAssistant);
   }
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openVoiceAssistant,
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.mic_rounded, color: Colors.white),
+        label: const Text(
+          'AI ASSISTANT',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(
@@ -49,6 +68,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.qrScanner),
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_none_outlined, color: AppColors.primary),
             onPressed: () {},

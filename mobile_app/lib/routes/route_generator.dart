@@ -20,6 +20,11 @@ import '../features/user/screens/medicine_call_screen.dart';
 import '../features/user/screens/nearby_healthcare_screen.dart';
 import '../features/user/screens/my_prescriptions_screen.dart';
 import '../features/user/screens/emergency_help_screen.dart';
+import '../features/user/screens/profile_screen.dart';
+import '../features/user/screens/qr_code_screen.dart';
+import '../features/user/screens/qr_scanner_screen.dart';
+import '../features/user/screens/reports_screen.dart';
+import '../features/user/screens/voice_assistant_screen.dart';
 
 // ASHA Feature Screens
 import '../features/reports/screens/village_health_report_screen.dart';
@@ -94,7 +99,15 @@ class RouteGenerator {
       case AppRoutes.settings:
         return _fadeRoute(_PlaceholderScreen(title: 'Settings'));
       case AppRoutes.profile:
-        return _fadeRoute(_PlaceholderScreen(title: 'Profile'));
+        return _fadeRoute(const ProfileScreen());
+      case AppRoutes.qrCode:
+        return _fadeRoute(const QRCodeScreen());
+      case AppRoutes.qrScanner:
+        return _fadeRoute(const QRScannerScreen());
+      case AppRoutes.reports:
+        return _fadeRoute(const ReportsScreen());
+      case AppRoutes.voiceAssistant:
+        return _fadeRoute(const VoiceAssistantScreen());
 
       // ASHA Worker portal routes
       case AppRoutes.villageHealthReport:

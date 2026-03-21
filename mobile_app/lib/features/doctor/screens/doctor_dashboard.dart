@@ -9,13 +9,11 @@ import 'schedule_screen.dart';
 import 'doctor_profile_screen.dart';
 import '../../../providers/auth_provider.dart';
 import '../widgets/doctor_navigation_drawer.dart';
-<<<<<<< HEAD
-=======
 import 'prescription_history_screen.dart';
-
->>>>>>> a29c117 (Prescription and Consultatncy)
 import '../../../providers/consultation_provider.dart';
+import '../../../providers/realtime_provider.dart';
 import '../../../core/services/api_service.dart';
+import '../../../features/user/services/doctor_service.dart';
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({super.key});
@@ -30,16 +28,20 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   int _patientCount = 0;
   int _ashaCount = 0;
   int _pendingAlerts = 0;
+  final DoctorService _doctorService = DoctorService();
   final ApiService _api = ApiService();
+  List<Map<String, dynamic>> _upcomingConsultations = [];
 
   @override
   void initState() {
     super.initState();
     _fetchStats();
+    _fetchUpcoming();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().user;
       if (user != null) {
         context.read<ConsultationProvider>().initSignaling(user.id.toString());
+        context.read<RealtimeProvider>().initialize(user.id.toString());
       }
     });
   }
@@ -48,20 +50,31 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     if (!mounted) return;
     setState(() => _isLoading = true);
     try {
-      final patients = await _api.get('/users/patients/');
-      final ashas = await _api.get('/users/asha-workers/');
-      final alerts = await _api.get('/alerts/notifications/');
+      final stats = await _doctorService.getDashboardStats();
       
       if (!mounted) return;
       setState(() {
-        _patientCount = patients.length;
-        _ashaCount = ashas.length;
-        _pendingAlerts = alerts.length;
+        _patientCount = stats['patientCount'] ?? 0;
+        _ashaCount = stats['ashaCount'] ?? 0;
+        _pendingAlerts = stats['pendingAlerts'] ?? 0;
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error fetching doctor stats: $e');
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchUpcoming() async {
+    try {
+      final consultations = await _doctorService.getUpcomingConsultations();
+       if (mounted) {
+        setState(() {
+          _upcomingConsultations = consultations;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching upcoming: $e');
     }
   }
 
@@ -555,25 +568,38 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             ),
           ),
           const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          _buildAppointmentItem(
-            name: 'Amitabh Bachchan',
-            condition: 'General Checkup',
-            time: '10:30 AM',
-            statusText: 'CONFIRMED',
-            statusColor: Colors.green.shade700,
-            statusBgColor: const Color(0xFFE8FDF0),
-            isLast: false,
-          ),
-          const Divider(height: 1, indent: 70, color: Color(0xFFF1F5F9)),
-          _buildAppointmentItem(
-            name: 'Priyanka Chopra',
-            condition: 'Fever & Cold',
-            time: '11:15 AM',
-            statusText: 'VIDEO CALL',
-            statusColor: primaryBlue,
-            statusBgColor: lightBlue,
-            isLast: true,
-          ),
+          if (_upcomingConsultations.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Center(
+                child: Text(
+                  'No upcoming appointments',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              ),
+            )
+          else
+            ..._upcomingConsultations.take(3).map((consultation) {
+              final isLast = _upcomingConsultations.indexOf(consultation) == 
+                             (_upcomingConsultations.length > 3 ? 2 : _upcomingConsultations.length - 1);
+              return Column(
+                children: [
+                   _buildAppointmentItem(
+                    name: consultation['patient_name'] ?? 'Patient',
+                    condition: consultation['call_type'] ?? 'Consultation',
+                    time: consultation['created_at'] != null 
+                        ? consultation['created_at'].toString().split('T').last.substring(0, 5)
+                        : 'Now',
+                    statusText: consultation['status'] ?? 'PENDING',
+                    statusColor: consultation['status'] == 'COMPLETED' ? Colors.green.shade700 : primaryBlue,
+                    statusBgColor: consultation['status'] == 'COMPLETED' ? const Color(0xFFE8FDF0) : lightBlue,
+                    isLast: isLast,
+                  ),
+                  if (!isLast)
+                    const Divider(height: 1, indent: 70, color: Color(0xFFF1F5F9)),
+                ],
+              );
+            }).toList(),
         ],
       ),
     );

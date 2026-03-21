@@ -5,10 +5,12 @@ import '../core/services/authentication_service.dart';
 class AuthProvider extends ChangeNotifier {
   final AuthenticationService _authService = AuthenticationService();
   UserModel? _user;
+  String? _token;
   bool _isLoading = false;
   String? _error;
 
   UserModel? get user => _user;
+  String? get token => _token;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isAuthenticated => _user != null;
@@ -21,6 +23,7 @@ class AuthProvider extends ChangeNotifier {
     final cachedData = await _authService.getCachedUser();
     if (cachedData != null) {
       _user = UserModel.fromJson(cachedData['user']);
+      _token = cachedData['token'];
       notifyListeners();
     }
   }
@@ -33,6 +36,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final response = await _authService.login(phoneNumber, password, role);
       _user = UserModel.fromJson(response['user']);
+      _token = response['token'];
       _isLoading = false;
       notifyListeners();
       return true;
@@ -52,6 +56,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       final response = await _authService.register(data);
       _user = UserModel.fromJson(response['user']);
+      _token = response['token'];
       _isLoading = false;
       notifyListeners();
       return true;
@@ -66,6 +71,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> logout() async {
     await _authService.logout();
     _user = null;
+    _token = null;
     notifyListeners();
   }
 
@@ -94,6 +100,7 @@ class AuthProvider extends ChangeNotifier {
       final response = await _authService.verifyOtp(phoneNumber, otp, role: role);
       if (response.containsKey('user')) {
         _user = UserModel.fromJson(response['user']);
+        _token = response['token'];
       }
       _isLoading = false;
       notifyListeners();

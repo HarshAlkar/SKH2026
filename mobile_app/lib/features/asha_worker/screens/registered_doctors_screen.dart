@@ -50,7 +50,7 @@ class _RegisteredDoctorsScreenState extends State<RegisteredDoctorsScreen> {
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      final consultation = await _doctorService.startConsultation(doctor['id'], type.toUpperCase());
+      final consultation = await _doctorService.startConsultation(doctorId: doctor['id'], callType: type.toUpperCase());
       
       if (mounted) {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);

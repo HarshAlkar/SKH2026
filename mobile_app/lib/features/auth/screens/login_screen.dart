@@ -162,14 +162,9 @@ class _LoginScreenState extends State<LoginScreen>
                 Icons.health_and_safety,
                 size: 50,
                 color: AppColors.primary,
-<<<<<<< HEAD
               ),
             );
           },
-=======
-              );
-            },
-          ),
         ),
         const SizedBox(height: 20),
         const Text(
@@ -185,7 +180,6 @@ class _LoginScreenState extends State<LoginScreen>
         const Text(
           'Access healthcare guidance anytime',
           style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
->>>>>>> a29c117 (Prescription and Consultatncy)
         ),
       ],
     );

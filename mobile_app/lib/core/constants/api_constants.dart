@@ -13,4 +13,5 @@ class ApiConstants {
   static const String consultationsEndpoint = '/consultations/';
   static const String prescriptionsEndpoint = '/prescriptions/';
   static const String alertsEndpoint = '/alerts/';
+  static const String voiceSignalingUrl = AppConfig.signalingServerUrl;
 }

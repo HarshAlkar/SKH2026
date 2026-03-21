@@ -66,4 +66,18 @@ module.exports = (io, socket) => {
       timestamp: new Date().toISOString()
     });
   });
+
+  // Relay a new prescription alert to a specific user
+  socket.on('new-prescription', (data) => {
+    const { receiverId, prescription } = data;
+    console.log(`Relaying prescription to user-${receiverId}`);
+    io.to(`user-${receiverId}`).emit('new-prescription', prescription);
+  });
+
+  // Relay a general notification to a specific user
+  socket.on('send-notification', (data) => {
+    const { receiverId, title, body } = data;
+    console.log(`Relaying notification to user-${receiverId}: ${title}`);
+    io.to(`user-${receiverId}`).emit('notification', { title, body });
+  });
 };

@@ -25,7 +25,11 @@ class AppRoutes {
   static const String emergencyHelp = '/emergency-help';
   static const String settings = '/settings';
   static const String profile = '/profile';
+  static const String qrCode = '/qr-code';
+  static const String qrScanner = '/qr-scanner';
+  static const String reports = '/reports';
   static const String medicineSchedule = '/medicine-schedule';
+  static const String voiceAssistant = '/voice-assistant';
 
   // ASHA Worker portal routes
   static const String villageHealthReport = '/asha/village-health-report';

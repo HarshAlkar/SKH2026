@@ -137,7 +137,8 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
         final patients = snapshot.data ?? [];
         final filteredPatients = patients.where((p) {
           final name = (p['name'] ?? '').toString().toLowerCase();
-          return name.contains(_searchQuery);
+          final abha = (p['abha_id'] ?? '').toString().toLowerCase();
+          return name.contains(_searchQuery) || abha.contains(_searchQuery);
         }).toList();
 
         if (filteredPatients.isEmpty) {

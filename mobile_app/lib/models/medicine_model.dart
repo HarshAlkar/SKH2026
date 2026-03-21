@@ -55,6 +55,8 @@ class MedicineModel {
     );
   }
 
+  factory MedicineModel.fromJson(Map<String, dynamic> json) => MedicineModel.fromMap(json);
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

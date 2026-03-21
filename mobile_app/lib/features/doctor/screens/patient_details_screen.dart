@@ -14,8 +14,12 @@ class PatientData {
   final String chronicConditions;
   final String pastSurgeries;
   final String allergies;
+  final String abhaId;
   final List<SymptomData> symptoms;
   final String aiInsights;
+  final Map<String, dynamic>? emergencyContact;
+  final List<dynamic>? familyMembers;
+  final List<dynamic>? reports;
 
   PatientData({
     required this.id,
@@ -27,23 +31,32 @@ class PatientData {
     required this.chronicConditions,
     required this.pastSurgeries,
     required this.allergies,
+    required this.abhaId,
     required this.symptoms,
     required this.aiInsights,
+    this.emergencyContact,
+    this.familyMembers,
+    this.reports,
   });
 
   factory PatientData.fromJson(Map<String, dynamic> json) {
+    final profile = json['profile_details'] ?? {};
     return PatientData(
       id: json['id'] ?? 0,
-      name: json['name'] ?? 'Unknown',
-      age: (json['age'] ?? 0).toString(),
-      gender: json['gender'] ?? 'Unknown',
+      name: json['name'] ?? json['username'] ?? 'Unknown',
+      age: (profile['age'] ?? 0).toString(),
+      gender: profile['gender'] ?? 'Unknown',
       village: json['village'] ?? 'Unknown',
-      bloodType: json['blood_group'] ?? 'Unknown',
+      bloodType: profile['blood_group'] ?? 'Unknown',
       chronicConditions: json['medical_history'] ?? 'None reported',
-      pastSurgeries: 'None reported',
-      allergies: 'None reported',
+      pastSurgeries: json['past_surgeries'] ?? 'None reported',
+      allergies: json['allergies'] ?? 'None reported',
+      abhaId: json['abha_id'] ?? profile['abha_id'] ?? '',
       symptoms: [], 
-      aiInsights: 'No AI insights available for this patient yet.',
+      aiInsights: json['ai_insights'] ?? 'No AI insights available for this patient yet.',
+      emergencyContact: json['emergency_contact'],
+      familyMembers: json['family_members'],
+      reports: json['reports'],
     );
   }
 
@@ -58,6 +71,7 @@ class PatientData {
       chronicConditions: 'No known chronic conditions reported.',
       pastSurgeries: 'Appendectomy (2018)',
       allergies: 'Penicillin, Peanuts',
+      abhaId: 'ABHA-1234-5678',
       symptoms: [
         SymptomData(label: 'High Fever (102°F)', bgColor: const Color(0xFFFFE4E6), textColor: const Color(0xFFE11D48)),
         SymptomData(label: 'Persistent Cough', bgColor: const Color(0xFFFFEDD5), textColor: const Color(0xFFEA580C)),
@@ -78,6 +92,7 @@ class PatientData {
       chronicConditions: 'Type 2 Diabetes (Managed)',
       pastSurgeries: 'None',
       allergies: 'Dust, Pollen',
+      abhaId: 'ABHA-1111-2222',
       symptoms: [
         SymptomData(label: 'Joint Pain', bgColor: const Color(0xFFE0F2FE), textColor: const Color(0xFF0369A1)),
         SymptomData(label: 'Mild Fever', bgColor: const Color(0xFFFEF3C7), textColor: const Color(0xFFB45309)),
@@ -97,6 +112,7 @@ class PatientData {
       chronicConditions: 'Hypertension, Asthma',
       pastSurgeries: 'Abdominal Surgery (2005)',
       allergies: 'None reported',
+      abhaId: 'ABHA-0000-0000',
       symptoms: [
         SymptomData(label: 'Dizziness', bgColor: const Color(0xFFF3E8FF), textColor: const Color(0xFF7E22CE)),
         SymptomData(label: 'Chest Tightness', bgColor: const Color(0xFFFEE2E2), textColor: const Color(0xFFDC2626)),
@@ -116,6 +132,7 @@ class PatientData {
       chronicConditions: 'None reported',
       pastSurgeries: 'C-Section (2020)',
       allergies: 'Sulfa Drugs',
+      abhaId: 'ABHA-9999-8888',
       symptoms: [
         SymptomData(label: 'Headache', bgColor: const Color(0xFFF1F5F9), textColor: const Color(0xFF475569)),
         SymptomData(label: 'Nausea', bgColor: const Color(0xFFECFDF5), textColor: const Color(0xFF059669)),
@@ -133,10 +150,44 @@ class SymptomData {
   SymptomData({required this.label, required this.bgColor, required this.textColor});
 }
 
-class PatientDetailsScreen extends StatelessWidget {
+class PatientDetailsScreen extends StatefulWidget {
   final PatientData patient;
 
   const PatientDetailsScreen({super.key, required this.patient});
+
+  @override
+  State<PatientDetailsScreen> createState() => _PatientDetailsScreenState();
+}
+
+class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
+  late PatientData _currentPatient;
+  final DoctorService _doctorService = DoctorService();
+  bool _isLoadingProfile = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPatient = widget.patient;
+    _fetchFullProfile();
+  }
+
+  Future<void> _fetchFullProfile() async {
+    if (_currentPatient.abhaId.isEmpty) return;
+    
+    setState(() => _isLoadingProfile = true);
+    try {
+      final fullData = await _doctorService.getPatientFullProfile(_currentPatient.abhaId);
+      if (fullData != null && mounted) {
+        setState(() {
+          _currentPatient = PatientData.fromJson(fullData);
+          _isLoadingProfile = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching full profile: $e');
+      if (mounted) setState(() => _isLoadingProfile = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -170,10 +221,23 @@ class PatientDetailsScreen extends StatelessWidget {
             const SizedBox(height: 20),
             _buildActionButtons(context),
             const SizedBox(height: 20),
+            if (_isLoadingProfile)
+              const Center(child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
+              )),
             _buildPersonalInfoCard(),
             const SizedBox(height: 20),
             _buildHealthHistoryCard(),
             const SizedBox(height: 20),
+            if (_currentPatient.emergencyContact != null) ...[
+              _buildEmergencyContactCard(),
+              const SizedBox(height: 20),
+            ],
+            if (_currentPatient.familyMembers != null && _currentPatient.familyMembers!.isNotEmpty) ...[
+              _buildFamilyMembersCard(),
+              const SizedBox(height: 20),
+            ],
             _buildSymptomsCard(),
             const SizedBox(height: 32),
           ],
@@ -211,7 +275,7 @@ class PatientDetailsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            patient.name,
+            _currentPatient.name,
             style: const TextStyle(
               color: textPrimary,
               fontSize: 22,
@@ -229,7 +293,7 @@ class PatientDetailsScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  patient.gender,
+                  _currentPatient.gender,
                   style: const TextStyle(
                     color: primaryBlue,
                     fontSize: 12,
@@ -245,7 +309,7 @@ class PatientDetailsScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${patient.age} years old',
+                  '${_currentPatient.age} years old',
                   style: const TextStyle(
                     color: textSecondary,
                     fontSize: 12,
@@ -263,7 +327,7 @@ class PatientDetailsScreen extends StatelessWidget {
               const SizedBox(width: 4),
               Flexible(
                 child: Text(
-                  'Village: ${patient.village}',
+                  'Village: ${_currentPatient.village}',
                   style: const TextStyle(
                     color: textSecondary,
                     fontSize: 13,
@@ -350,7 +414,7 @@ class PatientDetailsScreen extends StatelessWidget {
                 // Start a consultation first
                 final doctorService = DoctorService();
                 final consultation = await doctorService.startConsultation(
-                  patientId: patient.id,
+                  patientId: _currentPatient.id,
                   callType: 'OFFLINE',
                 );
 
@@ -364,8 +428,9 @@ class PatientDetailsScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => CreatePrescriptionScreen(
-                        patientName: patient.name,
+                        patientName: _currentPatient.name,
                         consultationId: consultationId.toString(),
+                        patientId: _currentPatient.id.toString(),
                       ),
                     ),
                   );
@@ -403,13 +468,15 @@ class PatientDetailsScreen extends StatelessWidget {
       iconUrl: Icons.person_outline,
       child: Column(
         children: [
-          _buildInfoRow('Full Name', patient.name),
+          _buildInfoRow('Full Name', _currentPatient.name),
           const Divider(height: 24, color: Color(0xFFF1F5F9)),
-          _buildInfoRow('Age', patient.age),
+          _buildInfoRow('ABHA ID', _currentPatient.abhaId.isEmpty ? 'N/A' : _currentPatient.abhaId),
           const Divider(height: 24, color: Color(0xFFF1F5F9)),
-          _buildInfoRow('Location', patient.village),
+          _buildInfoRow('Age', _currentPatient.age),
           const Divider(height: 24, color: Color(0xFFF1F5F9)),
-          _buildInfoRow('Blood Type', patient.bloodType),
+          _buildInfoRow('Location', _currentPatient.village),
+          const Divider(height: 24, color: Color(0xFFF1F5F9)),
+          _buildInfoRow('Blood Type', _currentPatient.bloodType),
         ],
       ),
     );
@@ -423,13 +490,49 @@ class PatientDetailsScreen extends StatelessWidget {
         children: [
           _buildHistorySection(
             'CHRONIC CONDITIONS',
-            patient.chronicConditions,
+            _currentPatient.chronicConditions,
           ),
           const SizedBox(height: 12),
-          _buildHistorySection('PAST SURGERIES', patient.pastSurgeries),
+          _buildHistorySection('PAST SURGERIES', _currentPatient.pastSurgeries),
           const SizedBox(height: 12),
-          _buildHistorySection('ALLERGIES', patient.allergies),
+          _buildHistorySection('ALLERGIES', _currentPatient.allergies),
         ],
+      ),
+    );
+  }
+
+  Widget _buildEmergencyContactCard() {
+    final ec = _currentPatient.emergencyContact;
+    if (ec == null) return const SizedBox.shrink();
+    return _buildCardBase(
+      title: 'Emergency Contact',
+      iconUrl: Icons.contact_phone_outlined,
+      child: Column(
+        children: [
+          _buildInfoRow('Name', ec['name'] ?? 'N/A'),
+          const Divider(height: 24, color: Color(0xFFF1F5F9)),
+          _buildInfoRow('Relation', ec['relationship'] ?? 'N/A'),
+          const Divider(height: 24, color: Color(0xFFF1F5F9)),
+          _buildInfoRow('Phone', ec['phone_number'] ?? 'N/A'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFamilyMembersCard() {
+    final fm = _currentPatient.familyMembers;
+    if (fm == null || fm.isEmpty) return const SizedBox.shrink();
+    return _buildCardBase(
+      title: 'Family Members',
+      iconUrl: Icons.family_restroom,
+      child: Column(
+        children: fm.map((m) => Column(
+          children: [
+            _buildInfoRow(m['relationship'] ?? 'Member', m['name'] ?? 'N/A'),
+            if (fm.indexOf(m) != fm.length - 1)
+              const Divider(height: 24, color: Color(0xFFF1F5F9)),
+          ],
+        )).toList(),
       ),
     );
   }
@@ -459,7 +562,7 @@ class PatientDetailsScreen extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: patient.symptoms.map((s) => _buildSymptomChip(s.label, s.bgColor, s.textColor)).toList(),
+            children: _currentPatient.symptoms.map((s) => _buildSymptomChip(s.label, s.bgColor, s.textColor)).toList(),
           ),
           const SizedBox(height: 24),
           Container(
@@ -485,7 +588,7 @@ class PatientDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   TextSpan(
-                    text: patient.aiInsights,
+                    text: _currentPatient.aiInsights,
                   ),
                 ],
               ),

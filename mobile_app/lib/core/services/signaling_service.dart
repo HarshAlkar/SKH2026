@@ -1,35 +1,54 @@
-import 'package:socket_io_client/socket_io_client.dart' as io;
-import '../config/app_config.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import '../constants/api_constants.dart';
 
 class SignalingService {
-  static final SignalingService _instance = SignalingService._internal();
-  factory SignalingService() => _instance;
-  SignalingService._internal();
-
-  io.Socket? _socket;
-  final String serverUrl = AppConfig.signalingServerUrl;
+  IO.Socket? _socket;
+  
+  // Callbacks
+  Function(Map<String, dynamic>)? _onOffer;
+  Function(Map<String, dynamic>)? _onAnswer;
+  Function(Map<String, dynamic>)? _onIceCandidate;
+  Function(Map<String, dynamic>)? _onIncomingCall;
+  Function(Map<String, dynamic>)? _onPeerJoined;
 
   void connect(String userId) {
-    if (_socket?.connected ?? false) return;
-
-    _socket = io.io(serverUrl, io.OptionBuilder()
+    _socket = IO.io(ApiConstants.voiceSignalingUrl, IO.OptionBuilder()
       .setTransports(['websocket'])
       .setQuery({'userId': userId})
       .build());
 
     _socket!.onConnect((_) {
-      print('Signaling connected for user $userId');
+      print('Signaling Socket Connected: userId=$userId');
     });
 
-    _socket!.onDisconnect((_) => print('Signaling disconnected'));
-    
-    _socket!.onConnectError((err) => print('Signaling Connect Error: $err'));
-    _socket!.onError((err) => print('Signaling Error: $err'));
+    _socket!.on('offer', (data) {
+      if (_onOffer != null) _onOffer!(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on('answer', (data) {
+      if (_onAnswer != null) _onAnswer!(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on('ice-candidate', (data) {
+      if (_onIceCandidate != null) _onIceCandidate!(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on('incoming-call', (data) {
+      if (_onIncomingCall != null) _onIncomingCall!(Map<String, dynamic>.from(data));
+    });
+
+    _socket!.on('peer-joined', (data) {
+      if (_onPeerJoined != null) _onPeerJoined!(Map<String, dynamic>.from(data));
+    });
   }
 
+  // Socket Actions
   void joinRoom(String roomId) {
-    print('Joining room: $roomId');
     _socket?.emit('join-consultation', roomId);
+  }
+
+  void leaveRoom(String roomId) {
+     _socket?.emit('leave-consultation', roomId);
   }
 
   void sendCallRequest({
@@ -46,33 +65,11 @@ class SignalingService {
     });
   }
 
-  void onIncomingCall(Function(Map<String, dynamic>) callback) {
-    _socket?.on('incoming-call', (data) => callback(Map<String, dynamic>.from(data)));
-  }
-
-  void onPeerJoined(Function(Map<String, dynamic>) callback) {
-    _socket?.on('peer-joined', (data) => callback(Map<String, dynamic>.from(data)));
-  }
-
-  void onOffer(Function(Map<String, dynamic>) callback) {
-    _socket?.on('offer', (data) => callback(Map<String, dynamic>.from(data)));
-  }
-
-  void onAnswer(Function(Map<String, dynamic>) callback) {
-    _socket?.on('answer', (data) => callback(Map<String, dynamic>.from(data)));
-  }
-
-  void onIceCandidate(Function(Map<String, dynamic>) callback) {
-    _socket?.on('ice-candidate', (data) => callback(Map<String, dynamic>.from(data)));
-  }
-
   void emitOffer(String roomId, Map<String, dynamic> offer) {
-    print('Emitting offer for room: $roomId');
     _socket?.emit('offer', {'consultationId': roomId, 'offer': offer});
   }
 
   void emitAnswer(String roomId, Map<String, dynamic> answer) {
-    print('Emitting answer for room: $roomId');
     _socket?.emit('answer', {'consultationId': roomId, 'answer': answer});
   }
 
@@ -80,10 +77,15 @@ class SignalingService {
     _socket?.emit('ice-candidate', {'consultationId': roomId, 'candidate': candidate});
   }
 
-  void dispose() {
-    _socket?.dispose();
-    _socket = null;
-  }
+  // Setters for callbacks
+  void onOffer(Function(Map<String, dynamic>) callback) => _onOffer = callback;
+  void onAnswer(Function(Map<String, dynamic>) callback) => _onAnswer = callback;
+  void onIceCandidate(Function(Map<String, dynamic>) callback) => _onIceCandidate = callback;
+  void onIncomingCall(Function(Map<String, dynamic>) callback) => _onIncomingCall = callback;
+  void onPeerJoined(Function(Map<String, dynamic>) callback) => _onPeerJoined = callback;
 
-  io.Socket? get socket => _socket;
+  void dispose() {
+    _socket?.disconnect();
+    _socket?.dispose();
+  }
 }

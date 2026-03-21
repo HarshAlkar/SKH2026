@@ -4,7 +4,8 @@ import 'core/services/storage_service.dart';
 import 'core/services/alarm_service.dart';
 import 'core/services/notification_service.dart';
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+import 'core/keys/navigator_key.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
