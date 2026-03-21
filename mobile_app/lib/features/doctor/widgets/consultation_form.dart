@@ -74,7 +74,7 @@ class _ConsultationFormState extends State<ConsultationForm> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<UrgencyLevel>(
-            value: _urgency,
+            initialValue: _urgency,
             decoration: InputDecoration(
               prefixIcon: const Icon(
                 Icons.emergency_outlined,

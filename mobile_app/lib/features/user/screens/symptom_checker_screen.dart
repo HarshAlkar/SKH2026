@@ -277,7 +277,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
               ),
             ),
             Text(
-              'Gramin Health Connect',
+              'VitalReach',
               style: TextStyle(
                 color: Colors.grey.shade500,
                 fontSize: 12,

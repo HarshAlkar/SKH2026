@@ -248,8 +248,13 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     return _buildSectionCard(
       title: 'Contact Information',
       children: [
+<<<<<<< HEAD
         _buildInfoRow(Icons.phone_outlined, 'Phone Number', phone),
         _buildInfoRow(Icons.email_outlined, 'Email', 'Available upon request'),
+=======
+        _buildInfoRow(Icons.phone_outlined, 'Phone Number', '+91 98765 43210'),
+        _buildInfoRow(Icons.email_outlined, 'Email', 'dr.amitsharma@vitalreach.com'),
+>>>>>>> fee035fdefda48dc95a9fb53f469dc6dcaed41aa
       ],
     );
   }

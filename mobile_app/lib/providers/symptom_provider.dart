@@ -6,7 +6,7 @@ import '../core/services/storage_service.dart';
 class SymptomProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
   final StorageService _storageService = StorageService();
-  List<SymptomModel> _symptoms = [];
+  final List<SymptomModel> _symptoms = [];
   bool _isLoading = false;
   Map<String, dynamic>? _lastAnalysis;
 

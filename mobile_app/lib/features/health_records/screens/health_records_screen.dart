@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/common_appbar.dart';
+import '../../../routes/app_routes.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 import '../models/health_record_model.dart';
 import '../widgets/health_record_card.dart';
 import '../../patient/screens/register_patient_screen.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/constants/api_constants.dart';
 
 class HealthRecordsScreen extends StatefulWidget {
   const HealthRecordsScreen({super.key});
@@ -12,51 +17,12 @@ class HealthRecordsScreen extends StatefulWidget {
 
 class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ApiService _apiService = ApiService();
 
-  final List<HealthRecordModel> _allRecords = [
-    HealthRecordModel(
-      patientName: 'Ramesh Patil',
-      village: 'Kaman',
-      temperature: '98.6',
-      bloodPressure: '120/80',
-      bloodSugar: '100',
-      weight: '65',
-      lastUpdated: 'Today',
-      riskLevel: RiskLevel.normal,
-    ),
-    HealthRecordModel(
-      patientName: 'Shanti Devi',
-      village: 'Kaman',
-      temperature: '101.2',
-      bloodPressure: '150/95',
-      bloodSugar: '140',
-      weight: '62',
-      lastUpdated: 'Yesterday',
-      riskLevel: RiskLevel.moderate,
-    ),
-    HealthRecordModel(
-      patientName: 'Amit Shinde',
-      village: 'Rampur',
-      temperature: '103.5',
-      bloodPressure: '160/100',
-      bloodSugar: '180',
-      weight: '70',
-      lastUpdated: '2 days ago',
-      riskLevel: RiskLevel.highRisk,
-    ),
-    HealthRecordModel(
-      patientName: 'Sita Devi',
-      village: 'Rampur',
-      temperature: '98.4',
-      bloodPressure: '115/75',
-      bloodSugar: '95',
-      weight: '58',
-      lastUpdated: '1 week ago',
-      riskLevel: RiskLevel.normal,
-    ),
-  ];
-
+  List<HealthRecordModel> _allRecords = [];
   List<HealthRecordModel> _filteredRecords = [];
+  bool _isLoading = true;
+  String? _error;
 
   final Color primaryColor = const Color(0xFF2F4DB6);
   final Color backgroundColor = const Color(0xFFF5F7FA);
@@ -64,7 +30,7 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
   @override
   void initState() {
     super.initState();
-    _filteredRecords = _allRecords;
+    _fetchRecords();
   }
 
   @override
@@ -73,19 +39,43 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
     super.dispose();
   }
 
+  Future<void> _fetchRecords() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await _apiService.get(ApiConstants.recordsEndpoint);
+      final List<HealthRecordModel> fetched = (response as List)
+          .map((data) => HealthRecordModel.fromJson(data))
+          .toList();
+
+      setState(() {
+        _allRecords = fetched;
+        _filteredRecords = _allRecords;
+        _isLoading = false;
+      });
+      _filterRecords(_searchController.text);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   void _filterRecords(String query) {
     setState(() {
       if (query.isEmpty) {
         _filteredRecords = _allRecords;
       } else {
         _filteredRecords = _allRecords
-            .where(
-              (record) =>
-                  record.patientName.toLowerCase().contains(
-                    query.toLowerCase(),
-                  ) ||
-                  record.village.toLowerCase().contains(query.toLowerCase()),
-            )
+            .where((record) =>
+                record.patientName.toLowerCase().contains(query.toLowerCase()) ||
+                record.village.toLowerCase().contains(query.toLowerCase()))
             .toList();
       }
     });
@@ -95,42 +85,20 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          "Health Records",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      appBar: const CommonAppBar(title: "Health Records"),
+      drawer: const AshaDrawer(currentRoute: AppRoutes.healthRecords),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => const RegisterPatientScreen(),
             ),
-          );
+          ).then((value) {
+            if (value == true) {
+              _fetchRecords();
+            }
+          });
         },
         backgroundColor: primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
@@ -169,15 +137,52 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
                 ),
               ),
             ),
+            
             // Health Record List
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _filteredRecords.length,
-                itemBuilder: (context, index) {
-                  return HealthRecordCard(record: _filteredRecords[index]);
-                },
-              ),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.error_outline, size: 60, color: Colors.redAccent),
+                              const SizedBox(height: 16),
+                              Text('Error: $_error', style: const TextStyle(color: Colors.red)),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _fetchRecords,
+                                child: const Text('Retry'),
+                              )
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _fetchRecords,
+                          child: _filteredRecords.isEmpty
+                              ? ListView(
+                                  children: const [
+                                    Padding(
+                                      padding: EdgeInsets.all(40.0),
+                                      child: Center(
+                                        child: Text(
+                                          "No health records found.",
+                                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : ListView.builder(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  itemCount: _filteredRecords.length,
+                                  itemBuilder: (context, index) {
+                                    return HealthRecordCard(record: _filteredRecords[index]);
+                                  },
+                                ),
+                        ),
             ),
           ],
         ),

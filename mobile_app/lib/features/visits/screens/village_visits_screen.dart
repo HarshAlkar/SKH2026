@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/common_appbar.dart';
+import '../../../routes/app_routes.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 import '../models/visit_model.dart';
 import '../widgets/visit_card.dart';
 import 'schedule_visit_screen.dart';
+import '../../../core/services/api_service.dart';
 
 class VillageVisitsScreen extends StatefulWidget {
   const VillageVisitsScreen({super.key});
@@ -12,53 +16,52 @@ class VillageVisitsScreen extends StatefulWidget {
 
 class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ApiService _apiService = ApiService();
+  
   final Color primaryColor = const Color(0xFF2F4DB6);
   final Color backgroundColor = const Color(0xFFF5F7FA);
 
-  final List<VisitModel> _allVisits = [
-    VisitModel(
-      id: '1',
-      patientName: 'Sita Devi',
-      village: 'Rampur',
-      visitTime: '10:30 AM',
-      status: VisitStatus.pending,
-    ),
-    VisitModel(
-      id: '2',
-      patientName: 'Ramesh Patil',
-      village: 'Kaman',
-      visitTime: '11:45 AM',
-      status: VisitStatus.completed,
-    ),
-    VisitModel(
-      id: '3',
-      patientName: 'Amit Shinde',
-      village: 'Rampur',
-      visitTime: '01:15 PM',
-      status: VisitStatus.pending,
-    ),
-    VisitModel(
-      id: '4',
-      patientName: 'Shanti Devi',
-      village: 'Kaman',
-      visitTime: '02:30 PM',
-      status: VisitStatus.missed,
-    ),
-    VisitModel(
-      id: '5',
-      patientName: 'Gopal Krishan',
-      village: 'Vikhroli',
-      visitTime: '04:00 PM',
-      status: VisitStatus.pending,
-    ),
-  ];
-
+  List<VisitModel> _allVisits = [];
   List<VisitModel> _filteredVisits = [];
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _filteredVisits = List.from(_allVisits);
+    _fetchVisits();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchVisits() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await _apiService.get('/asha-workers/visits/');
+      final List<VisitModel> fetched = (response as List)
+          .map((data) => VisitModel.fromJson(data))
+          .toList();
+
+      setState(() {
+        _allVisits = fetched;
+        _filteredVisits = fetched;
+        _isLoading = false;
+      });
+      _filterVisits(_searchController.text);
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   void _filterVisits(String query) {
@@ -77,6 +80,42 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
     });
   }
 
+  Future<void> _markVisitComplete(VisitModel visit) async {
+    try {
+      await _apiService.patch('/asha-workers/visits/${visit.id}/', body: {
+        'status': 'COMPLETED',
+      });
+      
+      // Update local state
+      setState(() {
+        int index = _allVisits.indexWhere((v) => v.id == visit.id);
+        if (index != -1) {
+          _allVisits[index] = _allVisits[index].copyWith(status: VisitStatus.completed);
+          _filterVisits(_searchController.text);
+        }
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Visit marked as completed"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: ${e.toString()}"),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     int total = _allVisits.length;
@@ -89,26 +128,8 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          "Village Visits",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+      appBar: CommonAppBar(
+        title: "Village Visits",
         actions: [
           IconButton(
             icon: const Icon(
@@ -120,6 +141,7 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
           const SizedBox(width: 8),
         ],
       ),
+      drawer: const AshaDrawer(currentRoute: AppRoutes.villageVisits),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -127,7 +149,11 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
             MaterialPageRoute(
               builder: (context) => const ScheduleVisitScreen(),
             ),
-          );
+          ).then((value) {
+            if (value == true) {
+              _fetchVisits();
+            }
+          });
         },
         backgroundColor: primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
@@ -183,36 +209,50 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
 
             // Visit List
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _filteredVisits.length,
-                itemBuilder: (context, index) {
-                  final visit = _filteredVisits[index];
-                  return VisitCard(
-                    visit: visit,
-                    onMarkComplete: () {
-                      setState(() {
-                        int originalIndex = _allVisits.indexWhere(
-                          (v) => v.id == visit.id,
-                        );
-                        if (originalIndex != -1) {
-                          _allVisits[originalIndex] = _allVisits[originalIndex]
-                              .copyWith(status: VisitStatus.completed);
-                          // Re-filter to update UI
-                          _filteredVisits[index] = _allVisits[originalIndex];
-                        }
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Visit marked as completed"),
-                          backgroundColor: Colors.green,
-                          behavior: SnackBarBehavior.floating,
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+                              const SizedBox(height: 16),
+                              Text("Error: $_error", textAlign: TextAlign.center),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: _fetchVisits,
+                                child: const Text("Retry"),
+                              )
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _fetchVisits,
+                          child: _filteredVisits.isEmpty
+                              ? ListView(
+                                  children: [
+                                    const SizedBox(height: 100),
+                                    const Center(
+                                      child: Text(
+                                        "No visits found.",
+                                        style: TextStyle(color: Colors.grey, fontSize: 16),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : ListView.builder(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  itemCount: _filteredVisits.length,
+                                  itemBuilder: (context, index) {
+                                    final visit = _filteredVisits[index];
+                                    return VisitCard(
+                                      visit: visit,
+                                      onMarkComplete: () => _markVisitComplete(visit),
+                                    );
+                                  },
+                                ),
                         ),
-                      );
-                    },
-                  );
-                },
-              ),
             ),
           ],
         ),

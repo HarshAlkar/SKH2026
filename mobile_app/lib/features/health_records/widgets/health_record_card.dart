@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../models/health_record_model.dart';
 import 'risk_badge.dart';
 import '../../asha_worker/screens/update_health_screen.dart';
-import '../screens/record_details_screen.dart';
 
 class HealthRecordCard extends StatelessWidget {
   final HealthRecordModel record;
@@ -46,7 +45,7 @@ class HealthRecordCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "Village: \${record.village}",
+                    "Village: ${record.village}",
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
@@ -57,7 +56,7 @@ class HealthRecordCard extends StatelessWidget {
                   RiskBadge(riskLevel: record.riskLevel),
                   const SizedBox(height: 4),
                   Text(
-                    "Updated: \${record.lastUpdated}",
+                    "Updated: ${record.lastUpdated}",
                     style: TextStyle(fontSize: 10, color: Colors.grey[400]),
                   ),
                 ],
@@ -68,13 +67,14 @@ class HealthRecordCard extends StatelessWidget {
           const Divider(height: 1, color: Color(0xFFEEEEEE)),
           const SizedBox(height: 16),
           // Vital Signs Grid
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
             children: [
-              _buildVitalItem("Temp", "\${record.temperature}°F"),
+              _buildVitalItem("Temp", "${record.temperature}°F"),
               _buildVitalItem("BP", record.bloodPressure),
-              _buildVitalItem("Sugar", "\${record.bloodSugar} mg/dL"),
-              _buildVitalItem("Weight", "\${record.weight} kg"),
+              _buildVitalItem("Sugar", "${record.bloodSugar} mg/dL"),
+              _buildVitalItem("Weight", "${record.weight} kg"),
             ],
           ),
           const SizedBox(height: 20),
@@ -84,10 +84,29 @@ class HealthRecordCard extends StatelessWidget {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RecordDetailsScreen(),
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16)
+                        ),
+                        title: Row(
+                          children: const [
+                            Icon(Icons.notes, color: Color(0xFF2F4DB6)),
+                            SizedBox(width: 8),
+                            Text("Symptoms Log"),
+                          ]
+                        ),
+                        content: Text(
+                          record.symptoms, 
+                          style: const TextStyle(fontSize: 15, height: 1.5)
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Close", style: TextStyle(fontWeight: FontWeight.bold)),
+                          )
+                        ],
                       ),
                     );
                   },
@@ -115,7 +134,9 @@ class HealthRecordCard extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const UpdateHealthScreen(),
+                        builder: (context) => UpdateHealthScreen(
+                          initialPatientId: record.patientId?.toString()
+                        ),
                       ),
                     );
                   },

@@ -1,30 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../screens/asha_dashboard.dart';
-import '../../patient/screens/village_patients_screen.dart';
-import '../../visits/screens/village_visits_screen.dart';
-import '../../health_records/screens/health_records_screen.dart';
-import '../../alerts/screens/risk_alert_screen.dart';
-import '../../doctor/screens/consult_doctor_screen.dart';
-import '../../reports/screens/village_health_report_screen.dart';
-// import '../../referral/screens/emergency_referral_screen.dart'; // Missing
-// import '../../settings/screens/settings_screen.dart'; // Missing
 import '../../../providers/auth_provider.dart';
 import '../../../routes/app_routes.dart';
 
 class AshaDrawer extends StatelessWidget {
-  const AshaDrawer({super.key});
+  final String currentRoute;
 
-  void _navigateTo(BuildContext context, Widget screen) {
-    Navigator.pushReplacement(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => screen,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    );
+  const AshaDrawer({super.key, required this.currentRoute});
+
+  void _navigateTo(BuildContext context, String routeName) {
+    if (currentRoute == routeName) {
+      Navigator.pop(context); // Just close drawer if already on the page
+      return;
+    }
+    
+    Navigator.pop(context); // Close drawer first
+    Navigator.pushReplacementNamed(context, routeName);
   }
 
   @override
@@ -48,107 +39,122 @@ class AshaDrawer extends StatelessWidget {
               child: Icon(Icons.person, size: 40, color: Colors.blue),
             ),
           ),
-          ListTile(
-            leading: const Icon(Icons.dashboard_outlined),
-            title: const Text('Dashboard'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const AshaDashboard());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.analytics_outlined),
-            title: const Text('Village Health Report'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const VillageHealthReportScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.person_add_alt_1_outlined),
-            title: const Text('Register Patient'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const VillagePatientsScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.directions_walk),
-            title: const Text('Village Visits'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const VillageVisitsScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.folder_shared_outlined),
-            title: const Text('Health Records'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const HealthRecordsScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.warning_amber_rounded,
-              color: Colors.orange,
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.dashboard_outlined,
+                  title: 'Dashboard',
+                  route: AppRoutes.ashaDashboard,
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.analytics_outlined,
+                  title: 'Village Health Report',
+                  route: AppRoutes.villageHealthReport,
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.person_add_alt_1_outlined,
+                  title: 'Register Patient',
+                  route: AppRoutes.registerPatient,
+                ),
+                 _buildDrawerItem(
+                  context: context,
+                  icon: Icons.people_outline,
+                  title: 'Village Patients',
+                  route: AppRoutes.villagePatients,
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.directions_walk,
+                  title: 'Village Visits',
+                  route: AppRoutes.villageVisits,
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.folder_shared_outlined,
+                  title: 'Health Records',
+                  route: AppRoutes.healthRecords,
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.warning_amber_rounded,
+                  title: 'Risk Alerts',
+                  route: AppRoutes.riskAlerts,
+                  iconColor: Colors.orange,
+                ),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.medical_services_outlined,
+                  title: 'Consult Doctor',
+                  route: AppRoutes.ashaConsultDoctor,
+                  iconColor: Colors.green,
+                ),
+                const Divider(),
+                _buildDrawerItem(
+                  context: context,
+                  icon: Icons.settings_outlined,
+                  title: 'Settings',
+                  route: AppRoutes.ashaSettings,
+                ),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.redAccent),
+                  title: const Text(
+                    'Logout',
+                    style: TextStyle(color: Colors.redAccent),
+                  ),
+                  onTap: () async {
+                    await authProvider.logout();
+                    if (context.mounted) {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        AppRoutes.roleSelection,
+                        (route) => false,
+                      );
+                    }
+                  },
+                ),
+              ],
             ),
-            title: const Text('Risk Alerts'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const RiskAlertScreen());
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.emergency_share, color: Colors.red),
-            title: const Text('Emergency Referral'),
-            onTap: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Emergency Referral feature coming soon')),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(
-              Icons.medical_services_outlined,
-              color: Colors.green,
-            ),
-            title: const Text('Consult Doctor'),
-            onTap: () {
-              Navigator.pop(context);
-              _navigateTo(context, const ConsultDoctorScreen());
-            },
-          ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.settings_outlined),
-            title: const Text('Settings'),
-            onTap: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings feature coming soon')),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.logout, color: Colors.redAccent),
-            title: const Text(
-              'Logout',
-              style: TextStyle(color: Colors.redAccent),
-            ),
-            onTap: () async {
-              await authProvider.logout();
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  AppRoutes.login,
-                  (route) => false,
-                );
-              }
-            },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String route,
+    Color? iconColor,
+  }) {
+    final bool isSelected = currentRoute == route;
+    const Color primaryColor = Color(0xFF2A7DE1);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: isSelected ? primaryColor.withOpacity(0.12) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: isSelected ? primaryColor : (iconColor ?? Colors.grey[700]),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: isSelected ? primaryColor : Colors.black87,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        onTap: () => _navigateTo(context, route),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }

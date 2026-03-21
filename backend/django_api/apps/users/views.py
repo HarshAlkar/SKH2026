@@ -20,9 +20,60 @@ import datetime
 class UserSerializer(serializers.ModelSerializer):
     profile_details = serializers.SerializerMethodField()
     
+    profile_details = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'abha_id', 'created_at', 'profile_details']
+
+    def get_profile_details(self, obj):
+        if obj.role == 'doctor' and hasattr(obj, 'doctor_profile'):
+            return {
+                "specialization": obj.doctor_profile.specialization,
+                "experience_years": obj.doctor_profile.experience_years,
+                "hospital_name": obj.doctor_profile.hospital_name,
+                "qualification": obj.doctor_profile.qualification,
+                "is_available": obj.doctor_profile.is_available
+            }
+        elif obj.role == 'asha_worker' and hasattr(obj, 'asha_profile'):
+            return {
+                "assigned_village": obj.asha_profile.assigned_village,
+                "phc_center": obj.asha_profile.phc_center
+            }
+        elif obj.role == 'user' and hasattr(obj, 'patient_profile'):
+            return {
+                "age": obj.patient_profile.age,
+                "gender": obj.patient_profile.gender,
+                "address": obj.patient_profile.address,
+                "blood_group": obj.patient_profile.blood_group
+            }
+        return None
+        fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'created_at', 'profile_details']
+
+    def get_profile_details(self, obj):
+        if obj.role == 'doctor' and hasattr(obj, 'doctor_profile'):
+            return {
+                "specialization": obj.doctor_profile.specialization,
+                "experience_years": obj.doctor_profile.experience_years,
+                "hospital_name": obj.doctor_profile.hospital_name,
+                "qualification": obj.doctor_profile.qualification,
+                "is_available": obj.doctor_profile.is_available
+            }
+        elif obj.role == 'asha_worker' and hasattr(obj, 'asha_profile'):
+            return {
+                "assigned_village": obj.asha_profile.assigned_village,
+                "phc_center": obj.asha_profile.phc_center
+            }
+        elif obj.role == 'user' and hasattr(obj, 'patient_profile'):
+            return {
+                "age": obj.patient_profile.age,
+                "gender": obj.patient_profile.gender,
+                "address": obj.patient_profile.address,
+                "blood_group": obj.patient_profile.blood_group,
+                "abha_id": obj.patient_profile.abha_id
+            }
+        return None
+        fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'created_at', 'profile_details']
 
     def get_profile_details(self, obj):
         if obj.role == 'doctor' and hasattr(obj, 'doctor_profile'):
@@ -60,6 +111,18 @@ class EmergencyContactSerializer(serializers.ModelSerializer):
         model = EmergencyContact
         fields = '__all__'
 
+class FamilyMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        from apps.patients.models import FamilyMember
+        model = FamilyMember
+        fields = '__all__'
+
+class EmergencyContactSerializer(serializers.ModelSerializer):
+    class Meta:
+        from apps.patients.models import EmergencyContact
+        model = EmergencyContact
+        fields = '__all__'
+
 class RegisterSerializer(serializers.ModelSerializer):
 
     username = serializers.CharField(required=False, allow_blank=True)
@@ -73,17 +136,23 @@ class RegisterSerializer(serializers.ModelSerializer):
     assigned_village = serializers.CharField(required=False, allow_blank=True)
     phc_center = serializers.CharField(required=False, allow_blank=True)
     license_number = serializers.CharField(required=False, allow_blank=True)
+    worker_id = serializers.CharField(required=False, allow_blank=True)
+    district = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'role', 'phone_number', 'village', 'name',
-                  'specialization', 'experience_years', 'hospital_name', 'assigned_village', 'phc_center', 'license_number']
+                  'specialization', 'experience_years', 'hospital_name', 'assigned_village', 'phc_center', 'license_number', 'worker_id', 'district']
     
     def validate_phone_number(self, value):
         # Relaxed validation to support various formats or email-as-phone during transition
         if not value:
             return value
+        # Relaxed validation to support various formats or email-as-phone during transition
+        if not value:
+            return value
         if User.objects.filter(phone_number=value).exists() or User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("This identifier is already registered.")
             raise serializers.ValidationError("This identifier is already registered.")
         return value
 
@@ -105,6 +174,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         assigned_village = validated_data.pop('assigned_village', None)
         phc_center = validated_data.pop('phc_center', None)
         license_number = validated_data.pop('license_number', None)
+        worker_id = validated_data.pop('worker_id', None)
+        district = validated_data.pop('district', None)
         
         # Use phone_number as username if username not provided
         if not validated_data.get('username'):
@@ -123,6 +194,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         elif user.role == 'asha_worker':
             ASHAWorker.objects.create(
                 user=user,
+                worker_id=worker_id,
+                district=district,
                 assigned_village=assigned_village or user.village,
                 phc_center=phc_center or "Local PHC"
             )
@@ -159,6 +232,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='login')
     def login(self, request):
+        identifier = request.data.get('phone_number') or request.data.get('email') or request.data.get('username')
         print(f"DEBUG LOGIN request.data: {request.data}")
         identifier = request.data.get('phone_number') or request.data.get('email') or request.data.get('username')
         if identifier:
@@ -172,23 +246,36 @@ class UserViewSet(viewsets.ModelViewSet):
         if not identifier or not password:
             print("DEBUG: missing identifier or password")
             return Response({"error": "Identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not identifier or not password:
+            print("DEBUG: missing identifier or password")
+            return Response({"error": "Identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not identifier or not password:
+            return Response({"error": "Identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Try to find user by phone number, email, or username
+        from django.db.models import Q
         # Try to find user by phone number, email, or username
         from django.db.models import Q
         try:
             user_obj = User.objects.get(Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier))
             
+            user_obj = User.objects.get(Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier))
+            
             # Check if role matches
             if user_obj.role != role:
                 return Response({
-                    "error": f"Invalid login for this module. This account is registered as {user_obj.get_role_display()}."
+                    "error": f"Invalid module. Your account is registered as {user_obj.get_role_display()}."
                 }, status=status.HTTP_403_FORBIDDEN)
+                
             username = user_obj.username
+            
         except User.DoesNotExist:
             return Response({"error": "Invalid credentials or user not found"}, status=status.HTTP_401_UNAUTHORIZED)
         except User.MultipleObjectsReturned:
-            # Fallback to the first one or prompt for more specific identifier if needed
-            user_obj = User.objects.filter(Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier)).first()
+            # Fallback for multiple users matching the identifier
+            user_obj = User.objects.filter(Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier), role=role).first()
+            if not user_obj:
+                return Response({"error": "Invalid credentials or user not found for this role"}, status=status.HTTP_401_UNAUTHORIZED)
             username = user_obj.username
 
         user = authenticate(username=username, password=password)
@@ -280,6 +367,31 @@ class UserViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             # This shouldn't happen if they have an OTP, but just in case
             return Response({"message": "OTP verified for unregistered number"}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='doctors')
+    def get_doctors(self, request):
+        doctors = User.objects.filter(role='doctor')
+        serializer = self.get_serializer(doctors, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='asha-workers')
+    def get_asha_workers(self, request):
+        workers = User.objects.filter(role='asha_worker')
+        serializer = self.get_serializer(workers, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='patients')
+    def get_patients(self, request):
+        patients = User.objects.filter(role='user')
+        serializer = self.get_serializer(patients, many=True)
+        return Response(serializer.data)
+
+    # Allow custom list behavior
+    def list(self, request, *args, **kwargs):
+        role = request.query_params.get('role')
+        if role:
+            self.queryset = User.objects.filter(role=role)
+        return super().list(request, *args, **kwargs)
 
     @action(detail=False, methods=['get'], url_path='doctors')
     def get_doctors(self, request):

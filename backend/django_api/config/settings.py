@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'apps.consultations',
     'apps.prescriptions',
     'apps.symptom_analysis',
-    'apps.alerts',
     'apps.medicine_tracker',
     'apps.health_records',
     'apps.asha_workers',

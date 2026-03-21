@@ -1,0 +1,33 @@
+--- Users ---
+User: dr_sharma, Role: DOCTOR, Village: 'None'
+User: dr_priya, Role: DOCTOR, Village: 'None'
+User: 9876543210, Role: user, Village: 'Pune'
+User: 9876543211, Role: user, Village: 'Nagpur'
+User: 9876543212, Role: user, Village: 'Delhi'
+User: 9876543213, Role: user, Village: 'Mumbai'
+User: 9999999990, Role: doctor, Village: 'None'
+User: 9999999991, Role: doctor, Village: 'None'
+User: 9999999992, Role: doctor, Village: 'None'
+User: 8888888880, Role: asha_worker, Village: 'Rampur Village'
+User: 8888888881, Role: asha_worker, Village: 'Kaman Village'
+User: 8591274978, Role: user, Village: 'mumbai'
+User: 1234567890, Role: asha_worker, Village: 'agpur'
+User: 8108210981, Role: doctor, Village: 'None'
+User: 9821797965, Role: doctor, Village: 'None'
+User: 1212121212, Role: doctor, Village: 'None'
+User: 7888097989, Role: asha_worker, Village: 'Dapoli'
+User: 8408939967970, Role: user, Village: 'Pune'
+
+--- ASHA Workers ---
+ASHA: 8888888880, Assigned: 'Rampur Village'
+ASHA: 8888888881, Assigned: 'Kaman Village'
+ASHA: 1234567890, Assigned: 'agpur'
+ASHA: 7888097989, Assigned: 'Dapoli'
+
+--- Patients ---
+Patient ID: 1, User: 9876543210, User.Village: 'Pune'
+Patient ID: 2, User: 9876543211, User.Village: 'Nagpur'
+Patient ID: 3, User: 9876543212, User.Village: 'Delhi'
+Patient ID: 4, User: 9876543213, User.Village: 'Mumbai'
+Patient ID: 5, User: 8591274978, User.Village: 'mumbai'
+Patient ID: 6, User: 8408939967970, User.Village: 'Pune'

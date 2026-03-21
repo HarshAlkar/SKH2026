@@ -3,9 +3,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from .models import VoiceSymptomInput, SymptomAnalysis
-from apps.alerts.models import AlertNotification
-from apps.doctors.models import Doctor
-from apps.asha_workers.models import ASHAWorker
 from django.conf import settings
 import sys
 import os
@@ -107,26 +104,8 @@ class SymptomAnalysisView(APIView):
             severity_level=severity
         )
         
-        # 5. Alert system for Doctors & ASHA
-        alert_sent = False
-        if severity in ['High', 'Critical']:
-            # Find assigned ASHA
-            asha = ASHAWorker.objects.filter(assigned_village=user.village).first()
-            # Find any doctor
-            doctor = Doctor.objects.first()
-            
-            AlertNotification.objects.create(
-                patient=user,
-                doctor=doctor,
-                asha_worker=asha,
-                disease=predicted_disease,
-                severity=severity
-            )
-            alert_sent = True
-        
         return Response({
             "analysis_id": analysis.id,
             "disease": predicted_disease,
             "severity": severity,
-            "alert_sent": alert_sent
         }, status=status.HTTP_200_OK)

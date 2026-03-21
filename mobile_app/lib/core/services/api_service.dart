@@ -10,23 +10,40 @@ class ApiService {
   String get baseUrl => ApiConstants.baseUrl;
   Future<String?> getToken() async => _storageService.getString('token');
 
+<<<<<<< HEAD
   Future<Map<String, String>> _getHeaders({Map<String, String>? extra, bool includeToken = true}) async {
     final token = includeToken ? _storageService.getString('token') : null;
+=======
+  Future<Map<String, String>> _getHeaders(String endpoint, Map<String, String>? extra) async {
+    final token = _storageService.getString('token');
+    
+    final isAuthEndpoint = endpoint.contains('login') || 
+                           endpoint.contains('register') || 
+                           endpoint.contains('send-otp') || 
+                           endpoint.contains('verify-otp') || 
+                           endpoint.contains('reset-password');
+
+>>>>>>> fee035fdefda48dc95a9fb53f469dc6dcaed41aa
     return {
       'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
+      if (token != null && token.isNotEmpty && !isAuthEndpoint) 'Authorization': 'Token $token',
       ...?extra,
     };
   }
 
   Future<dynamic> get(String endpoint, {Map<String, String>? headers, bool includeToken = true}) async {
     try {
+<<<<<<< HEAD
       final combinedHeaders = await _getHeaders(extra: headers, includeToken: includeToken);
+=======
+      final combinedHeaders = await _getHeaders(endpoint, headers);
+>>>>>>> fee035fdefda48dc95a9fb53f469dc6dcaed41aa
       final response = await _client.get(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
         headers: combinedHeaders,
       );
       return _processResponse(response);
+
     } catch (e) {
       rethrow;
     }
@@ -39,7 +56,11 @@ class ApiService {
     bool includeToken = true,
   }) async {
     try {
+<<<<<<< HEAD
       final combinedHeaders = await _getHeaders(extra: {
+=======
+      final combinedHeaders = await _getHeaders(endpoint, {
+>>>>>>> fee035fdefda48dc95a9fb53f469dc6dcaed41aa
         'Content-Type': 'application/json',
         ...?headers,
       }, includeToken: includeToken);
@@ -61,7 +82,11 @@ class ApiService {
     bool includeToken = true,
   }) async {
     try {
+<<<<<<< HEAD
       final combinedHeaders = await _getHeaders(extra: {
+=======
+      final combinedHeaders = await _getHeaders(endpoint, {
+>>>>>>> fee035fdefda48dc95a9fb53f469dc6dcaed41aa
         'Content-Type': 'application/json',
         ...?headers,
       }, includeToken: includeToken);
@@ -76,9 +101,36 @@ class ApiService {
     }
   }
 
+<<<<<<< HEAD
   Future<dynamic> delete(String endpoint, {Map<String, String>? headers, bool includeToken = true}) async {
     try {
       final combinedHeaders = await _getHeaders(extra: headers, includeToken: includeToken);
+=======
+  Future<dynamic> patch(
+    String endpoint, {
+    Map<String, String>? headers,
+    dynamic body,
+  }) async {
+    try {
+      final combinedHeaders = await _getHeaders(endpoint, {
+        'Content-Type': 'application/json',
+        ...?headers,
+      });
+      final response = await _client.patch(
+        Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+        headers: combinedHeaders,
+        body: jsonEncode(body),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<dynamic> delete(String endpoint, {Map<String, String>? headers}) async {
+    try {
+      final combinedHeaders = await _getHeaders(endpoint, headers);
+>>>>>>> fee035fdefda48dc95a9fb53f469dc6dcaed41aa
       final response = await _client.delete(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
         headers: combinedHeaders,

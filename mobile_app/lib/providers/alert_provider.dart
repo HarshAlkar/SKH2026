@@ -25,8 +25,9 @@ class AlertProvider extends ChangeNotifier {
       if (response is List) {
         _alerts = response.map((json) {
           String sev = 'Info';
-          if (json['severity'] == 'Critical' || json['severity'] == 'High') sev = 'Emergency';
-          else if (json['severity'] == 'Moderate') sev = 'Warning';
+          if (json['severity'] == 'Critical' || json['severity'] == 'High') {
+            sev = 'Emergency';
+          } else if (json['severity'] == 'Moderate') sev = 'Warning';
 
           return AlertModel(
             id: json['id'].toString(),

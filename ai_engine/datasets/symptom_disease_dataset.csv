@@ -1,0 +1,11 @@
+fever,cough,headache,fatigue,nausea,disease
+1,1,0,1,0,Viral Fever
+1,0,1,1,0,Influenza
+0,0,1,0,1,Migraine
+0,1,0,1,0,Common Cold
+1,1,1,0,0,Pneumonia
+0,0,1,1,1,Food Poisoning
+1,0,0,0,1,Gastroenteritis
+0,0,1,1,0,Stress
+0,1,0,1,0,Bronchitis
+1,1,0,1,0,COVID-19

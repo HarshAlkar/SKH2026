@@ -132,4 +132,4 @@ We handle poor connectivity using an **Offline-Resilient Architecture**:
 *   **Govt Integration**: Direct synchronization with National Health ID systems.
 
 ---
-**Gramin Health Connect** — Healthcare for the last mile.
+**VitalReach** — Healthcare for the last mile.
