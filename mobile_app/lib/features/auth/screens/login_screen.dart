@@ -162,9 +162,30 @@ class _LoginScreenState extends State<LoginScreen>
                 Icons.health_and_safety,
                 size: 50,
                 color: AppColors.primary,
+<<<<<<< HEAD
               ),
             );
           },
+=======
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'VitalReach',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF1E293B),
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Access healthcare guidance anytime',
+          style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+>>>>>>> a29c117 (Prescription and Consultatncy)
         ),
       ],
     );

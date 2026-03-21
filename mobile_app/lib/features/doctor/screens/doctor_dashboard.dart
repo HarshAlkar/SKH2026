@@ -9,6 +9,11 @@ import 'schedule_screen.dart';
 import 'doctor_profile_screen.dart';
 import '../../../providers/auth_provider.dart';
 import '../widgets/doctor_navigation_drawer.dart';
+<<<<<<< HEAD
+=======
+import 'prescription_history_screen.dart';
+
+>>>>>>> a29c117 (Prescription and Consultatncy)
 import '../../../providers/consultation_provider.dart';
 import '../../../core/services/api_service.dart';
 
@@ -436,15 +441,18 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           icon: Icons.assignment,
           title: 'Create Prescription',
           onTap: () {
-            _navigateTo(const CreatePrescriptionScreen());
+            _navigateTo(const MyPatientsScreen());
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select a patient to create a prescription')),
+            );
           },
         ),
         const SizedBox(height: 12),
         _buildActionCard(
           icon: Icons.history,
-          title: 'Consultation History',
+          title: 'Prescription History',
           onTap: () {
-            _navigateTo(const ConsultationHistoryScreen());
+            _navigateTo(PrescriptionHistoryScreen());
           },
         ),
       ],

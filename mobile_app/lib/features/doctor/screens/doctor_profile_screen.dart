@@ -1,14 +1,43 @@
 import 'package:flutter/material.dart';
+import '../../user/services/doctor_service.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
+import 'edit_doctor_profile_screen.dart';
 
-class DoctorProfileScreen extends StatelessWidget {
+class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({super.key});
 
+  @override
+  State<DoctorProfileScreen> createState() => _DoctorProfileScreenState();
+}
+
+class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   final Color primaryBlue = const Color(0xFF2A7DE1);
   final Color lightBg = const Color(0xFFF3F4F6);
   final Color cardBg = const Color(0xFFFFFFFF);
   final Color accentGreen = const Color(0xFF22C55E);
   final Color textPrimary = const Color(0xFF1F2937);
   final Color textSecondary = const Color(0xFF6B7280);
+
+  final DoctorService _doctorService = DoctorService();
+  bool _isLoading = true;
+  Map<String, dynamic>? _doctorProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    final profile = await _doctorService.getDoctorProfile();
+    if (mounted) {
+      setState(() {
+        _doctorProfile = profile;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,33 +59,59 @@ class DoctorProfileScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildProfileHeader(),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  _buildProfessionalInfo(),
-                  const SizedBox(height: 16),
-                  _buildClinicInfo(),
-                  const SizedBox(height: 16),
-                  _buildConsultationStats(),
-                  const SizedBox(height: 16),
-                  _buildContactInfo(),
-                  const SizedBox(height: 40),
-                ],
-              ),
+        actions: [
+          if (_doctorProfile != null)
+            IconButton(
+              icon: Icon(Icons.edit, color: primaryBlue),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditDoctorProfileScreen(
+                      currentProfile: _doctorProfile!,
+                    ),
+                  ),
+                );
+                if (result == true) {
+                  setState(() { _isLoading = true; });
+                  _fetchProfile();
+                }
+              },
             ),
-          ],
-        ),
+        ],
       ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _doctorProfile == null
+              ? const Center(child: Text("Could not load profile"))
+              : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildProfileHeader(),
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            _buildProfessionalInfo(),
+                            const SizedBox(height: 16),
+                            _buildClinicInfo(),
+                            const SizedBox(height: 16),
+                            _buildContactInfo(),
+                            const SizedBox(height: 40),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
     );
   }
 
   Widget _buildProfileHeader() {
+    final name = _doctorProfile?['full_name'] ?? 'Doctor Name';
+    final specialization = _doctorProfile?['specialization'] ?? 'General Physician';
+    final hospital = _doctorProfile?['hospital_name'] ?? 'Not Set';
+
     return Container(
       width: double.infinity,
       color: Colors.white,
@@ -94,7 +149,7 @@ class DoctorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Dr. Amit Sharma',
+            name.toString().startsWith('Dr.') ? name : 'Dr. $name',
             style: TextStyle(
               color: textPrimary,
               fontSize: 22,
@@ -103,7 +158,7 @@ class DoctorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'General Physician',
+            specialization,
             style: TextStyle(
               color: primaryBlue,
               fontSize: 15,
@@ -117,7 +172,7 @@ class DoctorProfileScreen extends StatelessWidget {
               Icon(Icons.location_on_outlined, size: 14, color: textSecondary),
               const SizedBox(width: 4),
               Text(
-                'Green Valley Health Center',
+                hospital,
                 style: TextStyle(
                   color: textSecondary,
                   fontSize: 13,
@@ -131,24 +186,30 @@ class DoctorProfileScreen extends StatelessWidget {
   }
 
   Widget _buildProfessionalInfo() {
+    final license = _doctorProfile?['license_number'] ?? 'Not Set';
+    final exp = _doctorProfile?['experience_years']?.toString() ?? '0';
+    final edu = _doctorProfile?['qualification'] ?? 'Not Set';
+
     return _buildSectionCard(
       title: 'Professional Information',
       children: [
-        _buildInfoRow(Icons.badge_outlined, 'Medical License', 'MC-345897'),
-        _buildInfoRow(Icons.work_outline, 'Experience', '12 Years'),
-        _buildInfoRow(Icons.school_outlined, 'Education', 'MBBS, MD (Internal Medicine)'),
+        _buildInfoRow(Icons.badge_outlined, 'Medical License', license),
+        _buildInfoRow(Icons.work_outline, 'Experience', '$exp Years'),
+        _buildInfoRow(Icons.school_outlined, 'Education', edu),
         _buildInfoRow(Icons.videocam_outlined, 'Consultation Mode', 'Video · Audio · Offline'),
       ],
     );
   }
 
   Widget _buildClinicInfo() {
+    final hospital = _doctorProfile?['hospital_name'] ?? 'Not Set';
+    
     return _buildSectionCard(
       title: 'Clinic Information',
       children: [
-        _buildInfoRow(Icons.local_hospital_outlined, 'Clinic Name', 'Green Valley Health Center'),
-        _buildInfoRow(Icons.map_outlined, 'Location', 'Kaman Village, Vasai Region'),
-        _buildInfoRow(Icons.access_time, 'Working Hours', '09:00 AM – 05:00 PM'),
+        _buildInfoRow(Icons.local_hospital_outlined, 'Clinic Name', hospital),
+        _buildInfoRow(Icons.map_outlined, 'Location', 'Registered Address'),
+        _buildInfoRow(Icons.access_time, 'Working Hours', 'Available'),
       ],
     );
   }
@@ -170,11 +231,11 @@ class DoctorProfileScreen extends StatelessWidget {
         ),
         Row(
           children: [
-            Expanded(child: _buildStatItem('Total Patients', '1,248', primaryBlue)),
+            Expanded(child: _buildStatItem('Total Patients', '--', primaryBlue)),
             const SizedBox(width: 12),
-            Expanded(child: _buildStatItem('Monthly', '152', Colors.orange)),
+            Expanded(child: _buildStatItem('Monthly', '--', Colors.orange)),
             const SizedBox(width: 12),
-            Expanded(child: _buildStatItem('Rating', '4.8 ★', accentGreen)),
+            Expanded(child: _buildStatItem('Rating', '5.0 ★', accentGreen)),
           ],
         ),
       ],
@@ -182,11 +243,13 @@ class DoctorProfileScreen extends StatelessWidget {
   }
 
   Widget _buildContactInfo() {
+    final phone = _doctorProfile?['phone_number'] ?? 'Not Set';
+    
     return _buildSectionCard(
       title: 'Contact Information',
       children: [
-        _buildInfoRow(Icons.phone_outlined, 'Phone Number', '+91 98765 43210'),
-        _buildInfoRow(Icons.email_outlined, 'Email', 'dr.amitsharma@graminhealth.com'),
+        _buildInfoRow(Icons.phone_outlined, 'Phone Number', phone),
+        _buildInfoRow(Icons.email_outlined, 'Email', 'Available upon request'),
       ],
     );
   }

@@ -24,6 +24,7 @@ class AuthenticationService {
             'password': password,
             'role': role,
           },
+          includeToken: false,
         );
 
         // Success
@@ -69,6 +70,7 @@ class AuthenticationService {
         ApiConstants.registerEndpoint,
         headers: {'Content-Type': 'application/json'},
         body: data,
+        includeToken: false,
       );
       
       // Auto login after register
@@ -97,6 +99,7 @@ class AuthenticationService {
       ApiConstants.sendOtpEndpoint,
       headers: {'Content-Type': 'application/json'},
       body: {'phone_number': phoneNumber},
+      includeToken: false,
     );
   }
 
@@ -109,6 +112,7 @@ class AuthenticationService {
         'otp': otp,
         if (role != null) 'role': role,
       },
+      includeToken: false,
     );
 
     // If response contains token, it means it was a login verify
@@ -135,6 +139,7 @@ class AuthenticationService {
         'otp_code': otpCode,
         'new_password': newPassword,
       },
+      includeToken: false,
     );
   }
 

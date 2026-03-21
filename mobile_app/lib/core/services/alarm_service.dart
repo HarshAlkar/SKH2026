@@ -1,14 +1,24 @@
+import 'dart:io';
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:flutter/material.dart';
 import 'notification_service.dart';
 
 class AlarmService {
   static Future<void> init() async {
-    await AndroidAlarmManager.initialize();
-    debugPrint('AlarmService Initialized');
+    if (Platform.isAndroid) {
+      await AndroidAlarmManager.initialize();
+      debugPrint('AlarmService Initialized (Android)');
+    } else {
+      debugPrint('AlarmService bypassed for platform: ${Platform.operatingSystem}');
+    }
   }
 
   static Future<void> scheduleMedicineAlarm(int id, DateTime time, String name, String instructions, String dosage) async {
+    if (!Platform.isAndroid) {
+      debugPrint('Alarm scheduling skipped on ${Platform.operatingSystem}. Using local notifications fallback if available.');
+      return;
+    }
+
     // Ensure the ID is valid for Android alarms (int32)
     final alarmId = id % 2147483647;
     
@@ -64,6 +74,8 @@ class AlarmService {
   }
 
   static Future<void> cancelAlarm(int id) async {
+    if (!Platform.isAndroid) return;
+    
     final alarmId = id % 2147483647;
     await AndroidAlarmManager.cancel(alarmId);
     debugPrint('Cancelled alarm $alarmId');

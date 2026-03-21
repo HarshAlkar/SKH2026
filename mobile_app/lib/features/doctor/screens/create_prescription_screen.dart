@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+<<<<<<< HEAD
 import '../../../core/services/api_service.dart';
 import '../../../providers/auth_provider.dart';
 
@@ -7,6 +8,16 @@ class CreatePrescriptionScreen extends StatefulWidget {
   final String? patientName;
   final String? patientId;
   const CreatePrescriptionScreen({super.key, this.patientName, this.patientId});
+=======
+import '../../../features/user/services/doctor_service.dart';
+import '../../../models/medicine_model.dart';
+import '../../../providers/consultation_provider.dart';
+
+class CreatePrescriptionScreen extends StatefulWidget {
+  final String? patientName;
+  final String? consultationId;
+  const CreatePrescriptionScreen({super.key, this.patientName, this.consultationId});
+>>>>>>> a29c117 (Prescription and Consultatncy)
 
   @override
   State<CreatePrescriptionScreen> createState() => _CreatePrescriptionScreenState();
@@ -17,11 +28,21 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
   final ApiService _api = ApiService();
 
   late TextEditingController _patientNameController;
+  final _diagnosisController = TextEditingController();
+  final _notesController = TextEditingController();
   final _medicineNameController = TextEditingController();
+  final _purposeController = TextEditingController();
   final _dosageController = TextEditingController();
+  final _routeController = TextEditingController();
   final _durationController = TextEditingController();
   final _instructionsController = TextEditingController();
+<<<<<<< HEAD
   final _diagnosisController = TextEditingController();
+=======
+  
+  final DoctorService _doctorService = DoctorService();
+  bool _isSaving = false;
+>>>>>>> a29c117 (Prescription and Consultatncy)
 
   final List<String> _timingOptions = ['Before Breakfast', 'After Meals', 'At Bedtime'];
   final Set<String> _selectedTimings = {};
@@ -57,8 +78,12 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
   @override
   void dispose() {
     _patientNameController.dispose();
+    _diagnosisController.dispose();
+    _notesController.dispose();
     _medicineNameController.dispose();
+    _purposeController.dispose();
     _dosageController.dispose();
+    _routeController.dispose();
     _durationController.dispose();
     _instructionsController.dispose();
     _diagnosisController.dispose();
@@ -201,14 +226,78 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
+<<<<<<< HEAD
                 onPressed: _isLoading ? null : _savePrescription,
+=======
+                onPressed: _isSaving ? null : () async {
+                  setState(() => _isSaving = true);
+                  
+                  try {
+                    final consultationId = widget.consultationId;
+                    if (consultationId == null) {
+                      throw Exception('Consultation ID is missing. Cannot save prescription.');
+                    }
+                    
+                    final prescriptionData = {
+                      'consultation': int.tryParse(consultationId),
+                      'diagnosis': _diagnosisController.text,
+                      'notes': _notesController.text,
+                      'medications': [
+                        {
+                          'name': _medicineNameController.text,
+                          'purpose': _purposeController.text,
+                          'dosage': _dosageController.text,
+                          'route': _routeController.text.isEmpty ? 'Oral' : _routeController.text,
+                          'duration': _durationController.text,
+                          'instructions': _instructionsController.text,
+                          'timing': _selectedTimings.join(', '),
+                        }
+                      ],
+                    };
+                    
+                    await _doctorService.createPrescription(prescriptionData);
+                    
+                    if (mounted) {
+                      // Refresh consultation history
+                      context.read<ConsultationProvider>().fetchHistory();
+                      
+                      Navigator.pop(context); // Close dialog
+                      Navigator.pop(context); // Back to previous screen
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Prescription Saved & Sent to Database'),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error saving prescription: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  } finally {
+                    if (mounted) setState(() => _isSaving = false);
+                  }
+                },
+>>>>>>> a29c117 (Prescription and Consultatncy)
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryBlue,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
+<<<<<<< HEAD
                 child: _isLoading 
                   ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Text('Confirm & Send', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+=======
+                child: _isSaving 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('Confirm & Send', style: TextStyle(fontWeight: FontWeight.bold)),
+>>>>>>> a29c117 (Prescription and Consultatncy)
               ),
             ),
           ],
@@ -263,6 +352,7 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
               _buildPatientInfoCard(),
               const SizedBox(height: 32),
               
+<<<<<<< HEAD
               _buildSectionTitle(Icons.add_box_outlined, 'DIAGNOSIS'),
               const SizedBox(height: 16),
               _buildTextField(
@@ -274,6 +364,26 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
               const SizedBox(height: 24),
 
               _buildSectionTitle(Icons.medication_outlined, 'MEDICATION DETAILS'),
+=======
+              _buildLabel('Diagnosis'),
+              _buildTextField(
+                controller: _diagnosisController,
+                placeholder: 'Enter diagnosis',
+                validatorError: 'Please enter diagnosis',
+              ),
+              const SizedBox(height: 16),
+              
+              _buildLabel('Notes'),
+              _buildTextField(
+                controller: _notesController,
+                placeholder: 'Additional notes',
+                validatorError: 'Required',
+                maxLines: 2,
+              ),
+              const SizedBox(height: 32),
+              
+              _buildSectionTitle(Icons.add_box_outlined, 'MEDICATION DETAILS'),
+>>>>>>> a29c117 (Prescription and Consultatncy)
               const SizedBox(height: 16),
               
               _buildLabel('Medicine Name'),
@@ -284,6 +394,14 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
               ),
               const SizedBox(height: 16),
               
+              _buildLabel('Purpose'),
+              _buildTextField(
+                controller: _purposeController,
+                placeholder: 'e.g. Bacterial infection',
+                validatorError: 'Please enter purpose',
+              ),
+              const SizedBox(height: 16),
+
               Row(
                 children: [
                   Expanded(
@@ -304,16 +422,24 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildLabel('Duration'),
+                        _buildLabel('Route'),
                         _buildTextField(
-                          controller: _durationController,
-                          placeholder: 'e.g. 7 days',
+                          controller: _routeController,
+                          placeholder: 'e.g. Oral',
                           validatorError: 'Required',
                         ),
                       ],
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+
+              _buildLabel('Duration'),
+              _buildTextField(
+                controller: _durationController,
+                placeholder: 'e.g. 7 days',
+                validatorError: 'Required',
               ),
               const SizedBox(height: 16),
               

@@ -63,15 +63,18 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
       
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
+      final emailOrPhone = _emailPhoneController.text.trim();
+      final isEmail = emailOrPhone.contains('@');
+      
       final registrationData = {
-        'name': _nameController.text,
-        'phone_number': _emailPhoneController.text,
+        'name': _nameController.text.trim(),
+        isEmail ? 'email' : 'phone_number': emailOrPhone,
         'password': _passwordController.text,
         'role': 'doctor',
         'specialization': _selectedSpecialization,
-        'license_number': _licenseController.text,
-        'experience_years': _experienceController.text,
-        'hospital_name': _hospitalController.text,
+        'license_number': _licenseController.text.trim(),
+        'experience_years': int.tryParse(_experienceController.text) ?? 0,
+        'hospital_name': _hospitalController.text.trim(),
       };
       
       final success = await authProvider.register(registrationData);

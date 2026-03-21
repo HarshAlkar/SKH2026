@@ -53,7 +53,10 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      final consultation = await _doctorService.startConsultation(doctor['id'], type.toUpperCase());
+      final consultation = await _doctorService.startConsultation(
+        doctorId: doctor['id'], 
+        callType: type.toUpperCase(),
+      );
       
       if (mounted) {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -115,7 +118,7 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
               ),
             ),
             Text(
-              'Gramin Health Connect',
+              'VitalReach',
               style: TextStyle(
                 color: Colors.grey.shade500,
                 fontSize: 12,

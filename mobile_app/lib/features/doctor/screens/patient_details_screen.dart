@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'video_consultation_screen.dart';
 import 'create_prescription_screen.dart';
+import '../../user/services/doctor_service.dart';
 
 
 class PatientData {
+  final int id;
   final String name;
   final String age;
   final String gender;
@@ -16,6 +18,7 @@ class PatientData {
   final String aiInsights;
 
   PatientData({
+    required this.id,
     required this.name,
     required this.age,
     required this.gender,
@@ -28,8 +31,25 @@ class PatientData {
     required this.aiInsights,
   });
 
+  factory PatientData.fromJson(Map<String, dynamic> json) {
+    return PatientData(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? 'Unknown',
+      age: (json['age'] ?? 0).toString(),
+      gender: json['gender'] ?? 'Unknown',
+      village: json['village'] ?? 'Unknown',
+      bloodType: json['blood_group'] ?? 'Unknown',
+      chronicConditions: json['medical_history'] ?? 'None reported',
+      pastSurgeries: 'None reported',
+      allergies: 'None reported',
+      symptoms: [], 
+      aiInsights: 'No AI insights available for this patient yet.',
+    );
+  }
+
   static PatientData getDummySarah() {
     return PatientData(
+      id: 6,
       name: 'Sarah Jenkins',
       age: '28',
       gender: 'Female',
@@ -49,6 +69,7 @@ class PatientData {
 
   static PatientData getDummyRamesh() {
     return PatientData(
+      id: 1,
       name: 'Ramesh Patil',
       age: '45',
       gender: 'Male',
@@ -67,6 +88,7 @@ class PatientData {
 
   static PatientData getDummyAmitabh() {
     return PatientData(
+      id: 3, // Dummy ID
       name: 'Amitabh Bachchan',
       age: '78',
       gender: 'Male',
@@ -85,6 +107,7 @@ class PatientData {
 
   static PatientData getDummySunita() {
     return PatientData(
+      id: 4, // Dummy ID
       name: 'Sunita Deshmukh',
       age: '32',
       gender: 'Female',
@@ -269,7 +292,9 @@ class PatientDetailsScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const VideoConsultationScreen(),
+                  builder: (context) => const VideoConsultationScreen(
+                    consultationId: '', // Should be fixed to actual ID later if needed
+                  ),
                 ),
               );
             },
@@ -320,13 +345,38 @@ class PatientDetailsScreen extends StatelessWidget {
           width: double.infinity,
           height: 48,
           child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CreatePrescriptionScreen(patientName: patient.name),
-                ),
-              );
+            onPressed: () async {
+              try {
+                // Start a consultation first
+                final doctorService = DoctorService();
+                final consultation = await doctorService.startConsultation(
+                  patientId: patient.id,
+                  callType: 'OFFLINE',
+                );
+
+                if (context.mounted) {
+                  final consultationId = consultation['id'];
+                  if (consultationId == null) {
+                    throw Exception('Failed to get consultation ID from server');
+                  }
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CreatePrescriptionScreen(
+                        patientName: patient.name,
+                        consultationId: consultationId.toString(),
+                      ),
+                    ),
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error starting consultation: $e')),
+                  );
+                }
+              }
             },
             icon: const Icon(Icons.assignment_outlined, size: 20),
             label: const Text(

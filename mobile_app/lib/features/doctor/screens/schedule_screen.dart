@@ -275,7 +275,9 @@ class ScheduleScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const VideoConsultationScreen(),
+                  builder: (context) => const VideoConsultationScreen(
+                    consultationId: '', // Should be fixed to actual ID later if needed
+                  ),
                 ),
               );
             },

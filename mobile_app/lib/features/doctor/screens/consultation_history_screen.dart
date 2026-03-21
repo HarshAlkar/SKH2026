@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../widgets/doctor_navigation_drawer.dart';
+import '../../../providers/consultation_provider.dart';
+import 'package:intl/intl.dart';
 
 class ConsultationRecord {
+  final int id;
   final String patientName;
   final int age;
   final String village;
@@ -10,6 +14,7 @@ class ConsultationRecord {
   final String prescriptionSummary;
 
   ConsultationRecord({
+    required this.id,
     required this.patientName,
     required this.age,
     required this.village,
@@ -17,6 +22,23 @@ class ConsultationRecord {
     required this.status,
     required this.prescriptionSummary,
   });
+
+  factory ConsultationRecord.fromJson(Map<String, dynamic> json) {
+    DateTime? createdAt;
+    if (json['created_at'] != null) {
+      createdAt = DateTime.parse(json['created_at']);
+    }
+    
+    return ConsultationRecord(
+      id: json['id'] ?? 0,
+      patientName: json['patient_name'] ?? 'Unknown',
+      age: json['patient_age'] ?? 0,
+      village: json['patient_village'] ?? 'Unknown',
+      date: createdAt != null ? DateFormat('MMM dd, yyyy').format(createdAt) : 'N/A',
+      status: json['status'] ?? 'Unknown',
+      prescriptionSummary: json['prescription_summary'] ?? 'No prescription',
+    );
+  }
 }
 
 class ConsultationHistoryScreen extends StatefulWidget {
@@ -26,167 +48,130 @@ class ConsultationHistoryScreen extends StatefulWidget {
   State<ConsultationHistoryScreen> createState() => _ConsultationHistoryScreenState();
 }
 
-class _ConsultationHistoryScreenState extends State<ConsultationHistoryScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  int _bottomNavIndex = 1; // History is index 1
-
-  final List<ConsultationRecord> _records = [
-    ConsultationRecord(
-      patientName: 'Sarah Jenkins',
-      age: 28,
-      village: 'Green Valley',
-      date: 'Oct 24, 2023',
-      status: 'Completed',
-      prescriptionSummary: '"Amoxicillin 500mg, Rest for 3 days, increased fluid intake."',
-    ),
-    ConsultationRecord(
-      patientName: 'Ramesh Patil',
-      age: 45,
-      village: 'Kaman',
-      date: 'Sep 12, 2023',
-      status: 'Follow-up',
-      prescriptionSummary: '"Cetirizine 10mg once daily for seasonal allergies. Avoid dust."',
-    ),
-    ConsultationRecord(
-      patientName: 'Sunita Deshmukh',
-      age: 32,
-      village: 'Pelhar',
-      date: 'Aug 05, 2023',
-      status: 'Completed',
-      prescriptionSummary: '"Annual checkup. Vitamin D supplements recommended."',
-    ),
-  ];
+class _ConsultationHistoryScreenState extends State<ConsultationHistoryScreen> {
+  final Color primaryBlue = const Color(0xFF2A7DE1);
+  final Color lightBg = const Color(0xFFF3F4F6);
+  final Color cardBg = const Color(0xFFFFFFFF);
+  final Color videoColor = const Color(0xFF2563EB);
+  final Color audioColor = const Color(0xFF10B981);
+  final Color textPrimary = const Color(0xFF1F2937);
+  final Color textSecondary = const Color(0xFF6B7280);
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ConsultationProvider>().fetchHistory();
+      context.read<ConsultationProvider>().fetchUpcomingConsultations();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color(0xFF2A7DE1);
-    const textPrimary = Color(0xFF1F2937);
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      drawer: const DoctorNavigationDrawer(activeRoute: 'Consultations'),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.arrow_back, color: textPrimary),
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: lightBg,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          centerTitle: true,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: textPrimary),
             onPressed: () => Navigator.pop(context),
           ),
-        ),
-        title: const Text(
-          'Consultation History',
-          style: TextStyle(
-            color: textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: textPrimary),
-            onPressed: () {},
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Container(
-            color: Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: primaryBlue,
-              unselectedLabelColor: const Color(0xFF94A3B8),
-              indicatorColor: primaryBlue,
-              indicatorWeight: 3,
-              isScrollable: true,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 20),
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
-              tabs: const [
-                Tab(text: 'All Sessions'),
-                Tab(text: 'Completed'),
-                Tab(text: 'Pending Follow-up'),
-              ],
+          title: Text(
+            'Consultation History',
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
+          bottom: TabBar(
+            labelColor: primaryBlue,
+            unselectedLabelColor: textSecondary,
+            indicatorColor: primaryBlue,
+            tabs: const [
+              Tab(text: "Pending"),
+              Tab(text: "Completed"),
+            ],
+          ),
+        ),
+        body: Consumer<ConsultationProvider>(
+          builder: (context, provider, child) {
+            if (provider.isLoading && provider.upcomingConsultations.isEmpty && provider.history.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final pending = provider.upcomingConsultations;
+            final completed = provider.history;
+
+            return TabBarView(
+              children: [
+                _buildList(pending, isUpcoming: true),
+                _buildList(completed, isUpcoming: false),
+              ],
+            );
+          },
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildRecordList('All Sessions'),
-          _buildRecordList('Completed'),
-          _buildRecordList('Follow-up'),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
-  Widget _buildRecordList(String filter) {
-    final filteredRecords = _records.where((r) {
-      if (filter == 'All Sessions') return true;
-      return r.status == filter;
-    }).toList();
-
-    if (filteredRecords.isEmpty) {
-      return const Center(
-        child: Text(
-          'No records found.',
-          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 16),
+  Widget _buildList(List<Map<String, dynamic>> items, {required bool isUpcoming}) {
+    if (items.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.history, size: 64, color: textSecondary.withOpacity(0.5)),
+            const SizedBox(height: 16),
+            Text(
+              'No consultations found',
+              style: TextStyle(color: textSecondary, fontSize: 16),
+            ),
+          ],
         ),
       );
     }
-
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      itemCount: filteredRecords.length,
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
       itemBuilder: (context, index) {
-        return _buildConsultationCard(filteredRecords[index]);
+        return _buildConsultationCard(items[index], isUpcoming: isUpcoming);
       },
     );
   }
 
-  Widget _buildConsultationCard(ConsultationRecord record) {
-    const primaryBlue = Color(0xFF2A7DE1);
-    const textPrimary = Color(0xFF1F2937);
-    const textSecondary = Color(0xFF6B7280);
-
-    Color badgeBgColor;
-    Color badgeTextColor;
-
-    if (record.status == 'Completed') {
-      badgeBgColor = const Color(0xFFD1FAE5); // Light green
-      badgeTextColor = const Color(0xFF059669); // Dark green
-    } else {
-      badgeBgColor = const Color(0xFFE8F1FF); // Light blue
-      badgeTextColor = primaryBlue;
+  Widget _buildConsultationCard(Map<String, dynamic> consultation, {required bool isUpcoming}) {
+    final String patientName = consultation['patient_name'] ?? 'Unknown Patient';
+    final String type = consultation['call_type'] ?? 'VIDEO';
+    final String status = consultation['status'] ?? (isUpcoming ? 'PENDING' : 'COMPLETED');
+    final String patientId = consultation['patient'].toString();
+    final DateTime createdAt = DateTime.parse(consultation['created_at'] ?? DateTime.now().toIso8601String());
+    
+    // Simulate a scheduled time for the UI since the backend doesn't explicitly have it right now
+    final DateTime scheduledTime = isUpcoming ? DateTime.now().add(const Duration(minutes: 30)) : createdAt;
+    
+    bool isVideo = type == 'VIDEO';
+    Color typeColor = isVideo ? videoColor : audioColor;
+    IconData typeIcon = isVideo ? Icons.videocam : Icons.phone;
+    
+    // Format date string
+    String dateString = 'Today';
+    if (scheduledTime.day != DateTime.now().day) {
+      dateString = '${scheduledTime.day}/${scheduledTime.month}/${scheduledTime.year}';
     }
+    
+    int hour = scheduledTime.hour > 12 ? scheduledTime.hour - 12 : (scheduledTime.hour == 0 ? 12 : scheduledTime.hour);
+    String amPm = scheduledTime.hour >= 12 ? 'PM' : 'AM';
+    String timeString = '$hour:${scheduledTime.minute.toString().padLeft(2, '0')} $amPm';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -195,282 +180,113 @@ class _ConsultationHistoryScreenState extends State<ConsultationHistoryScreen>
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
       ),
-      padding: const EdgeInsets.all(20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Patient Info and Badge
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const CircleAvatar(
-                radius: 24,
-                backgroundColor: Color(0xFF1E293B),
-                child: Icon(Icons.person, color: Colors.white70),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      record.patientName,
-                      style: const TextStyle(
-                        color: textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: typeColor.withOpacity(0.1),
+                      child: Text(
+                        patientName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join(''),
+                        style: TextStyle(
+                          color: typeColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Age: ${record.age} · Village: ${record.village}',
-                      style: const TextStyle(
-                        color: textSecondary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            patientName,
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(typeIcon, size: 14, color: typeColor),
+                              const SizedBox(width: 4),
+                              Text(
+                                isVideo ? 'Video Consultation' : 'Audio Consultation',
+                                style: TextStyle(
+                                  color: typeColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$dateString • $timeString',
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isUpcoming ? const Color(0xFFFEF3C7) : const Color(0xFFD1FAE5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        status,
+                        style: TextStyle(
+                          color: isUpcoming ? const Color(0xFFD97706) : const Color(0xFF059669),
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: badgeBgColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  record.status,
-                  style: TextStyle(
-                    color: badgeTextColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Divider(height: 1, color: Color(0xFFF1F5F9)),
-          ),
-
-          // Patient and Date Info
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'PATIENT',
-                    style: TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          // View details
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFFE5E7EB)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: Text(
+                          'View Details',
+                          style: TextStyle(
+                            color: textPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    record.patientName,
-                    style: const TextStyle(
-                      color: textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    'DATE',
-                    style: TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    record.date,
-                    style: const TextStyle(
-                      color: textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Prescription Summary Box
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(8),
-              border: Border(
-                left: BorderSide(color: primaryBlue, width: 3),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'PRESCRIPTION SUMMARY',
-                  style: TextStyle(
-                    color: primaryBlue,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  record.prescriptionSummary,
-                  style: const TextStyle(
-                    color: Color(0xFF475569),
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
+                  ],
                 ),
               ],
             ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // Action Buttons
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 44,
-                  child: ElevatedButton(
-                    onPressed: () {}, // Navigate to report
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryBlue,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Text(
-                      'View Report',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              SizedBox(
-                height: 44,
-                width: 44,
-                child: OutlinedButton(
-                  onPressed: () {}, // Download logic
-                  style: OutlinedButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    foregroundColor: textPrimary,
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Icon(Icons.download_outlined, size: 20, color: Color(0xFF475569)),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: _bottomNavIndex,
-        onTap: (index) {
-          setState(() {
-            _bottomNavIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2A7DE1),
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedFontSize: 10,
-        unselectedFontSize: 10,
-        showUnselectedLabels: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.home_outlined),
-            ),
-            activeIcon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.home),
-            ),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.history_outlined),
-            ),
-            activeIcon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.history),
-            ),
-            label: 'History',
-          ),
-          BottomNavigationBarItem(
-            icon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.calendar_month_outlined),
-            ),
-            activeIcon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.calendar_month),
-            ),
-            label: 'Schedule',
-          ),
-          BottomNavigationBarItem(
-            icon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.person_outline),
-            ),
-            activeIcon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.person),
-            ),
-            label: 'Profile',
           ),
         ],
       ),
