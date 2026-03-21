@@ -4,7 +4,7 @@ import '../screens/doctor_dashboard.dart';
 import '../../../routes/app_routes.dart';
 import '../screens/patient_requests_screen.dart';
 import '../screens/create_prescription_screen.dart';
-import '../screens/consultation_history_screen.dart';
+import '../screens/prescription_history_screen.dart';
 import '../screens/health_reports_screen.dart';
 import '../screens/my_patients_screen.dart';
 import '../screens/doctor_settings_screen.dart';
@@ -173,14 +173,14 @@ class DoctorNavigationDrawer extends StatelessWidget {
                     _buildMenuItem(
                       context: context,
                       icon: Icons.medical_services_outlined,
-                      title: 'Consultations',
-                      isActive: activeRoute == 'Consultations',
+                      title: 'Prescription History',
+                      isActive: activeRoute == 'Prescriptions',
                       onTap: () {
                         Navigator.pop(context);
-                        if (activeRoute != 'Consultations') {
+                        if (activeRoute != 'Prescriptions') {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const ConsultationHistoryScreen()),
+                            MaterialPageRoute(builder: (context) => const PrescriptionHistoryScreen()),
                           );
                         }
                       },
@@ -195,7 +195,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                         if (activeRoute != 'Prescriptions') {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const CreatePrescriptionScreen()),
+                            MaterialPageRoute(builder: (context) => const PrescriptionHistoryScreen()),
                           );
                         }
                       },

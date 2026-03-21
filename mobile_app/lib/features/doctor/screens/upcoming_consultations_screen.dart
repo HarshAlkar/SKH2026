@@ -1,21 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/consultation_provider.dart';
+import '../../../providers/auth_provider.dart';
 import 'patient_details_screen.dart';
 import 'video_consultation_screen.dart';
+import 'consultation_history_screen.dart';
 import 'dart:async';
-
-class Consultation {
-  final String patientName;
-  final String type;
-  final String time;
-  final int initialSeconds;
-
-  Consultation({
-    required this.patientName,
-    required this.type,
-    required this.time,
-    required this.initialSeconds,
-  });
-}
 
 class UpcomingConsultationsScreen extends StatefulWidget {
   const UpcomingConsultationsScreen({super.key});
@@ -33,26 +23,23 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
   final Color textPrimary = const Color(0xFF1F2937);
   final Color textSecondary = const Color(0xFF6B7280);
 
-  final List<Consultation> _consultations = [
-    Consultation(
-      patientName: 'Sarah Jenkins',
-      type: 'Video Consultation',
-      time: 'Today · 10:30 AM',
-      initialSeconds: 522, // 08:42
-    ),
-    Consultation(
-      patientName: 'Ramesh Patil',
-      type: 'Audio Consultation',
-      time: 'Today · 11:00 AM',
-      initialSeconds: 1090, // 18:10
-    ),
-    Consultation(
-      patientName: 'Sunita Deshmukh',
-      type: 'Video Consultation',
-      time: 'Today · 12:15 PM',
-      initialSeconds: 2525, // 42:05
-    ),
-  ];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ConsultationProvider>().fetchUpcomingConsultations();
+      context.read<ConsultationProvider>().fetchHistory();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,25 +63,133 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.calendar_today_outlined, color: textPrimary, size: 20),
-            onPressed: () {},
+            icon: Icon(Icons.history, color: textPrimary),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ConsultationHistoryScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _consultations.length,
-        itemBuilder: (context, index) {
-          return _buildConsultationCard(_consultations[index]);
+      body: Consumer<ConsultationProvider>(
+        builder: (context, provider, child) {
+          if (provider.isLoading && provider.upcomingConsultations.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final upcoming = provider.upcomingConsultations.where((c) {
+            final name = c['patient_name']?.toString().toLowerCase() ?? '';
+            return name.contains(_searchQuery.toLowerCase());
+          }).toList();
+
+          return Column(
+            children: [
+              _buildSearchBar(),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    await provider.fetchUpcomingConsultations();
+                    await provider.fetchHistory();
+                  },
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      if (upcoming.isNotEmpty) ...[
+                        ...upcoming.map((c) => _buildConsultationCard(c, isUpcoming: true)),
+                      ],
+                      if (upcoming.isEmpty)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 100),
+                            child: Column(
+                              children: [
+                                Icon(Icons.search_off, size: 64, color: textSecondary.withOpacity(0.5)),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No consultations found',
+                                  style: TextStyle(color: textSecondary, fontSize: 16),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
         },
       ),
     );
   }
 
-  Widget _buildConsultationCard(Consultation consultation) {
-    bool isVideo = consultation.type.contains('Video');
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: Colors.white,
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+        decoration: InputDecoration(
+          hintText: 'Search patients...',
+          prefixIcon: const Icon(Icons.search),
+          filled: true,
+          fillColor: lightBg,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: TextStyle(
+        color: textSecondary,
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.1,
+      ),
+    );
+  }
+
+  Widget _buildConsultationCard(Map<String, dynamic> consultation, {required bool isUpcoming}) {
+    final String patientName = consultation['patient_name'] ?? 'Unknown Patient';
+    final String type = consultation['call_type'] ?? 'VIDEO';
+    final String consultationId = consultation['id'].toString();
+    final String patientId = consultation['patient'].toString();
+    final DateTime createdAt = DateTime.parse(consultation['created_at'] ?? DateTime.now().toIso8601String());
+    
+    // Simulate a scheduled time for the UI since the backend doesn't explicitly have it right now
+    // Just add 30 minutes to created_at for upcoming, or show the actual time for history
+    final DateTime scheduledTime = isUpcoming ? DateTime.now().add(const Duration(minutes: 30)) : createdAt;
+    
+    bool isVideo = type == 'VIDEO';
     Color typeColor = isVideo ? videoColor : audioColor;
     IconData typeIcon = isVideo ? Icons.videocam : Icons.phone;
+    
+    // Format date string
+    String dateString = 'Today';
+    if (scheduledTime.day != DateTime.now().day) {
+      dateString = '${scheduledTime.day}/${scheduledTime.month}/${scheduledTime.year}';
+    }
+    
+    int hour = scheduledTime.hour > 12 ? scheduledTime.hour - 12 : (scheduledTime.hour == 0 ? 12 : scheduledTime.hour);
+    String amPm = scheduledTime.hour >= 12 ? 'PM' : 'AM';
+    String timeString = '$hour:${scheduledTime.minute.toString().padLeft(2, '0')} $amPm';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -122,7 +217,7 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                       radius: 28,
                       backgroundColor: typeColor.withOpacity(0.1),
                       child: Text(
-                        consultation.patientName.split(' ').map((e) => e[0]).take(2).join(''),
+                        patientName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join(''),
                         style: TextStyle(
                           color: typeColor,
                           fontWeight: FontWeight.bold,
@@ -136,7 +231,7 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            consultation.patientName,
+                            patientName,
                             style: TextStyle(
                               color: textPrimary,
                               fontSize: 16,
@@ -149,7 +244,7 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                               Icon(typeIcon, size: 14, color: typeColor),
                               const SizedBox(width: 4),
                               Text(
-                                consultation.type,
+                                isVideo ? 'Video Consultation' : 'Audio Consultation',
                                 style: TextStyle(
                                   color: typeColor,
                                   fontSize: 13,
@@ -160,7 +255,7 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            consultation.time,
+                            '$dateString • $timeString',
                             style: TextStyle(
                               color: textSecondary,
                               fontSize: 12,
@@ -169,7 +264,12 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                         ],
                       ),
                     ),
-                    _CountdownBadge(initialSeconds: consultation.initialSeconds),
+                    if (isUpcoming) 
+                      _CountdownBadge(
+                        initialSeconds: scheduledTime.difference(DateTime.now()).inSeconds > 0 
+                            ? scheduledTime.difference(DateTime.now()).inSeconds 
+                            : 0,
+                      ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -178,23 +278,23 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          PatientData patientData;
-                          if (consultation.patientName.contains('Ramesh')) {
-                            patientData = PatientData.getDummyRamesh();
-                          } else if (consultation.patientName.contains('Sunita')) {
-                            patientData = PatientData.getDummySunita();
+                          final patientDetails = consultation['patient_details'];
+                          if (patientDetails != null) {
+                            final patientData = PatientData.fromJson(patientDetails);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PatientDetailsScreen(patient: patientData),
+                              ),
+                            );
                           } else {
-                            patientData = PatientData.getDummySarah();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Patient details not available')),
+                            );
                           }
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PatientDetailsScreen(patient: patientData),
-                            ),
-                          );
                         },
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Color(0xFFE5E7EB)),
+                          side: const BorderSide(color: Color(0xFFE5E7EB)),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -211,12 +311,17 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                       ),
                     ),
                     const SizedBox(width: 12),
+                    if (isUpcoming)
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const VideoConsultationScreen()),
+                          final doctorName = context.read<AuthProvider>().user?.name ?? 'Doctor';
+                          context.read<ConsultationProvider>().startConsultation(
+                            consultationId: consultationId,
+                            patientId: patientId,
+                            patientName: patientName,
+                            doctorName: doctorName,
+                            isVideo: isVideo,
                           );
                         },
                         style: ElevatedButton.styleFrom(
@@ -288,6 +393,7 @@ class _CountdownBadgeState extends State<_CountdownBadge> {
   }
 
   String _formatDuration(int totalSeconds) {
+    if (totalSeconds <= 0) return '00:00';
     int minutes = totalSeconds ~/ 60;
     int seconds = totalSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
@@ -295,20 +401,7 @@ class _CountdownBadgeState extends State<_CountdownBadge> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFEF3C7),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        'Starts in ${_formatDuration(_seconds)}',
-        style: const TextStyle(
-          color: Color(0xFFD97706),
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
+    // Returning an empty SizedBox since the previous code was commented out
+    return const SizedBox.shrink();
   }
 }

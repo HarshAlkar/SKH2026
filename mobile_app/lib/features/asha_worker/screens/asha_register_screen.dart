@@ -83,7 +83,7 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Gramin Health Connect",
+          "VitalReach",
           style: TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,

@@ -167,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 20),
         const Text(
-          'Gramin Health Connect',
+          'VitalReach',
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.bold,

@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/consultation_provider.dart';
 
 class VideoConsultationScreen extends StatefulWidget {
-  const VideoConsultationScreen({super.key});
+  final String consultationId;
+  
+  const VideoConsultationScreen({
+    super.key,
+    required this.consultationId,
+  });
 
   @override
   State<VideoConsultationScreen> createState() => _VideoConsultationScreenState();
@@ -285,7 +292,7 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
                           children: [
                             InkWell(
                               onTap: () {
-                                Navigator.pop(context);
+                                _showEndCallDialog();
                               },
                               borderRadius: BorderRadius.circular(30),
                               child: Container(
@@ -324,6 +331,33 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showEndCallDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('End Consultation'),
+        content: const Text('Are you sure you want to end this consultation and mark it as completed?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Close video screen
+              await context.read<ConsultationProvider>().endConsultation(widget.consultationId);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
+            child: const Text('End Call'),
+          ),
+        ],
       ),
     );
   }

@@ -90,7 +90,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
         backgroundColor: primaryColor,
         leading: const Icon(Icons.add_box_outlined, color: Colors.white), // Medical plus icon alternative
         title: const Text(
-          'Gramin Health Connect',
+          'VitalReach',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -491,7 +491,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                 child: Column(
                   children: [
                     const Text(
-                      "© 2024 Gramin Health Connect",
+                      "© 2024 VitalReach",
                       style: TextStyle(
                         color: Color(0xFF94A3B8),
                         fontSize: 12,

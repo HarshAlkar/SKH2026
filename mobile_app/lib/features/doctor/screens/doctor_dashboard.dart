@@ -9,6 +9,7 @@ import 'schedule_screen.dart';
 import 'doctor_profile_screen.dart';
 import '../../../providers/auth_provider.dart';
 import '../widgets/doctor_navigation_drawer.dart';
+import 'prescription_history_screen.dart';
 
 import '../../../providers/consultation_provider.dart';
 
@@ -179,7 +180,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Gramin Health Connect · Phone: ${user?.phoneNumber ?? 'N/A'}',
+          'VitalReach · Phone: ${user?.phoneNumber ?? 'N/A'}',
           style: TextStyle(
             color: textSecondary,
             fontSize: 13,
@@ -395,15 +396,18 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           icon: Icons.assignment,
           title: 'Create Prescription',
           onTap: () {
-            _navigateTo(const CreatePrescriptionScreen());
+            _navigateTo(const MyPatientsScreen());
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Please select a patient to create a prescription')),
+            );
           },
         ),
         const SizedBox(height: 12),
         _buildActionCard(
           icon: Icons.history,
-          title: 'Consultation History',
+          title: 'Prescription History',
           onTap: () {
-            _navigateTo(const ConsultationHistoryScreen());
+            _navigateTo(PrescriptionHistoryScreen());
           },
         ),
       ],

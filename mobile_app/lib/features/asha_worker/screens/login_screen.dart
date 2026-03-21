@@ -91,7 +91,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
         centerTitle: true,
         leading: Icon(Icons.health_and_safety, color: primaryColor, size: 28),
         title: const Text(
-          "Gramin Health Connect",
+          "VitalReach",
           style: TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
@@ -434,7 +434,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
 
               // Footer Text
               Text(
-                "© 2024 Gramin Health Connect. Empowering healthcare in every village.",
+                "© 2024 VitalReach. Empowering healthcare in every village.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,

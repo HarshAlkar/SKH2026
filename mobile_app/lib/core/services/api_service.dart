@@ -8,8 +8,8 @@ class ApiService {
 
   final StorageService _storageService = StorageService();
 
-  Future<Map<String, String>> _getHeaders(Map<String, String>? extra) async {
-    final token = _storageService.getString('token');
+  Future<Map<String, String>> _getHeaders({Map<String, String>? extra, bool includeToken = true}) async {
+    final token = includeToken ? _storageService.getString('token') : null;
     return {
       'Accept': 'application/json',
       if (token != null) 'Authorization': 'Token $token',
@@ -17,9 +17,9 @@ class ApiService {
     };
   }
 
-  Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
+  Future<dynamic> get(String endpoint, {Map<String, String>? headers, bool includeToken = true}) async {
     try {
-      final combinedHeaders = await _getHeaders(headers);
+      final combinedHeaders = await _getHeaders(extra: headers, includeToken: includeToken);
       final response = await _client.get(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
         headers: combinedHeaders,
@@ -34,12 +34,13 @@ class ApiService {
     String endpoint, {
     Map<String, String>? headers,
     dynamic body,
+    bool includeToken = true,
   }) async {
     try {
-      final combinedHeaders = await _getHeaders({
+      final combinedHeaders = await _getHeaders(extra: {
         'Content-Type': 'application/json',
         ...?headers,
-      });
+      }, includeToken: includeToken);
       final response = await _client.post(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
         headers: combinedHeaders,
@@ -55,12 +56,13 @@ class ApiService {
     String endpoint, {
     Map<String, String>? headers,
     dynamic body,
+    bool includeToken = true,
   }) async {
     try {
-      final combinedHeaders = await _getHeaders({
+      final combinedHeaders = await _getHeaders(extra: {
         'Content-Type': 'application/json',
         ...?headers,
-      });
+      }, includeToken: includeToken);
       final response = await _client.put(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
         headers: combinedHeaders,
@@ -72,9 +74,9 @@ class ApiService {
     }
   }
 
-  Future<dynamic> delete(String endpoint, {Map<String, String>? headers}) async {
+  Future<dynamic> delete(String endpoint, {Map<String, String>? headers, bool includeToken = true}) async {
     try {
-      final combinedHeaders = await _getHeaders(headers);
+      final combinedHeaders = await _getHeaders(extra: headers, includeToken: includeToken);
       final response = await _client.delete(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
         headers: combinedHeaders,

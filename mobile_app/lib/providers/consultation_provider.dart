@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../features/user/services/doctor_service.dart';
 import '../core/services/signaling_service.dart';
 import '../features/user/screens/call_screen.dart';
+import '../features/doctor/screens/video_consultation_screen.dart';
 import '../main.dart';
 
 class ConsultationProvider extends ChangeNotifier {
@@ -9,9 +10,11 @@ class ConsultationProvider extends ChangeNotifier {
   final SignalingService _signaling = SignalingService();
   
   List<Map<String, dynamic>> _history = [];
+  List<Map<String, dynamic>> _upcomingConsultations = [];
   bool _isLoading = false;
 
   List<Map<String, dynamic>> get history => _history;
+  List<Map<String, dynamic>> get upcomingConsultations => _upcomingConsultations;
   bool get isLoading => _isLoading;
 
   void initSignaling(String userId) {
@@ -48,11 +51,8 @@ class ConsultationProvider extends ChangeNotifier {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => CallScreen(
+                    builder: (context) => VideoConsultationScreen(
                       consultationId: consultationId,
-                      doctorName: callerName,
-                      isVideo: callType == 'VIDEO',
-                      isOfferer: false,
                     ),
                   ),
                 );
@@ -65,6 +65,48 @@ class ConsultationProvider extends ChangeNotifier {
     }
   }
 
+  void startConsultation({
+    required String consultationId,
+    required String patientId,
+    required String patientName,
+    required String doctorName,
+    required bool isVideo,
+  }) {
+    _signaling.sendCallRequest(
+      receiverId: patientId,
+      consultationId: consultationId,
+      callerName: doctorName,
+      callType: isVideo ? 'VIDEO' : 'AUDIO',
+    );
+    
+    final context = navigatorKey.currentContext;
+    if (context != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VideoConsultationScreen(
+            consultationId: consultationId,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> endConsultation(String consultationId) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      await _doctorService.endConsultation(consultationId);
+      await fetchUpcomingConsultations();
+      await fetchHistory();
+    } catch (e) {
+      print('Error ending consultation: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> fetchHistory() async {
     _isLoading = true;
     notifyListeners();
@@ -72,6 +114,19 @@ class ConsultationProvider extends ChangeNotifier {
       _history = await _doctorService.getConsultationHistory();
     } catch (e) {
       print('Error: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchUpcomingConsultations() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      _upcomingConsultations = await _doctorService.getPendingConsultations();
+    } catch (e) {
+      print('Error fetching upcoming consultations: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

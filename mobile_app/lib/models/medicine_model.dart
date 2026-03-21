@@ -43,10 +43,10 @@ class MedicineModel {
       id: map['id'],
       medicineName: map['medicine_name'] ?? map['name'] ?? '',
       dosage: map['dosage'] ?? '',
-      frequency: map['frequency'] ?? '',
-      startDate: map['start_date'] ?? '',
-      endDate: map['end_date'] ?? '',
-      reminderTime: map['reminder_time'] ?? map['time'] ?? '',
+      frequency: map['frequency'] ?? map['timing'] ?? '',
+      startDate: map['start_date'] ?? map['duration'] ?? '',
+      endDate: map['end_date'] ?? map['duration'] ?? '',
+      reminderTime: map['reminder_time'] ?? '',
       instructions: map['instructions'] ?? '',
       isTaken: map['is_taken'] == 1 || map['is_taken'] == true,
       createdAt: map['created_at'] != null 
@@ -66,6 +66,17 @@ class MedicineModel {
       'reminder_time': reminderTime,
       'instructions': instructions,
       'is_taken': isTaken,
+    };
+  }
+
+  // Helper for backend mapping
+  Map<String, dynamic> toBackendJson() {
+    return {
+      'name': medicineName,
+      'dosage': dosage,
+      'duration': '$startDate to $endDate', // Map dates to duration string
+      'timing': frequency,
+      'instructions': instructions,
     };
   }
 }

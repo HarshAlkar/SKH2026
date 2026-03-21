@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'patient_details_screen.dart';
+import '../../user/services/doctor_service.dart';
 
 class Patient {
   final String name;
@@ -28,74 +29,15 @@ class MyPatientsScreen extends StatefulWidget {
 
 class _MyPatientsScreenState extends State<MyPatientsScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final DoctorService _doctorService = DoctorService();
   String _searchQuery = '';
+  late Future<List<Map<String, dynamic>>> _patientsFuture;
 
-  final Map<String, List<Patient>> _groupedPatients = {
-    'TODAY': [
-      Patient(
-        name: 'Sarah Jenkins',
-        age: '28',
-        village: 'Green Valley',
-        lastVisit: 'Today · 09:45 AM',
-        status: 'Recovering',
-        statusColor: const Color(0xFFF59E0B),
-      ),
-      Patient(
-        name: 'Amitabh Bachchan',
-        age: '78',
-        village: 'Mumbai South',
-        lastVisit: 'Today · 10:30 AM',
-        status: 'Needs Consultation',
-        statusColor: const Color(0xFFEF4444),
-      ),
-    ],
-    'YESTERDAY': [
-      Patient(
-        name: 'Ramesh Patil',
-        age: '45',
-        village: 'Kaman',
-        lastVisit: 'Yesterday · 06:20 PM',
-        status: 'Recovered',
-        statusColor: const Color(0xFF22C55E),
-      ),
-      Patient(
-        name: 'Priyanka Chopra',
-        age: '38',
-        village: 'Juhu',
-        lastVisit: 'Yesterday · 11:15 AM',
-        status: 'Recovering',
-        statusColor: const Color(0xFFF59E0B),
-      ),
-    ],
-    'THIS WEEK': [
-      Patient(
-        name: 'Sunita Deshmukh',
-        age: '32',
-        village: 'Pelhar',
-        lastVisit: '3 days ago',
-        status: 'Needs Consultation',
-        statusColor: const Color(0xFFEF4444),
-      ),
-      Patient(
-        name: 'Rajesh Khanna',
-        age: '55',
-        village: 'Virar West',
-        lastVisit: '4 days ago',
-        status: 'Recovered',
-        statusColor: const Color(0xFF22C55E),
-      ),
-    ],
-    'THIS MONTH': [
-      Patient(
-        name: 'Lata Bai',
-        age: '62',
-        village: 'Vasai',
-        lastVisit: '12 days ago',
-        status: 'Recovering',
-        statusColor: const Color(0xFFF59E0B),
-      ),
-    ],
-  };
+  @override
+  void initState() {
+    super.initState();
+    _patientsFuture = _doctorService.getPatients();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -176,48 +118,56 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
   }
 
   Widget _buildPatientList() {
-    List<Widget> listItems = [];
-
-    _groupedPatients.forEach((section, patients) {
-      final filteredPatients = patients
-          .where((p) => p.name.toLowerCase().contains(_searchQuery))
-          .toList();
-
-      if (filteredPatients.isNotEmpty) {
-        listItems.add(_buildSectionHeader(section));
-        for (var patient in filteredPatients) {
-          listItems.add(_buildPatientCard(patient));
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _patientsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
         }
-        listItems.add(const SizedBox(height: 16));
-      }
-    });
-
-    if (listItems.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_search, size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 16),
-            Text(
-              'No patients found',
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+        
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error loading patients: ${snapshot.error}',
+              style: const TextStyle(color: Colors.red),
             ),
-          ],
-        ),
-      );
-    }
+          );
+        }
 
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      children: [
-        const SizedBox(height: 8),
-        ...listItems,
-      ],
+        final patients = snapshot.data ?? [];
+        final filteredPatients = patients.where((p) {
+          final name = (p['name'] ?? '').toString().toLowerCase();
+          return name.contains(_searchQuery);
+        }).toList();
+
+        if (filteredPatients.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.person_search, size: 64, color: Colors.grey.shade300),
+                const SizedBox(height: 16),
+                Text(
+                  _searchQuery.isEmpty ? 'No patients in database' : 'No matches found',
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          itemCount: filteredPatients.length,
+          itemBuilder: (context, index) {
+            return _buildPatientCardFromMap(filteredPatients[index]);
+          },
+        );
+      },
     );
   }
 
@@ -236,9 +186,13 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
     );
   }
 
-  Widget _buildPatientCard(Patient patient) {
+  Widget _buildPatientCardFromMap(Map<String, dynamic> patient) {
     const textPrimary = Color(0xFF1F2937);
     const textSecondary = Color(0xFF6B7280);
+    
+    final String name = patient['name'] ?? 'Unknown';
+    final String age = (patient['age'] ?? 'N/A').toString();
+    final String village = patient['village'] ?? 'Unknown Village';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -258,20 +212,12 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: () {
-            PatientData patientData;
-            if (patient.name.contains('Ramesh')) {
-              patientData = PatientData.getDummyRamesh();
-            } else if (patient.name.contains('Amitabh')) {
-              patientData = PatientData.getDummyAmitabh();
-            } else if (patient.name.contains('Sunita')) {
-              patientData = PatientData.getDummySunita();
-            } else {
-              patientData = PatientData.getDummySarah();
-            }
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PatientDetailsScreen(patient: patientData),
+                builder: (context) => PatientDetailsScreen(
+                  patient: PatientData.fromJson(patient),
+                ),
               ),
             );
           },
@@ -284,7 +230,7 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
                   radius: 28,
                   backgroundColor: const Color(0xFFE8F1FF),
                   child: Text(
-                    patient.name.split(' ').map((e) => e[0]).take(2).join(''),
+                    name.isNotEmpty ? name.split(' ').map((e) => e[0]).take(2).join('') : 'P',
                     style: const TextStyle(
                       color: Color(0xFF2A7DE1),
                       fontWeight: FontWeight.bold,
@@ -298,7 +244,7 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        patient.name,
+                        name,
                         style: const TextStyle(
                           color: textPrimary,
                           fontSize: 16,
@@ -307,7 +253,7 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Age: ${patient.age} · Village: ${patient.village}',
+                        'Age: $age · Village: $village',
                         style: const TextStyle(
                           color: textSecondary,
                           fontSize: 13,
@@ -315,18 +261,18 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'Last Visit: ${patient.lastVisit}',
-                        style: const TextStyle(
-                          color: textSecondary,
+                      const Text(
+                        'View Records & Details',
+                        style: TextStyle(
+                          color: Color(0xFF2A7DE1),
                           fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                _buildStatusBadge(patient.status, patient.statusColor),
+                const Icon(Icons.chevron_right, color: Color(0xFFCBD5E1)),
               ],
             ),
           ),
