@@ -38,11 +38,22 @@ class RegisterSerializer(serializers.ModelSerializer):
                   'specialization', 'experience_years', 'hospital_name', 'assigned_village', 'phc_center', 'license_number']
     
     def validate_phone_number(self, value):
+        if not value:
+            return value
         if not re.match(r'^\d{10}$', value):
             raise serializers.ValidationError("Phone number must be exactly 10 digits.")
-        if User.objects.filter(phone_number=value).exists() or User.objects.filter(username=value).exists():
+        if User.objects.filter(phone_number=value).exists():
             raise serializers.ValidationError("This phone number is already registered.")
         return value
+
+    def validate(self, data):
+        email = data.get('email')
+        phone_number = data.get('phone_number')
+        
+        if not email and not phone_number:
+            raise serializers.ValidationError("Either email or phone number is required.")
+        
+        return data
 
     def validate_name(self, value):
         if not value:
@@ -63,9 +74,9 @@ class RegisterSerializer(serializers.ModelSerializer):
         phc_center = validated_data.pop('phc_center', None)
         license_number = validated_data.pop('license_number', None)
         
-        # Use phone_number as username if username not provided
+        # Use phone_number as username if provided, else use email
         if not validated_data.get('username'):
-            validated_data['username'] = validated_data.get('phone_number')
+            validated_data['username'] = validated_data.get('phone_number') or validated_data.get('email')
 
         user = User.objects.create_user(**validated_data)
         

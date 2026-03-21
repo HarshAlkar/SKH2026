@@ -1,39 +1,32 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from apps.prescriptions.models import Prescription
+from apps.prescriptions.models import Medication
 from .models import MedicineSchedule
 from django.utils import timezone
 import datetime
-import json
+import re
 
-@receiver(post_save, sender=Prescription)
-def sync_prescription_to_schedule(sender, instance, created, **kwargs):
+@receiver(post_save, sender=Medication)
+def sync_medication_to_schedule(sender, instance, created, **kwargs):
     if created:
-        patient = instance.consultation.patient
-        medications_text = instance.medications
+        prescription = instance.prescription
+        patient = prescription.consultation.patient
         
-        # Try to parse if it's JSON list
-        try:
-            meds = json.loads(medications_text)
-            if not isinstance(meds, list):
-                meds = [medications_text]
-        except:
-            # Not JSON, split by lines or commas
-            meds = medications_text.replace(',', '\n').split('\n')
+        # Parse duration to get end date (e.g., "3 days" -> current + 3)
+        duration_days = 7 # Default
+        if instance.duration:
+            match = re.search(r'(\d+)', instance.duration)
+            if match:
+                duration_days = int(match.group(1))
 
-        for med_raw in meds:
-            med_name = med_raw.strip()
-            if not med_name:
-                continue
-                
-            # Default values for sync
-            MedicineSchedule.objects.create(
-                patient=patient,
-                medicine_name=med_name,
-                dosage="As prescribed",
-                frequency="Daily",
-                start_date=timezone.now().date(),
-                end_date=timezone.now().date() + datetime.timedelta(days=7), # Default 1 week
-                reminder_time=datetime.time(9, 0), # Default 9 AM
-                instructions=instance.dosage_instructions
-            )
+        # Default values for sync from Medication fields
+        MedicineSchedule.objects.create(
+            patient=patient,
+            medicine_name=instance.name,
+            dosage=instance.dosage,
+            frequency=instance.timing or "As prescribed",
+            start_date=timezone.now().date(),
+            end_date=timezone.now().date() + datetime.timedelta(days=duration_days),
+            reminder_time=datetime.time(9, 0), # Default 9 AM
+            instructions=instance.instructions
+        )

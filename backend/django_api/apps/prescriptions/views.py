@@ -10,7 +10,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if hasattr(user, 'patient_profile'):
-            return self.queryset.filter(consultation__patient=user.patient_profile)
+            return self.queryset.filter(consultation__patient=user.patient_profile).order_by('-issued_at')
         elif hasattr(user, 'doctor_profile'):
-            return self.queryset.filter(consultation__doctor=user.doctor_profile)
+            return self.queryset.filter(consultation__doctor=user.doctor_profile).order_by('-issued_at')
         return self.queryset.none()

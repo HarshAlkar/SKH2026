@@ -2,12 +2,27 @@ from rest_framework import serializers
 from .models import Doctor
 
 class DoctorSerializer(serializers.ModelSerializer):
-    full_name = serializers.SerializerMethodField()
-    phone_number = serializers.CharField(source='user.phone_number', read_only=True)
+    full_name = serializers.CharField(source='user.name', required=False, allow_blank=True)
+    phone_number = serializers.CharField(source='user.phone_number', required=False, allow_blank=True)
 
-    def get_full_name(self, obj):
-        return obj.user.name or obj.user.username or f"Doctor #{obj.id}"
-    
     class Meta:
         model = Doctor
         fields = ['id', 'user_id', 'full_name', 'phone_number', 'specialization', 'qualification', 'experience_years', 'hospital_name', 'bio', 'is_available']
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+        
+        # Update User model
+        if 'name' in user_data:
+            instance.user.name = user_data['name']
+        if 'phone_number' in user_data:
+            instance.user.phone_number = user_data['phone_number']
+        if user_data:
+            instance.user.save()
+
+        # Update Doctor model
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        return instance
