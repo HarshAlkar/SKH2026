@@ -52,34 +52,32 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
     }
   }
 
-  void _handleOtpLogin() async {
-    final identifier = _idController.text.trim();
-    if (identifier.isEmpty) {
-      Helpers.showSnackBar(context, 'Please enter your phone number', isError: true);
-      return;
-    }
-
+  void _handleDemoLogin(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final response = await authProvider.sendOtp(identifier);
-
-    if (response != null && mounted) {
-      Navigator.pushNamed(
-        context, 
-        AppRoutes.loginWithOtp,
-        arguments: {
-          'phoneNumber': identifier,
-          'role': 'asha_worker',
-          'isForgotPassword': false,
-        },
-      );
-    } else if (mounted) {
-      Helpers.showSnackBar(
-        context,
-        authProvider.error ?? 'Failed to send OTP. Is your account registered?',
-        isError: true,
-      );
+    final success = await authProvider.demoLogin('asha_worker');
+    
+    if (success && mounted) {
+      Navigator.pushReplacementNamed(context, AppRoutes.ashaDashboard);
     }
   }
+  
+  void _handleOtpLogin() {
+  final phone = _idController.text.trim();
+
+  if (phone.isEmpty || phone.length < 10) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Enter valid phone number")),
+    );
+    return;
+  }
+
+  // TODO: Navigate to OTP screen or call API
+  print("Sending OTP to $phone");
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text("OTP sent to $phone")),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +89,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
         centerTitle: true,
         leading: Icon(Icons.health_and_safety, color: primaryColor, size: 28),
         title: const Text(
-          "Gramin Health Connect",
+          "VitalReach",
           style: TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
@@ -385,18 +383,34 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(
-                            0xFFE8F5E9,
-                          ), // Light green tint
+                          backgroundColor: const Color(0xFFE8F5E9),
                           foregroundColor: Colors.teal,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: Colors.teal.shade200,
-                              width: 1,
-                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Demo Access Button
+                      OutlinedButton.icon(
+                        onPressed: () => _handleDemoLogin(context),
+                        icon: const Icon(Icons.flash_on, color: Colors.orange, size: 20),
+                        label: const Text(
+                          "Demo Access (No Login)",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(color: Colors.orange, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                       ),
@@ -404,6 +418,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                   ),
                 ),
               ),
+
               const SizedBox(height: 48),
 
               // Bottom Feature Icons
@@ -434,7 +449,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
 
               // Footer Text
               Text(
-                "© 2024 Gramin Health Connect. Empowering healthcare in every village.",
+                "© 2024 VitalReach. Empowering healthcare in every village.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,

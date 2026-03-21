@@ -72,6 +72,27 @@ class ApiService {
     }
   }
 
+  Future<dynamic> patch(
+    String endpoint, {
+    Map<String, String>? headers,
+    dynamic body,
+  }) async {
+    try {
+      final combinedHeaders = await _getHeaders({
+        'Content-Type': 'application/json',
+        ...?headers,
+      });
+      final response = await _client.patch(
+        Uri.parse('${ApiConstants.baseUrl}$endpoint'),
+        headers: combinedHeaders,
+        body: jsonEncode(body),
+      );
+      return _processResponse(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<dynamic> delete(String endpoint, {Map<String, String>? headers}) async {
     try {
       final combinedHeaders = await _getHeaders(headers);

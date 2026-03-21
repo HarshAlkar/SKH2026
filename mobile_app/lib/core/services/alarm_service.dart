@@ -1,22 +1,21 @@
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'notification_service.dart';
 
 class AlarmService {
   static Future<void> init() async {
+    if (kIsWeb || !Platform.isAndroid) return;
     await AndroidAlarmManager.initialize();
-    debugPrint('AlarmService Initialized');
   }
 
   static Future<void> scheduleMedicineAlarm(int id, DateTime time, String name, String instructions, String dosage) async {
-    // Ensure the ID is valid for Android alarms (int32)
-    final alarmId = id % 2147483647;
-    
-    debugPrint('Scheduling alarm for $name (ID: $alarmId) at $time');
-    
+    if (kIsWeb || !Platform.isAndroid) return;
+    // Schedule alarm
     await AndroidAlarmManager.oneShotAt(
       time,
-      alarmId,
+      id,
       callback,
       exact: true,
       wakeup: true,
@@ -26,46 +25,28 @@ class AlarmService {
         'instructions': instructions,
         'dosage': dosage,
         'id': id,
-        'time': time.toIso8601String(),
       },
     );
   }
 
   @pragma('vm:entry-point')
-  static void callback(int id, Map<String, dynamic> params) {
-    debugPrint('--- ALARM TRIGGERED ---');
-    debugPrint('Alarm ID: $id');
-    debugPrint('Medicine: ${params['name']}');
+  static Future<void> callback(int id, Map<String, dynamic> params) async {
+    WidgetsFlutterBinding.ensureInitialized();
+    debugPrint('Alarm triggered for $id');
     
-    // Trigger notification
-    NotificationService().showMedicineReminder(
-      params['id'] ?? id, 
+    final notificationService = NotificationService();
+    await notificationService.init();
+
+    await notificationService.showMedicineReminder(
+      id, 
       params['name'] ?? 'Medicine', 
       params['instructions'] ?? '',
       params['dosage'] ?? '',
     );
-
-    // Reschedule for tomorrow
-    try {
-      final lastTime = DateTime.parse(params['time']);
-      final nextTime = lastTime.add(const Duration(days: 1));
-      
-      scheduleMedicineAlarm(
-        params['id'] ?? id,
-        nextTime,
-        params['name'] ?? 'Medicine',
-        params['instructions'] ?? '',
-        params['dosage'] ?? '',
-      );
-      debugPrint('Rescheduled for: $nextTime');
-    } catch (e) {
-      debugPrint('Error rescheduling alarm: $e');
-    }
   }
 
   static Future<void> cancelAlarm(int id) async {
-    final alarmId = id % 2147483647;
-    await AndroidAlarmManager.cancel(alarmId);
-    debugPrint('Cancelled alarm $alarmId');
+    if (kIsWeb || !Platform.isAndroid) return;
+    await AndroidAlarmManager.cancel(id);
   }
 }

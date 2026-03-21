@@ -78,12 +78,9 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: const Icon(Icons.health_and_safety, color: Color(0xFF1FA67A), size: 28),
         title: const Text(
-          "Gramin Health Connect",
+          "VitalReach",
           style: TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
@@ -234,10 +231,12 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
                           Icons.phone_outlined,
                         ),
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty)
+                          if (value == null || value.trim().isEmpty) {
                             return 'Required';
-                          if (value.trim().length != 10)
+                          }
+                          if (value.trim().length != 10) {
                             return 'Must be exactly 10 digits';
+                          }
                           return null;
                         },
                       ),
@@ -262,7 +261,7 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
                       // Field 4: District
                       _buildLabel("District"),
                       DropdownButtonFormField<String>(
-                        value: _selectedDistrict,
+                        initialValue: _selectedDistrict,
                         hint: Text(
                           "Select District",
                           style: TextStyle(
@@ -367,8 +366,9 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
                             ),
                         validator: (value) {
                           if (value == null || value.isEmpty) return 'Required';
-                          if (value != _passwordController.text)
+                          if (value != _passwordController.text) {
                             return 'Passwords do not match';
+                          }
                           return null;
                         },
                       ),
@@ -478,7 +478,7 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
 
               // Footer
               Text(
-                "© 2024 Gramin Health Connect. Empowering Rural Health.",
+                "© 2024 VitalReach. Empowering Rural Health.",
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),

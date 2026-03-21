@@ -54,7 +54,7 @@ class _PatientSelectorState extends State<PatientSelector> {
                 return DropdownMenuItem<String>(
                   value: patient['name'],
                   child: Text(
-                    "\${patient['name']} – Age \${patient['age']} – \${patient['village']}",
+                    "${patient['name']} – Age ${patient['age']} – ${patient['village']}",
                     style: const TextStyle(fontSize: 14, color: Colors.black87),
                   ),
                 );

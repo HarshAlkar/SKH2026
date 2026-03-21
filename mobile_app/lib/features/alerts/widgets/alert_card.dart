@@ -22,7 +22,7 @@ class AlertCard extends StatelessWidget {
   void _contactPatient(BuildContext context) {
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('Calling \${alert.patientName}...')));
+    ).showSnackBar(SnackBar(content: Text('Calling ${alert.patientName}...')));
   }
 
   void _notifyDoctor(BuildContext context) {
@@ -93,7 +93,7 @@ class AlertCard extends StatelessWidget {
 
                     // Title
                     Text(
-                      '\${alert.alertType} – \${alert.patientName}',
+                      '${alert.alertType} – ${alert.patientName}',
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,

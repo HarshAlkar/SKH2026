@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:async';
+import 'dart:convert';
+import '../../../core/widgets/common_appbar.dart';
+import '../../../routes/app_routes.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 import '../widgets/custom_input_field.dart';
 import '../widgets/custom_dropdown_field.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/constants/api_constants.dart';
 
 class RegisterPatientScreen extends StatefulWidget {
   const RegisterPatientScreen({super.key});
@@ -9,15 +16,17 @@ class RegisterPatientScreen extends StatefulWidget {
   @override
   State<RegisterPatientScreen> createState() => _RegisterPatientScreenState();
 }
-
+  
 class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
-  final _villageController = TextEditingController();
   final _phoneController = TextEditingController();
   final _diseaseController = TextEditingController();
+
+  // For the map lookup
+  String _finalVillageName = "";
 
   String? _selectedGender;
   String? _selectedBloodGroup = "Not Known";
@@ -29,41 +38,108 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _nameController.dispose();
     _ageController.dispose();
-    _villageController.dispose();
     _phoneController.dispose();
     _diseaseController.dispose();
     super.dispose();
   }
 
+  // Prevent API rate limit blocks
+  Timer? _debounce;
+  final Map<String, List<String>> _cache = {};
+
+  Future<List<String>> _searchMapsVillages(String query) async {
+    if (query.isEmpty || query.length < 3) return const [];
+    
+    if (_cache.containsKey(query)) return _cache[query]!;
+
+    Completer<List<String>> completer = Completer();
+    
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    
+    _debounce = Timer(const Duration(milliseconds: 1000), () async {
+      try {
+        final url = Uri.parse(
+            'https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=5&countrycodes=in');
+        final response = await http.get(url, headers: {'User-Agent': 'HackStompApp/1.0'});
+        if (response.statusCode == 200) {
+          final List data = jsonDecode(response.body);
+          if (data.isEmpty) {
+             completer.complete([query]);
+             return;
+          }
+          List<String> results = data.map((item) => item['display_name'].toString()).toList();
+          _cache[query] = results;
+          completer.complete(results);
+          return;
+        }
+      } catch (_) {}
+      completer.complete([query]); // Always allow manual entry if API rate limited
+    });
+
+    return completer.future;
+  }
+
   void _handleSavePatient() async {
     if (_formKey.currentState!.validate()) {
+      if (_finalVillageName.trim().isEmpty) {
+         ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please select or enter a valid village from the map dropdown.')),
+         );
+         return;
+      }
+
       setState(() {
         _isLoading = true;
       });
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        final payload = {
+          'name': _nameController.text.trim(),
+          'age': _ageController.text.trim(),
+          'gender': _selectedGender,
+          'village': _finalVillageName, // Push the extracted GPS map string
+          'phone_number': _phoneController.text.trim(),
+          'blood_group': _selectedBloodGroup,
+          'disease': _diseaseController.text.trim(),
+        };
 
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        await ApiService().post(ApiConstants.patientsEndpoint, body: payload);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Patient registered successfully",
-              style: TextStyle(fontWeight: FontWeight.bold),
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "Patient registered successfully",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
             ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+          );
 
-        // Navigate back to the Dashboard/Village Patients list smoothly
-        Navigator.pop(context);
+          // Return to previous screen so VillagePatientsScreen will refresh completely
+          Navigator.pop(context, true); 
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $e'),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     }
   }
@@ -102,34 +178,107 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
     );
   }
 
+  Widget _buildMapsAutocomplete() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Village (Search GPS Maps)",
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: Colors.black54,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Autocomplete<String>(
+          optionsBuilder: (TextEditingValue textEditingValue) async {
+            if (textEditingValue.text.length < 3) {
+              return const Iterable<String>.empty();
+            }
+            return await _searchMapsVillages(textEditingValue.text);
+          },
+          onSelected: (String selection) {
+            // Because you requested the full format (Village, City, State, Country)
+            // we will absolutely retain the full selection!
+            setState(() {
+              _finalVillageName = selection.trim();
+            });
+          },
+          fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+            // Keep background state updated in case they manually override and don't pick
+            controller.addListener(() {
+              _finalVillageName = controller.text; 
+            });
+
+            return TextFormField(
+              controller: controller,
+              focusNode: focusNode,
+              onEditingComplete: onEditingComplete,
+              validator: (value) =>
+                  (value == null || value.trim().isEmpty) ? 'Required' : null,
+              decoration: InputDecoration(
+                hintText: "Type and wait for map suggestions...",
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                prefixIcon: const Icon(Icons.public, color: Color(0xFF2F4DB6)),
+                filled: true,
+                fillColor: const Color(0xFFF5F7FA),
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF2F4DB6), width: 1.5),
+                ),
+              ),
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 6.0,
+                borderRadius: BorderRadius.circular(12),
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width - 80, 
+                  height: 200, // Constrain popup size securely over other fields
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(0),
+                    itemCount: options.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      final String option = options.elementAt(index);
+                      return ListTile(
+                        leading: const Icon(Icons.location_on, color: Colors.blueAccent),
+                        title: Text(option, style: const TextStyle(fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                        onTap: () {
+                          onSelected(option);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: lightBackground,
-      appBar: AppBar(
-        title: const Text(
-          "Register New Patient",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: primaryColor,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-        ),
+      appBar: const CommonAppBar(
+        title: "Register New Patient",
       ),
+      drawer: const AshaDrawer(currentRoute: AppRoutes.registerPatient),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -166,10 +315,12 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
                               controller: _ageController,
                               keyboardType: TextInputType.number,
                               validator: (value) {
-                                if (value == null || value.trim().isEmpty)
+                                if (value == null || value.trim().isEmpty) {
                                   return 'Required';
-                                if (int.tryParse(value) == null)
+                                }
+                                if (int.tryParse(value) == null) {
                                   return 'Must be numeric';
+                                }
                                 return null;
                               },
                             ),
@@ -199,16 +350,7 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
                   title: "LOCATION & CONTACT",
                   child: Column(
                     children: [
-                      CustomInputField(
-                        label: "Village",
-                        hintText: "Village Name",
-                        prefixIcon: Icons.location_on,
-                        controller: _villageController,
-                        validator: (value) =>
-                            (value == null || value.trim().isEmpty)
-                            ? 'Required'
-                            : null,
-                      ),
+                      _buildMapsAutocomplete(), // GPS Map Autocomplete Field Fully Replaces original CustomInputField
                       const SizedBox(height: 16),
                       CustomInputField(
                         label: "Phone Number",
@@ -217,12 +359,15 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
                         validator: (value) {
-                          if (value == null || value.trim().isEmpty)
+                          if (value == null || value.trim().isEmpty) {
                             return 'Required';
-                          if (value.trim().length != 10)
+                          }
+                          if (value.trim().length != 10) {
                             return 'Must be 10 digits';
-                          if (int.tryParse(value) == null)
+                          }
+                          if (int.tryParse(value) == null) {
                             return 'Must be numeric';
+                          }
                           return null;
                         },
                       ),

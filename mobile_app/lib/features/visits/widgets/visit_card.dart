@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/visit_model.dart';
 import 'status_badge.dart';
-import '../../patient/screens/patient_details_screen.dart';
+import '../../../routes/app_routes.dart';
 
 class VisitCard extends StatelessWidget {
   final VisitModel visit;
@@ -35,11 +35,10 @@ class VisitCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            Navigator.push(
+            Navigator.pushNamed(
               context,
-              MaterialPageRoute(
-                builder: (context) => const PatientDetailsScreen(),
-              ),
+              AppRoutes.ashaPatientDetails,
+              arguments: {'id': visit.patientId},
             );
           },
           child: Padding(
@@ -64,7 +63,7 @@ class VisitCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "Village: \${visit.village}",
+                            "Village: ${visit.village}",
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey[600],
@@ -82,7 +81,7 @@ class VisitCard extends StatelessWidget {
                     Icon(Icons.access_time, size: 16, color: Colors.grey[500]),
                     const SizedBox(width: 4),
                     Text(
-                      "Visit Time: \${visit.visitTime}",
+                      "Visit Time: ${visit.visitTime}",
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[600],
@@ -99,12 +98,10 @@ class VisitCard extends StatelessWidget {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          Navigator.push(
+                          Navigator.pushNamed(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const PatientDetailsScreen(),
-                            ),
+                            AppRoutes.ashaPatientDetails,
+                            arguments: {'id': visit.patientId},
                           );
                         },
                         style: OutlinedButton.styleFrom(

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/patient_model.dart';
 import 'status_badge.dart';
-import '../screens/patient_details_screen.dart';
 import '../../asha_worker/screens/update_health_screen.dart';
+import '../../../routes/app_routes.dart';
 
 class PatientCard extends StatefulWidget {
   final PatientModel patient;
@@ -15,18 +15,6 @@ class PatientCard extends StatefulWidget {
 
 class _PatientCardState extends State<PatientCard> {
   bool _isHovered = false;
-
-  void _navigateTo(BuildContext context, Widget screen) {
-    Navigator.push(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) => screen,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,14 +77,7 @@ class _PatientCardState extends State<PatientCard> {
                                 fontSize: 13,
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Text(
-                              "Village: ${widget.patient.village}",
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                              ),
-                            ),
+                            const SizedBox(width: 16)
                           ],
                         ),
                       ],
@@ -110,8 +91,13 @@ class _PatientCardState extends State<PatientCard> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () =>
-                          _navigateTo(context, const PatientDetailsScreen()),
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppRoutes.ashaPatientDetails,
+                          arguments: widget.patient,
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF005BBC), // Dark blue
                         foregroundColor: Colors.white,
@@ -133,8 +119,16 @@ class _PatientCardState extends State<PatientCard> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () =>
-                          _navigateTo(context, const UpdateHealthScreen()),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UpdateHealthScreen(
+                              initialPatientId: widget.patient.id?.toString(),
+                            ),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE8F1FF), // Light blue
                         foregroundColor: const Color(0xFF005BBC),

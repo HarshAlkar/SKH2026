@@ -17,6 +17,10 @@ class ConsultationCard extends StatelessWidget {
         statusColor = Colors.orange;
         statusText = "Pending";
         break;
+      case ConsultationStatus.approved:
+        statusColor = Colors.purple;
+        statusText = "Approved";
+        break;
       case ConsultationStatus.adviceProvided:
         statusColor = Colors.blue;
         statusText = "Advice Provided";
@@ -24,6 +28,10 @@ class ConsultationCard extends StatelessWidget {
       case ConsultationStatus.completed:
         statusColor = Colors.green;
         statusText = "Completed";
+        break;
+      case ConsultationStatus.rejected:
+        statusColor = Colors.red;
+        statusText = "Rejected";
         break;
     }
 
@@ -66,7 +74,7 @@ class ConsultationCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "\${statusText} • \${_formatTimestamp(consultation.timestamp)}",
+                  "$statusText • ${_formatTimestamp(consultation.timestamp)}",
                   style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
@@ -97,9 +105,9 @@ class ConsultationCard extends StatelessWidget {
     final difference = now.difference(timestamp);
 
     if (difference.inMinutes < 60) {
-      return "\${difference.inMinutes} mins ago";
+      return "${difference.inMinutes} mins ago";
     } else if (difference.inHours < 24) {
-      return "\${difference.inHours} hrs ago";
+      return "${difference.inHours} hrs ago";
     } else {
       return DateFormat('MMM d').format(timestamp);
     }

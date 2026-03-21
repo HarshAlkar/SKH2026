@@ -31,11 +31,13 @@ class RegisterSerializer(serializers.ModelSerializer):
     assigned_village = serializers.CharField(required=False, allow_blank=True)
     phc_center = serializers.CharField(required=False, allow_blank=True)
     license_number = serializers.CharField(required=False, allow_blank=True)
+    worker_id = serializers.CharField(required=False, allow_blank=True)
+    district = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'role', 'phone_number', 'village', 'name',
-                  'specialization', 'experience_years', 'hospital_name', 'assigned_village', 'phc_center', 'license_number']
+                  'specialization', 'experience_years', 'hospital_name', 'assigned_village', 'phc_center', 'license_number', 'worker_id', 'district']
     
     def validate_phone_number(self, value):
         if not re.match(r'^\d{10}$', value):
@@ -62,6 +64,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         assigned_village = validated_data.pop('assigned_village', None)
         phc_center = validated_data.pop('phc_center', None)
         license_number = validated_data.pop('license_number', None)
+        worker_id = validated_data.pop('worker_id', None)
+        district = validated_data.pop('district', None)
         
         # Use phone_number as username if username not provided
         if not validated_data.get('username'):
@@ -80,6 +84,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         elif user.role == 'asha_worker':
             ASHAWorker.objects.create(
                 user=user,
+                worker_id=worker_id,
+                district=district,
                 assigned_village=assigned_village or user.village,
                 phc_center=phc_center or "Local PHC"
             )
@@ -123,17 +129,22 @@ class UserViewSet(viewsets.ModelViewSet):
         if not role:
             return Response({"error": "Role is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Try to find user by phone number
+        # Try to find user by phone number AND specific role
         try:
-            user_obj = User.objects.get(phone_number=phone_number)
-            # Check if role matches
-            if user_obj.role != role:
-                return Response({
-                    "error": f"Invalid login for this module. This account is registered as {user_obj.get_role_display()}."
-                }, status=status.HTTP_403_FORBIDDEN)
+            user_obj = User.objects.get(phone_number=phone_number, role=role)
             username = user_obj.username
         except User.DoesNotExist:
-            return Response({"error": "Invalid credentials or user not found"}, status=status.HTTP_401_UNAUTHORIZED)
+            # Check if phone exists but with a different role to give better UX
+            if User.objects.filter(phone_number=phone_number).exists():
+                other_user = User.objects.filter(phone_number=phone_number).first()
+                return Response({
+                    "error": f"Invalid login for this module. This phone is registered as {other_user.get_role_display()}."
+                }, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "No account found with this phone number"}, status=status.HTTP_401_UNAUTHORIZED)
+        except User.MultipleObjectsReturned:
+            # Should rarely happen with role filtering, but just in case
+            user_obj = User.objects.filter(phone_number=phone_number, role=role).first()
+            username = user_obj.username
 
         user = authenticate(username=username, password=password)
         if user:

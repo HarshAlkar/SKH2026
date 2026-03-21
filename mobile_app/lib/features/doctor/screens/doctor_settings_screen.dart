@@ -357,7 +357,7 @@ class _DoctorSettingsScreenState extends State<DoctorSettingsScreen> {
         ),
       ),
       subtitle: subtitle != null ? Text(subtitle, style: TextStyle(fontSize: 12, color: textSecondary)) : null,
-      activeColor: primaryBlue,
+      activeThumbColor: primaryBlue,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }

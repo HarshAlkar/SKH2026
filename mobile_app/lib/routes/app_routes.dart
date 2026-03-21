@@ -37,9 +37,11 @@ class AppRoutes {
   static const String healthRecords = '/asha/health-records';
   static const String villageVisits = '/asha/village-visits';
   static const String scheduleVisit = '/asha/schedule-visit';
-  static const String emergencyReferral = '/asha/emergency-referral';
-  static const String referralHistory = '/asha/referral-history';
   static const String ashaSettings = '/asha/settings';
   static const String editPatient = '/asha/edit-patient';
+  static const String ashaNotifications = '/asha/notifications';
+  static const String ashaAllActivity = '/asha/all-activity';
+  static const String ashaActivityDetails = '/asha/activity-details';
+  static const String ashaPatientDetails = '/asha/patient-details';
 }
 

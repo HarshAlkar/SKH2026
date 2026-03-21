@@ -1,7 +1,15 @@
-import '../config/app_config.dart';
+import 'package:flutter/foundation.dart';
 
 class ApiConstants {
-  static const String baseUrl = AppConfig.baseUrl;
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8000/api';
+    }
+    
+    // For Android Emulator, always use 10.0.2.2
+    return 'http://10.0.2.2:8000/api';
+  }
+
   static const String loginEndpoint = '/auth/login/';
   static const String registerEndpoint = '/auth/register/';
   static const String logoutEndpoint = '/auth/logout/';
@@ -13,4 +21,7 @@ class ApiConstants {
   static const String consultationsEndpoint = '/consultations/';
   static const String prescriptionsEndpoint = '/prescriptions/';
   static const String alertsEndpoint = '/alerts/';
+  static const String recordsEndpoint = '/records/';
+  static const String ashaDashboardEndpoint = '/asha-workers/dashboard/';
 }
+

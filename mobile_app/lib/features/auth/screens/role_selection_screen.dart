@@ -32,7 +32,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           ),
         ),
         title: const Text(
-          'Gramin Health Connect',
+          'VitalReach',
           style: TextStyle(
             color: Color(0xFF1E293B),
             fontWeight: FontWeight.bold,
@@ -99,7 +99,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               const SizedBox(height: 20),
               const Center(
                 child: Text(
-                  '© 2024 Gramin Health Connect. \nEmpowering Rural Healthcare.',
+                  '© 2024 VitalReach. \nEmpowering Rural Healthcare.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),

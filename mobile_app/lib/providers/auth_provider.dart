@@ -44,6 +44,28 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> demoLogin(String role) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    // Simulate network delay
+    await Future.delayed(const Duration(seconds: 1));
+    
+    _user = UserModel(
+      id: 1,
+      name: role == 'asha_worker' ? 'Lakshmi Devi (ASHA)' : 'Dr. Smith',
+      email: role == 'asha_worker' ? 'asha@gramin.com' : 'doctor@gramin.com',
+      role: role,
+      phoneNumber: '9876543210',
+      village: 'Gramin Village',
+    );
+    
+    _isLoading = false;
+    notifyListeners();
+    return true;
+  }
+
+
   Future<bool> register(Map<String, dynamic> data) async {
     _isLoading = true;
     _error = null;

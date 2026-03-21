@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../core/widgets/common_appbar.dart';
+import '../../../routes/app_routes.dart';
+import '../../asha_worker/widgets/asha_drawer.dart';
 import '../models/patient_model.dart';
 import '../widgets/patient_card.dart';
 import '../widgets/add_patient_button.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/constants/api_constants.dart';
 
 class VillagePatientsScreen extends StatefulWidget {
   const VillagePatientsScreen({super.key});
@@ -12,29 +17,12 @@ class VillagePatientsScreen extends StatefulWidget {
 
 class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ApiService _apiService = ApiService();
 
-  final List<PatientModel> _allPatients = [
-    PatientModel(
-      name: 'Ramesh Patil',
-      age: 45,
-      village: 'Kaman',
-      status: 'Stable',
-    ),
-    PatientModel(
-      name: 'Savitri Devi',
-      age: 62,
-      village: 'Kaman',
-      status: 'Stable',
-    ),
-    PatientModel(
-      name: 'Arun Kumar',
-      age: 28,
-      village: 'Kaman',
-      status: 'Checkup Due',
-    ),
-  ];
-
+  List<PatientModel> _allPatients = [];
   List<PatientModel> _filteredPatients = [];
+  bool _isLoading = true;
+  String? _error;
 
   final Color primaryColor = const Color(0xFF2A7DE1);
   final Color darkBlue = const Color(0xFF005BBC);
@@ -42,13 +30,40 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
   @override
   void initState() {
     super.initState();
-    _filteredPatients = _allPatients;
+    _fetchPatients();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchPatients() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await _apiService.get(ApiConstants.patientsEndpoint);
+      // Backend returns a list of patient dictionaries
+      final List<PatientModel> fetched = (response as List)
+          .map((data) => PatientModel.fromJson(data))
+          .toList();
+
+      setState(() {
+        _allPatients = fetched;
+        _filteredPatients = _allPatients;
+        _isLoading = false;
+      });
+      _filterPatients(_searchController.text);
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   void _filterPatients(String query) {
@@ -71,23 +86,10 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        title: Text(
-          'Village Patients',
-          style: TextStyle(color: darkBlue, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        iconTheme: IconThemeData(color: darkBlue),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            color: darkBlue,
-            onPressed: () {},
-          ),
-          const SizedBox(width: 8),
-        ],
+      appBar: const CommonAppBar(
+        title: 'Village Patients',
       ),
+      drawer: const AshaDrawer(currentRoute: AppRoutes.villagePatients),
       body: Column(
         children: [
           // Search Bar Section
@@ -126,15 +128,52 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
               ],
             ),
           ),
-          // Patient List Section
+          
+          // Loading / Error / Patient List Section
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filteredPatients.length,
-              itemBuilder: (context, index) {
-                return PatientCard(patient: _filteredPatients[index]);
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.error_outline, size: 60, color: Colors.redAccent),
+                            const SizedBox(height: 16),
+                            Text('Error: $_error', style: const TextStyle(color: Colors.red)),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _fetchPatients,
+                              child: const Text('Retry'),
+                            )
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _fetchPatients,
+                        child: _filteredPatients.isEmpty
+                          ? ListView(
+                              children: const [
+                                Padding(
+                                  padding: EdgeInsets.all(40.0),
+                                  child: Center(
+                                    child: Text(
+                                      "No patients found in your village.",
+                                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              padding: const EdgeInsets.all(16),
+                              itemCount: _filteredPatients.length,
+                              itemBuilder: (context, index) {
+                                return PatientCard(patient: _filteredPatients[index]);
+                              },
+                            ),
+                      ),
           ),
         ],
       ),

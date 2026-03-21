@@ -261,7 +261,7 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                         
                         _buildLabel("Specialization"),
                         DropdownButtonFormField<String>(
-                          value: _selectedSpecialization,
+                          initialValue: _selectedSpecialization,
                           icon: const Icon(Icons.keyboard_arrow_down_rounded, color: textSubColor),
                           decoration: InputDecoration(
                             prefixIcon: const Icon(Icons.medical_services_outlined, color: primaryColor, size: 20),

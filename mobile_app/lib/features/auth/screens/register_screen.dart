@@ -120,7 +120,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Gramin Health Connect',
+          'VitalReach',
           style: TextStyle(
             color: Color(0xFF1E293B),
             fontWeight: FontWeight.bold,
