@@ -165,18 +165,18 @@ class UserViewSet(viewsets.ModelViewSet):
             # Check if role matches
             if user_obj.role != role:
                 return Response({
-                    "error": f"Invalid login for this module. This phone is registered as {other_user.get_role_display()}."
+                    "error": f"Invalid module. Your account is registered as {user_obj.get_role_display()}."
                 }, status=status.HTTP_403_FORBIDDEN)
-            return Response({"error": "No account found with this phone number"}, status=status.HTTP_401_UNAUTHORIZED)
-        except User.MultipleObjectsReturned:
-            # Should rarely happen with role filtering, but just in case
-            user_obj = User.objects.filter(phone_number=phone_number, role=role).first()
+                
             username = user_obj.username
+            
         except User.DoesNotExist:
             return Response({"error": "Invalid credentials or user not found"}, status=status.HTTP_401_UNAUTHORIZED)
         except User.MultipleObjectsReturned:
-            # Fallback to the first one or prompt for more specific identifier if needed
-            user_obj = User.objects.filter(Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier)).first()
+            # Fallback for multiple users matching the identifier
+            user_obj = User.objects.filter(Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier), role=role).first()
+            if not user_obj:
+                return Response({"error": "Invalid credentials or user not found for this role"}, status=status.HTTP_401_UNAUTHORIZED)
             username = user_obj.username
 
         user = authenticate(username=username, password=password)
