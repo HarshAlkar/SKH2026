@@ -87,7 +87,21 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        leading: Icon(Icons.health_and_safety, color: primaryColor, size: 28),
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Image.asset(
+              'assets/images/VitalReach_logo.png',
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(Icons.health_and_safety, color: primaryColor, size: 28);
+              },
+            ),
+          ),
+        ),
         title: const Text(
           "VitalReach",
           style: TextStyle(
@@ -449,7 +463,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
 
               // Footer Text
               Text(
-                "© 2024 VitalReach. Empowering healthcare in every village.",
+                "© 2024 VitalReach. Healthcare reaching everywhere.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,

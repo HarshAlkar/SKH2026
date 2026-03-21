@@ -42,6 +42,7 @@ import '../features/activity/screens/activity_details_screen.dart';
 import '../features/activity/models/activity_model.dart';
 import '../features/asha_worker/widgets/asha_drawer.dart';
 import '../core/widgets/common_appbar.dart';
+import '../features/asha_worker/screens/registered_doctors_screen.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -126,6 +127,9 @@ class RouteGenerator {
         return _fadeRoute(const VillageVisitsScreen(), settings: settings);
       case AppRoutes.scheduleVisit:
         return _fadeRoute(const ScheduleVisitScreen(), settings: settings);
+        return _fadeRoute(const ScheduleVisitScreen());
+      case AppRoutes.registeredDoctors:
+        return _fadeRoute(const RegisteredDoctorsScreen());
       case AppRoutes.ashaSettings:
         return _fadeRoute(const AshaSettingsScreen(), settings: settings);
       case AppRoutes.ashaNotifications:

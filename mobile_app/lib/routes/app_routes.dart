@@ -43,5 +43,6 @@ class AppRoutes {
   static const String ashaAllActivity = '/asha/all-activity';
   static const String ashaActivityDetails = '/asha/activity-details';
   static const String ashaPatientDetails = '/asha/patient-details';
+  static const String registeredDoctors = '/asha/registered-doctors';
 }
 

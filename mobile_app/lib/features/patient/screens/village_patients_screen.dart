@@ -86,9 +86,7 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      appBar: const CommonAppBar(
-        title: 'Village Patients',
-      ),
+      appBar: const CommonAppBar(title: 'Village Patients'),
       drawer: const AshaDrawer(currentRoute: AppRoutes.villagePatients),
       body: Column(
         children: [
@@ -128,52 +126,64 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
               ],
             ),
           ),
-          
+
           // Loading / Error / Patient List Section
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.error_outline, size: 60, color: Colors.redAccent),
-                            const SizedBox(height: 16),
-                            Text('Error: $_error', style: const TextStyle(color: Colors.red)),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _fetchPatients,
-                              child: const Text('Retry'),
-                            )
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 60,
+                          color: Colors.redAccent,
                         ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _fetchPatients,
-                        child: _filteredPatients.isEmpty
-                          ? ListView(
-                              children: const [
-                                Padding(
-                                  padding: EdgeInsets.all(40.0),
-                                  child: Center(
-                                    child: Text(
-                                      "No patients found in your village.",
-                                      style: TextStyle(color: Colors.grey, fontSize: 16),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error: $_error',
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _fetchPatients,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: _fetchPatients,
+                    child: _filteredPatients.isEmpty
+                        ? ListView(
+                            children: const [
+                              Padding(
+                                padding: EdgeInsets.all(40.0),
+                                child: Center(
+                                  child: Text(
+                                    "No patients found in your village.",
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 16,
                                     ),
                                   ),
                                 ),
-                              ],
-                            )
-                          : ListView.builder(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.all(16),
-                              itemCount: _filteredPatients.length,
-                              itemBuilder: (context, index) {
-                                return PatientCard(patient: _filteredPatients[index]);
-                              },
-                            ),
-                      ),
+                              ),
+                            ],
+                          )
+                        : ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _filteredPatients.length,
+                            itemBuilder: (context, index) {
+                              return PatientCard(
+                                patient: _filteredPatients[index],
+                              );
+                            },
+                          ),
+                  ),
           ),
         ],
       ),

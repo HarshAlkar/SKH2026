@@ -9,8 +9,8 @@ import 'schedule_screen.dart';
 import 'doctor_profile_screen.dart';
 import '../../../providers/auth_provider.dart';
 import '../widgets/doctor_navigation_drawer.dart';
-
 import '../../../providers/consultation_provider.dart';
+import '../../../core/services/api_service.dart';
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({super.key});
@@ -21,16 +21,43 @@ class DoctorDashboard extends StatefulWidget {
 
 class _DoctorDashboardState extends State<DoctorDashboard> {
   int _selectedIndex = 0;
+  bool _isLoading = false;
+  int _patientCount = 0;
+  int _ashaCount = 0;
+  int _pendingAlerts = 0;
+  final ApiService _api = ApiService();
 
   @override
   void initState() {
     super.initState();
+    _fetchStats();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final user = context.read<AuthProvider>().user;
       if (user != null) {
         context.read<ConsultationProvider>().initSignaling(user.id.toString());
       }
     });
+  }
+
+  Future<void> _fetchStats() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final patients = await _api.get('/users/patients/');
+      final ashas = await _api.get('/users/asha-workers/');
+      final alerts = await _api.get('/alerts/notifications/');
+      
+      if (!mounted) return;
+      setState(() {
+        _patientCount = patients.length;
+        _ashaCount = ashas.length;
+        _pendingAlerts = alerts.length;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching doctor stats: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   final Color primaryBlue = const Color(0xFF2A7DE1);
@@ -63,24 +90,38 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       backgroundColor: const Color(0xFFF8FAFC),
       drawer: const DoctorNavigationDrawer(activeRoute: 'Dashboard'),
       appBar: _buildAppBar(),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+      body: RefreshIndicator(
+        onRefresh: _fetchStats,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildWelcomeSection(),
-              const SizedBox(height: 32),
-              _buildSectionTitle('PERFORMANCE SUMMARY'),
-              const SizedBox(height: 16),
-              _buildPerformanceGrid(),
-              const SizedBox(height: 32),
-              _buildSectionTitle('QUICK ACTIONS'),
-              const SizedBox(height: 16),
-              _buildQuickActions(),
-              const SizedBox(height: 32),
-              _buildUpcomingAppointments(),
-              const SizedBox(height: 24),
+              if (_isLoading)
+                const LinearProgressIndicator(
+                  minHeight: 2,
+                  backgroundColor: Colors.transparent,
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2A7DE1)),
+                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildWelcomeSection(),
+                    const SizedBox(height: 32),
+                    _buildSectionTitle('PERFORMANCE SUMMARY'),
+                    const SizedBox(height: 16),
+                    _buildPerformanceGrid(),
+                    const SizedBox(height: 32),
+                    _buildSectionTitle('QUICK ACTIONS'),
+                    const SizedBox(height: 16),
+                    _buildQuickActions(),
+                    const SizedBox(height: 32),
+                    _buildUpcomingAppointments(),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -136,18 +177,19 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 );
               },
             ),
-            Positioned(
-              right: 12,
-              top: 14,
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: Colors.redAccent,
-                  shape: BoxShape.circle,
+            if (_pendingAlerts > 0)
+              Positioned(
+                right: 12,
+                top: 14,
+                child: Container(
+                  width: 10,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.redAccent,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         Padding(
@@ -170,7 +212,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Welcome back, Dr. ${(user?.name ?? 'Sharma').split(' ').last}',
+          'Welcome back, Dr. ${user?.name.split(' ').first ?? 'Doctor'}',
           style: TextStyle(
             color: textPrimary,
             fontSize: 22,
@@ -179,7 +221,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         ),
         const SizedBox(height: 4),
         Text(
-          'Gramin Health Connect · Phone: ${user?.phoneNumber ?? 'N/A'}',
+          'VitalReach · Phone: ${user?.phoneNumber ?? 'N/A'}',
           style: TextStyle(
             color: textSecondary,
             fontSize: 13,
@@ -212,22 +254,22 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 icon: Icons.assignment_outlined,
                 iconColor: Colors.orange,
                 iconBgColor: Colors.orange.withOpacity(0.1),
-                title: 'PENDING',
-                value: '5',
-                subtitle: 'Waiting for approval',
-                badgeText: 'Urgent',
+                title: 'PENDING ALERTS',
+                value: '$_pendingAlerts',
+                subtitle: 'High severity issues',
+                badgeText: _pendingAlerts > 0 ? 'Action' : null,
                 badgeColor: Colors.orange,
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _buildStatCard(
-                icon: Icons.calendar_today_outlined,
+                icon: Icons.people_outline,
                 iconColor: primaryBlue,
                 iconBgColor: lightBlue,
-                title: 'APPOINTMENTS',
-                value: '12',
-                subtitle: 'Scheduled for today',
+                title: 'ASHA WORKERS',
+                value: '$_ashaCount',
+                subtitle: 'Active in region',
               ),
             ),
           ],
@@ -237,26 +279,25 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           children: [
             Expanded(
               child: _buildStatCard(
-                icon: Icons.people_outline,
+                icon: Icons.people_alt_outlined,
                 iconColor: Colors.teal,
                 iconBgColor: Colors.teal.withOpacity(0.1),
                 title: 'TOTAL PATIENTS',
-                value: '1,240',
-                subtitle: '+12 this week',
+                value: '$_patientCount',
+                subtitle: 'Registered in system',
                 subtitleColor: Colors.teal,
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: _buildStatCard(
-                icon: Icons.local_hospital_outlined,
+                icon: Icons.video_call_outlined,
                 iconColor: Colors.redAccent,
                 iconBgColor: Colors.white,
-                title: 'EMERGENCY',
-                value: '2',
-                subtitle: 'Action required now',
+                title: 'VIRTUAL CALLS',
+                value: '12',
+                subtitle: 'Completed this month',
                 subtitleColor: Colors.redAccent,
-                cardBackgroundColor: emergencyCardBg,
               ),
             ),
           ],

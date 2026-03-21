@@ -11,8 +11,8 @@ import 'providers/medicine_provider.dart';
 import 'providers/alert_provider.dart';
 import 'main.dart'; // Import to use navigatorKey
 
-class GraminHealthApp extends StatelessWidget {
-  const GraminHealthApp({super.key});
+class VitalReachApp extends StatelessWidget {
+  const VitalReachApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +26,7 @@ class GraminHealthApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AlertProvider()),
       ],
       child: MaterialApp(
-        title: 'Gramin Health Connect',
+        title: 'VitalReach',
         navigatorKey: navigatorKey, // Set the key here
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,

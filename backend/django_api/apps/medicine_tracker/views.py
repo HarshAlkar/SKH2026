@@ -24,7 +24,13 @@ class MedicineTrackerViewSet(viewsets.ModelViewSet):
         return self.queryset.none()
 
     def perform_create(self, serializer):
-        patient, _ = Patient.objects.get_or_create(user=self.request.user)
+        # Safely get or create patient profile
+        patient = getattr(self.request.user, 'patient_profile', None)
+        if not patient:
+            patient, _ = Patient.objects.get_or_create(
+                user=self.request.user,
+                defaults={'age': 0, 'gender': 'Not Set', 'address': 'Not Set'}
+            )
         serializer.save(patient=patient)
 
     @action(detail=False, methods=['get'], url_path='user')

@@ -1,5 +1,6 @@
 class AppConstants {
-  static const String appName = 'Gramin Health Connect';
+  static const String appName = 'VitalReach';
+  static const String tagline = 'Healthcare reaching everywhere';
   static const double borderRadius = 12.0;
   static const double defaultPadding = 16.0;
 

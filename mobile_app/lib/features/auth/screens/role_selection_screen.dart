@@ -19,16 +19,23 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: Container(
-          margin: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(
-            Icons.health_and_safety,
-            color: AppColors.primary,
-            size: 20,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Image.asset(
+              'assets/images/VitalReach_logo.png',
+              errorBuilder: (context, error, stackTrace) {
+                return const Icon(
+                  Icons.health_and_safety,
+                  color: AppColors.primary,
+                  size: 20,
+                );
+              },
+            ),
           ),
         ),
         title: const Text(
@@ -46,16 +53,14 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 10),
-              const Text(
-                'Welcome to Gramin \nHealth Connect',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
-                  height: 1.2,
+              Center(
+                child: Image.asset(
+                  'assets/images/VitalReach_logo.png',
+                  height: 180,
+                  fit: BoxFit.contain,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               const Text(
                 'Select your role to continue',
                 style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
@@ -99,7 +104,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               const SizedBox(height: 20),
               const Center(
                 child: Text(
-                  '© 2024 VitalReach. \nEmpowering Rural Healthcare.',
+                  '© 2024 VitalReach. \nHealthcare reaching everywhere.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey, fontSize: 12),
                 ),

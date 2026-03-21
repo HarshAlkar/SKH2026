@@ -77,7 +77,7 @@ class _PatientCardState extends State<PatientCard> {
                                 fontSize: 13,
                               ),
                             ),
-                            const SizedBox(width: 16)
+                            const SizedBox(width: 16),
                           ],
                         ),
                       ],

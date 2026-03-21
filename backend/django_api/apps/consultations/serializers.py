@@ -10,6 +10,6 @@ class ConsultationSerializer(serializers.ModelSerializer):
         model = Consultation
         fields = [
             'id', 'patient', 'doctor', 'doctor_details', 'patient_name',
-            'call_type', 'status', 'created_at', 'meeting_link', 'notes'
+            'call_type', 'status', 'created_at', 'end_time', 'meeting_link', 'notes'
         ]
         read_only_fields = ['status', 'created_at']

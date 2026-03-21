@@ -14,5 +14,5 @@ void main() async {
   await AlarmService.init();
   await NotificationService().init();
 
-  runApp(const GraminHealthApp());
+  runApp(const VitalReachApp());
 }

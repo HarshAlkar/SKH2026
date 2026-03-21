@@ -478,7 +478,7 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
 
               // Footer
               Text(
-                "© 2024 VitalReach. Empowering Rural Health.",
+                "© 2024 VitalReach. Healthcare reaching everywhere.",
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),

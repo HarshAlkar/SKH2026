@@ -42,7 +42,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           ),
         ),
         title: const Text(
-          'Gramin Health Connect',
+          'VitalReach',
           style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
