@@ -27,11 +27,15 @@ class ConsultationViewSet(viewsets.ModelViewSet):
         except Patient.DoesNotExist:
             return Response({'error': 'Patient profile not found'}, status=status.HTTP_404_NOT_FOUND)
             
+        import uuid
+        meeting_link = f"https://meet.jit.si/CareSync-{uuid.uuid4().hex[:8]}" if call_type == 'VIDEO' else None
+        
         consultation = Consultation.objects.create(
             patient=patient,
             doctor_id=doctor_id,
             call_type=call_type,
-            status='PENDING'
+            status='PENDING',
+            meeting_link=meeting_link
         )
         
         serializer = self.get_serializer(consultation)

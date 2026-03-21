@@ -1,11 +1,10 @@
 from rest_framework import serializers
 from .models import Prescription
-from apps.consultations.models import Consultation
 
 class PrescriptionSerializer(serializers.ModelSerializer):
-    doctor_name = serializers.CharField(source='consultation.doctor.user.get_full_name', read_only=True)
-    patient_name = serializers.CharField(source='consultation.patient.user.get_full_name', read_only=True)
+    doctor_name = serializers.CharField(source='doctor.user.name', read_only=True)
+    patient_name = serializers.CharField(source='patient.user.name', read_only=True)
 
     class Meta:
         model = Prescription
-        fields = '__all__'
+        fields = ['id', 'patient', 'doctor', 'medications', 'dosage_instructions', 'notes', 'issued_at', 'consultation', 'doctor_name', 'patient_name']

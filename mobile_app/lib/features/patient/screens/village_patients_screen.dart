@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/patient_model.dart';
 import '../widgets/patient_card.dart';
 import '../widgets/add_patient_button.dart';
+import '../../asha_worker/widgets/asha_sidebar.dart';
+import '../../../core/services/api_service.dart';
+import '../../../providers/auth_provider.dart';
 
 class VillagePatientsScreen extends StatefulWidget {
   const VillagePatientsScreen({super.key});
@@ -12,29 +16,11 @@ class VillagePatientsScreen extends StatefulWidget {
 
 class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
   final TextEditingController _searchController = TextEditingController();
-
-  final List<PatientModel> _allPatients = [
-    PatientModel(
-      name: 'Ramesh Patil',
-      age: 45,
-      village: 'Kaman',
-      status: 'Stable',
-    ),
-    PatientModel(
-      name: 'Savitri Devi',
-      age: 62,
-      village: 'Kaman',
-      status: 'Stable',
-    ),
-    PatientModel(
-      name: 'Arun Kumar',
-      age: 28,
-      village: 'Kaman',
-      status: 'Checkup Due',
-    ),
-  ];
-
+  final ApiService _api = ApiService();
+  
+  List<PatientModel> _allPatients = [];
   List<PatientModel> _filteredPatients = [];
+  bool _isLoading = true;
 
   final Color primaryColor = const Color(0xFF2A7DE1);
   final Color darkBlue = const Color(0xFF005BBC);
@@ -42,7 +28,28 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
   @override
   void initState() {
     super.initState();
-    _filteredPatients = _allPatients;
+    _fetchPatients();
+  }
+
+  Future<void> _fetchPatients() async {
+    setState(() => _isLoading = true);
+    try {
+      final List<dynamic> data = await _api.get('/users/patients/');
+      setState(() {
+        _allPatients = data.map((json) => PatientModel(
+          id: json['id'].toString(),
+          name: json['name'] ?? 'Unknown',
+          age: 0, // Age not in user record directly, maybe in patient profile
+          village: json['village'] ?? 'Unknown',
+          status: 'Active',
+        )).toList();
+        _filteredPatients = _allPatients;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching patients: $e');
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -69,8 +76,12 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final isAsha = auth.user?.role == 'asha_worker';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
+      drawer: isAsha ? const AshaSidebar() : null,
       appBar: AppBar(
         title: Text(
           'Village Patients',
@@ -79,65 +90,77 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
         backgroundColor: Colors.white,
         elevation: 0.5,
         iconTheme: IconThemeData(color: darkBlue),
+        // Remove back arrow if ASHA
+        automaticallyImplyLeading: !isAsha,
+        leading: isAsha ? Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ) : null,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: const Icon(Icons.refresh),
             color: darkBlue,
-            onPressed: () {},
+            onPressed: _fetchPatients,
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: Column(
-        children: [
-          // Search Bar Section
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: _filterPatients,
-                    decoration: InputDecoration(
-                      hintText: 'Search patient...',
-                      hintStyle: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 14,
-                      ),
-                      prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: primaryColor, width: 1.5),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : Column(
+            children: [
+              // Search Bar Section
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: _filterPatients,
+                        decoration: InputDecoration(
+                          hintText: 'Search patient...',
+                          hintStyle: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 14,
+                          ),
+                          prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: primaryColor, width: 1.5),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    const AddPatientButton(),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                const AddPatientButton(),
-              ],
-            ),
+              ),
+              // Patient List Section
+              Expanded(
+                child: _filteredPatients.isEmpty 
+                  ? const Center(child: Text("No patients found"))
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _filteredPatients.length,
+                      itemBuilder: (context, index) {
+                        return PatientCard(patient: _filteredPatients[index]);
+                      },
+                    ),
+              ),
+            ],
           ),
-          // Patient List Section
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filteredPatients.length,
-              itemBuilder: (context, index) {
-                return PatientCard(patient: _filteredPatients[index]);
-              },
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

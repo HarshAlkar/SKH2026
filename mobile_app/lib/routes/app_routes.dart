@@ -41,5 +41,6 @@ class AppRoutes {
   static const String referralHistory = '/asha/referral-history';
   static const String ashaSettings = '/asha/settings';
   static const String editPatient = '/asha/edit-patient';
+  static const String registeredDoctors = '/asha/registered-doctors';
 }
 

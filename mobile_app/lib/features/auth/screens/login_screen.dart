@@ -147,38 +147,24 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildHeader() {
     return Column(
       children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.primary.withOpacity(0.1),
-          ),
-          child: Image.asset(
-            'assets/images/health_icon.png',
-            errorBuilder: (context, error, stackTrace) {
-              return const Icon(
+        Image.asset(
+          'assets/images/VitalReach_logo.png',
+          width: 250, // Increased to fit the text in logo
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12), // Square-ish
+                color: AppColors.primary.withOpacity(0.1),
+              ),
+              child: const Icon(
                 Icons.health_and_safety,
                 size: 50,
                 color: AppColors.primary,
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'Gramin Health Connect',
-          style: TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1E293B),
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Access healthcare guidance anytime',
-          style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              ),
+            );
+          },
         ),
       ],
     );

@@ -155,7 +155,7 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        "Empower rural communities with your medical expertise through Gramin Health Connect.",
+                        "Empower rural communities with your medical expertise through VitalReach.",
                         style: TextStyle(
                           color: textSubColor,
                           fontSize: 14,

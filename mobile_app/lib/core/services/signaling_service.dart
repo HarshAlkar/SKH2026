@@ -22,9 +22,13 @@ class SignalingService {
     });
 
     _socket!.onDisconnect((_) => print('Signaling disconnected'));
+    
+    _socket!.onConnectError((err) => print('Signaling Connect Error: $err'));
+    _socket!.onError((err) => print('Signaling Error: $err'));
   }
 
   void joinRoom(String roomId) {
+    print('Joining room: $roomId');
     _socket?.emit('join-consultation', roomId);
   }
 
@@ -46,23 +50,29 @@ class SignalingService {
     _socket?.on('incoming-call', (data) => callback(Map<String, dynamic>.from(data)));
   }
 
+  void onPeerJoined(Function(Map<String, dynamic>) callback) {
+    _socket?.on('peer-joined', (data) => callback(Map<String, dynamic>.from(data)));
+  }
+
   void onOffer(Function(Map<String, dynamic>) callback) {
-    _socket?.on('offer', (data) => callback(data));
+    _socket?.on('offer', (data) => callback(Map<String, dynamic>.from(data)));
   }
 
   void onAnswer(Function(Map<String, dynamic>) callback) {
-    _socket?.on('answer', (data) => callback(data));
+    _socket?.on('answer', (data) => callback(Map<String, dynamic>.from(data)));
   }
 
   void onIceCandidate(Function(Map<String, dynamic>) callback) {
-    _socket?.on('ice-candidate', (data) => callback(data));
+    _socket?.on('ice-candidate', (data) => callback(Map<String, dynamic>.from(data)));
   }
 
   void emitOffer(String roomId, Map<String, dynamic> offer) {
+    print('Emitting offer for room: $roomId');
     _socket?.emit('offer', {'consultationId': roomId, 'offer': offer});
   }
 
   void emitAnswer(String roomId, Map<String, dynamic> answer) {
+    print('Emitting answer for room: $roomId');
     _socket?.emit('answer', {'consultationId': roomId, 'answer': answer});
   }
 

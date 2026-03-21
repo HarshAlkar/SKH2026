@@ -83,7 +83,7 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          "Gramin Health Connect",
+          "VitalReach",
           style: TextStyle(
             color: Colors.black87,
             fontWeight: FontWeight.bold,
@@ -478,7 +478,7 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
 
               // Footer
               Text(
-                "© 2024 Gramin Health Connect. Empowering Rural Health.",
+                "© 2024 VitalReach. Healthcare reaching everywhere.",
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               ),

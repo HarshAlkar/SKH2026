@@ -17,11 +17,24 @@ class WebRTCService {
   final _connectionStateController = StreamController<RTCPeerConnectionState>.broadcast();
   Stream<RTCPeerConnectionState> get onConnectionState => _connectionStateController.stream;
 
+  final List<RTCIceCandidate> _remoteCandidatesQueue = [];
+  bool _isRemoteDescriptionSet = false;
+
   Future<void> init(String consultationId, {bool isOfferer = true}) async {
     _signaling.joinRoom(consultationId);
     
+    // Listen for peer joined to trigger the call if we are offerer
+    _signaling.onPeerJoined((data) async {
+      print('Signaling: Peer joined ${data['socketId']}');
+      if (isOfferer) {
+        print('Signaling: Offerer detected peer, starting call...');
+        await startCall(consultationId);
+      }
+    });
+
     _signaling.onOffer((data) async {
       if (!isOfferer) {
+        print('Signaling: Received offer');
         await _setupPeerConnection(consultationId);
         await _handleOffer(data['offer'], consultationId);
       }
@@ -29,12 +42,25 @@ class WebRTCService {
 
     _signaling.onAnswer((data) async {
       if (isOfferer) {
+        print('Signaling: Received answer');
         await _handleAnswer(data['answer']);
       }
     });
 
     _signaling.onIceCandidate((data) async {
-      await _handleIceCandidate(data['candidate']);
+      print('Signaling: Received ICE candidate');
+      final candidateMap = Map<String, dynamic>.from(data['candidate']);
+      final candidate = RTCIceCandidate(
+        candidateMap['candidate'],
+        candidateMap['sdpMid'],
+        candidateMap['sdpMLineIndex'],
+      );
+
+      if (_isRemoteDescriptionSet) {
+        await _peerConnection?.addCandidate(candidate);
+      } else {
+        _remoteCandidatesQueue.add(candidate);
+      }
     });
   }
 
@@ -44,6 +70,7 @@ class WebRTCService {
     final Map<String, dynamic> configuration = {
       'iceServers': [
         {'urls': 'stun:stun.l.google.com:19302'},
+        {'urls': 'stun:stun1.l.google.com:19302'},
       ]
     };
 
@@ -54,28 +81,37 @@ class WebRTCService {
     };
 
     _peerConnection!.onAddStream = (stream) {
+      print('WebRTC: Remote stream added');
       _remoteStream = stream;
       _remoteStreamController.add(stream);
     };
 
     _peerConnection!.onConnectionState = (state) {
+      print('WebRTC: Connection state changed to $state');
       _connectionStateController.add(state);
     };
 
-    _localStream = await navigator.mediaDevices.getUserMedia({
-      'audio': true,
-      'video': true,
-    });
-    
-    _localStream!.getTracks().forEach((track) {
-      _peerConnection!.addTrack(track, _localStream!);
-    });
+    try {
+      _localStream = await navigator.mediaDevices.getUserMedia({
+        'audio': true,
+        'video': true,
+      });
+      
+      _localStream!.getTracks().forEach((track) {
+        _peerConnection!.addTrack(track, _localStream!);
+      });
+    } catch (e) {
+      print('Error getting user media: $e');
+    }
   }
 
   Future<void> startCall(String consultationId, {bool video = true}) async {
     await _setupPeerConnection(consultationId);
 
-    RTCSessionDescription offer = await _peerConnection!.createOffer();
+    RTCSessionDescription offer = await _peerConnection!.createOffer({
+      'offerToReceiveAudio': true,
+      'offerToReceiveVideo': true,
+    });
     await _peerConnection!.setLocalDescription(offer);
 
     _signaling.emitOffer(consultationId, offer.toMap());
@@ -85,8 +121,13 @@ class WebRTCService {
     await _peerConnection!.setRemoteDescription(
       RTCSessionDescription(offerData['sdp'], offerData['type']),
     );
+    _isRemoteDescriptionSet = true;
+    await _processQueuedCandidates();
 
-    RTCSessionDescription answer = await _peerConnection!.createAnswer();
+    RTCSessionDescription answer = await _peerConnection!.createAnswer({
+      'offerToReceiveAudio': true,
+      'offerToReceiveVideo': true,
+    });
     await _peerConnection!.setLocalDescription(answer);
 
     _signaling.emitAnswer(consultationId, answer.toMap());
@@ -97,35 +138,35 @@ class WebRTCService {
     await _peerConnection!.setRemoteDescription(
       RTCSessionDescription(answerData['sdp'], answerData['type']),
     );
+    _isRemoteDescriptionSet = true;
+    await _processQueuedCandidates();
   }
 
-  Future<void> _handleIceCandidate(Map<String, dynamic> candidateData) async {
-    if (_peerConnection == null) return;
-    await _peerConnection!.addCandidate(
-      RTCIceCandidate(
-        candidateData['candidate'],
-        candidateData['sdpMid'],
-        candidateData['sdpMLineIndex'],
-      ),
-    );
+  Future<void> _processQueuedCandidates() async {
+    for (var candidate in _remoteCandidatesQueue) {
+      await _peerConnection?.addCandidate(candidate);
+    }
+    _remoteCandidatesQueue.clear();
   }
 
   void toggleMute() {
     if (_localStream != null) {
-      final audioTrack = _localStream!.getAudioTracks()[0];
-      audioTrack.enabled = !audioTrack.enabled;
+      for (var track in _localStream!.getAudioTracks()) {
+        track.enabled = !track.enabled;
+      }
     }
   }
 
   void toggleVideo() {
     if (_localStream != null) {
-      final videoTrack = _localStream!.getVideoTracks()[0];
-      videoTrack.enabled = !videoTrack.enabled;
+      for (var track in _localStream!.getVideoTracks()) {
+        track.enabled = !track.enabled;
+      }
     }
   }
 
   Future<void> switchCamera() async {
-    if (_localStream != null) {
+    if (_localStream != null && _localStream!.getVideoTracks().isNotEmpty) {
       final videoTrack = _localStream!.getVideoTracks()[0];
       await Helper.switchCamera(videoTrack);
     }
@@ -140,5 +181,7 @@ class WebRTCService {
     _peerConnection?.dispose();
     _remoteStreamController.close();
     _connectionStateController.close();
+    _isRemoteDescriptionSet = false;
+    _remoteCandidatesQueue.clear();
   }
 }

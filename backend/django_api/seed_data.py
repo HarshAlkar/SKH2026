@@ -6,7 +6,7 @@ django.setup()
 
 from django.contrib.auth import get_user_model
 from apps.doctors.models import Doctor
-from apps.medicine_tracker.models import MedicineReminder
+from apps.medicine_tracker.models import MedicineSchedule
 from apps.patients.models import Patient
 
 User = get_user_model()
@@ -18,7 +18,7 @@ def seed_data():
         defaults={
             'first_name': 'Aryan',
             'last_name': 'Sharma',
-            'role': 'DOCTOR',
+            'role': 'doctor',
             'email': 'sharma@example.com'
         }
     )
@@ -40,7 +40,7 @@ def seed_data():
         defaults={
             'first_name': 'Priya',
             'last_name': 'Verma',
-            'role': 'DOCTOR',
+            'role': 'doctor',
             'email': 'priya@example.com'
         }
     )
@@ -67,19 +67,19 @@ def seed_data():
 
         # 3. Add medicines
         medicines = [
-            {'name': 'Paracetamol', 'dosage': '1 Tablet', 'time': '08:00 AM', 'icon_name': 'medication'},
-            {'name': 'Insulin Dose', 'dosage': '5 Units', 'time': '12:30 PM', 'icon_name': 'vaccines'},
-            {'name': 'Vitamin C', 'dosage': '1 Tablet', 'time': '04:00 PM', 'icon_name': 'medical_services'},
+            {'name': 'Paracetamol', 'dosage': '1 Tablet', 'instructions': 'Take after food'},
+            {'name': 'Insulin Dose', 'dosage': '5 Units', 'instructions': 'Inject before breakfast'},
+            {'name': 'Vitamin C', 'dosage': '1 Tablet', 'instructions': 'Once daily'},
         ]
 
         for med in medicines:
-            MedicineReminder.objects.get_or_create(
+            MedicineSchedule.objects.get_or_create(
                 patient=patient,
-                name=med['name'],
+                medicine_name=med['name'],
                 defaults={
                     'dosage': med['dosage'],
-                    'time': med['time'],
-                    'icon_name': med['icon_name']
+                    'instructions': med['instructions'],
+                    'frequency': 'Daily'
                 }
             )
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/user_sidebar.dart';
+import '../../../core/services/api_service.dart';
+import 'package:intl/intl.dart';
 
 class MyPrescriptionsScreen extends StatefulWidget {
   const MyPrescriptionsScreen({super.key});
@@ -11,17 +13,35 @@ class MyPrescriptionsScreen extends StatefulWidget {
 
 class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final ApiService _api = ApiService();
+  bool _isLoading = true;
+  List<dynamic> _prescriptions = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _fetchPrescriptions();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchPrescriptions() async {
+    setState(() => _isLoading = true);
+    try {
+      final data = await _api.get('/prescriptions/user/');
+      setState(() {
+        _prescriptions = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error fetching prescriptions: $e');
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -49,8 +69,8 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search, color: AppColors.primary),
-            onPressed: () {},
+            icon: const Icon(Icons.refresh, color: AppColors.primary),
+            onPressed: _fetchPrescriptions,
           ),
           const SizedBox(width: 8),
         ],
@@ -67,13 +87,15 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildCurrentTab(),
-          _buildPastRecordsTab(),
-        ],
-      ),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : TabBarView(
+            controller: _tabController,
+            children: [
+              _buildCurrentTab(),
+              _buildPastRecordsTab(),
+            ],
+          ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         backgroundColor: AppColors.primary,
@@ -83,54 +105,63 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
   }
 
   Widget _buildCurrentTab() {
-    return ListView(
+    final current = _prescriptions.where((p) {
+      final date = DateTime.tryParse(p['created_at'] ?? '') ?? DateTime.now();
+      return DateTime.now().difference(date).inDays < 30;
+    }).toList();
+
+    if (current.isEmpty) {
+      return Center(child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          const Text("No active prescriptions found", style: TextStyle(color: Colors.grey)),
+        ],
+      ));
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.all(20),
-      children: [
-        _buildPrescriptionCard(
-          doctorName: 'Dr. Rajesh Kumar',
-          specialty: 'MBBS, MD - General Physician',
-          date: 'Today',
-          isPast: false,
-          medicines: [
-            {'name': 'Paracetamol 500mg', 'dosage': '1-0-1 (After Meals) • 5 Days'},
-            {'name': 'Amoxicillin 250mg', 'dosage': '1-1-1 (After Meals) • 3 Days'},
-            {'name': 'Cetirizine 10mg', 'dosage': '0-0-1 (Before Sleep) • 5 Days'},
-          ],
-        ),
-        const SizedBox(height: 40),
-        _buildEndOfList(),
-      ],
+      itemCount: current.length,
+      itemBuilder: (context, index) => _buildPrescriptionFromData(current[index]),
     );
   }
 
   Widget _buildPastRecordsTab() {
-    return ListView(
+    final past = _prescriptions.where((p) {
+      final date = DateTime.tryParse(p['created_at'] ?? '') ?? DateTime.now();
+      return DateTime.now().difference(date).inDays >= 30;
+    }).toList();
+
+    if (past.isEmpty) {
+      return Center(child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.history, size: 64, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          const Text("No past records found", style: TextStyle(color: Colors.grey)),
+        ],
+      ));
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.all(20),
-      children: [
-        _buildPrescriptionCard(
-          doctorName: 'Dr. Anjali Verma',
-          specialty: 'Dermatologist',
-          date: '12 Oct 2023',
-          isPast: true,
-          medicines: [
-            {'name': 'Betadine Ointment', 'dosage': 'Apply 2 times daily'},
-            {'name': 'Allegra 120mg', 'dosage': '1-0-0 (Morning)'},
-          ],
-        ),
-        const SizedBox(height: 40),
-        _buildEndOfList(),
-      ],
+      itemCount: past.length,
+      itemBuilder: (context, index) => _buildPrescriptionFromData(past[index], isPast: true),
     );
   }
 
-  Widget _buildPrescriptionCard({
-    required String doctorName,
-    required String specialty,
-    required String date,
-    required List<Map<String, String>> medicines,
-    required bool isPast,
-  }) {
+  Widget _buildPrescriptionFromData(dynamic data, {bool isPast = false}) {
+    final date = DateTime.tryParse(data['created_at'] ?? '') ?? DateTime.now();
+    final formattedDate = DateFormat('dd MMM yyyy').format(date);
+    
+    // Medications parsing: Medications is a string of comma separated values usually
+    List<String> meds = (data['medications'] ?? "").toString().split('\n').where((m) => m.trim().isNotEmpty).toList();
+    if (meds.isEmpty) meds = (data['medications'] ?? "").toString().split(',').where((m) => m.trim().isNotEmpty).toList();
+
     return Container(
+      margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -151,7 +182,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.lightBlue,
+                  color: const Color(0xFFE8F1FF),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.person_outline, color: AppColors.primary),
@@ -162,7 +193,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      doctorName,
+                      data['doctor_name'] ?? 'Unknown Doctor',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -170,7 +201,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
                       ),
                     ),
                     Text(
-                      specialty,
+                      data['notes'] ?? 'Consultation Record',
                       style: const TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                   ],
@@ -183,7 +214,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  date,
+                  formattedDate,
                   style: TextStyle(
                     color: isPast ? Colors.grey.shade600 : AppColors.primary,
                     fontSize: 10,
@@ -201,7 +232,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
               const Icon(Icons.medication_outlined, size: 18, color: AppColors.primary),
               const SizedBox(width: 8),
               Text(
-                'Medicines (${medicines.length})',
+                'Medicines (${meds.length})',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
@@ -211,26 +242,32 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
             ],
           ),
           const SizedBox(height: 12),
-          ...medicines.map((med) => Padding(
+          ...meds.map((med) => Padding(
                 padding: const EdgeInsets.only(bottom: 12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      med['name']!,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Color(0xFF1E293B),
+                    const Icon(Icons.circle, size: 8, color: Colors.blue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        med.trim(),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Color(0xFF1E293B),
+                        ),
                       ),
-                    ),
-                    Text(
-                      med['dosage']!,
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                     ),
                   ],
                 ),
               )),
+          if (data['diagnosis'] != null && data['diagnosis'].toString().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              "Diagnosis: ${data['diagnosis']}",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey),
+            ),
+          ],
           const SizedBox(height: 20),
           Row(
             children: [
@@ -267,7 +304,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
                         ),
                       )
                     : OutlinedButton.icon(
-                        onPressed: () {},
+                        onPressed: () => Navigator.pushNamed(context, '/medicine-tracker'),
                         icon: const Icon(Icons.alarm_add, size: 18),
                         label: const Text('Add Tracker'),
                         style: OutlinedButton.styleFrom(
@@ -284,19 +321,6 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildEndOfList() {
-    return Column(
-      children: [
-        Icon(Icons.inventory_2_outlined, color: Colors.grey.shade300, size: 48),
-        const SizedBox(height: 12),
-        const Text(
-          'End of list',
-          style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
-        ),
-      ],
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../core/services/webrtc_service.dart';
 import '../../user/services/doctor_service.dart';
 
@@ -35,22 +36,21 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   Future<void> _initWebRTC() async {
+    // Request permissions
+    await [Permission.camera, Permission.microphone].request();
+
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
 
     await _webrtcService.init(widget.consultationId, isOfferer: widget.isOfferer);
     
     _webrtcService.onRemoteStream.listen((stream) {
-      if (stream != null) {
+      if (stream != null && mounted) {
         setState(() {
           _remoteRenderer.srcObject = stream;
         });
       }
     });
-
-    if (widget.isOfferer) {
-      await _webrtcService.startCall(widget.consultationId, video: widget.isVideo);
-    }
 
     if (mounted) {
       setState(() {
@@ -138,19 +138,15 @@ class _CallScreenState extends State<CallScreen> {
               : Container(),
           ),
 
-          // Top Right Controls (Switch camera)
+          // Top Side Controls (Switch camera)
           Positioned(
             left: 20,
             top: 40,
             child: widget.isVideo 
-              ? Column(
-                  children: [
-                    _buildCallAction(
-                      icon: Icons.flip_camera_ios,
-                      color: Colors.white24,
-                      onPressed: _onSwitchCamera,
-                    ),
-                  ],
+              ? _buildCallAction(
+                  icon: Icons.flip_camera_ios,
+                  color: Colors.white24,
+                  onPressed: _onSwitchCamera,
                 )
               : Container(),
           ),
@@ -186,7 +182,7 @@ class _CallScreenState extends State<CallScreen> {
           // Top Info
           Positioned(
             top: 50,
-            left: 20,
+            left: 80, // Moved to not overlap with switch camera
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

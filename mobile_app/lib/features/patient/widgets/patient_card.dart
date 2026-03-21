@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/patient_model.dart';
 import 'status_badge.dart';
 import '../screens/patient_details_screen.dart';
 import '../../asha_worker/screens/update_health_screen.dart';
+import '../../doctor/screens/create_prescription_screen.dart';
+import '../../../providers/auth_provider.dart';
 
 class PatientCard extends StatefulWidget {
   final PatientModel patient;
@@ -30,6 +33,9 @@ class _PatientCardState extends State<PatientCard> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final isDoctor = auth.user?.role == 'doctor';
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -134,7 +140,12 @@ class _PatientCardState extends State<PatientCard> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () =>
-                          _navigateTo(context, const UpdateHealthScreen()),
+                          isDoctor 
+                            ? _navigateTo(context, CreatePrescriptionScreen(
+                                patientName: widget.patient.name,
+                                patientId: widget.patient.id,
+                              ))
+                            : _navigateTo(context, const UpdateHealthScreen()),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE8F1FF), // Light blue
                         foregroundColor: const Color(0xFF005BBC),
@@ -144,9 +155,9 @@ class _PatientCardState extends State<PatientCard> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
-                        "Update Health",
-                        style: TextStyle(
+                      child: Text(
+                        isDoctor ? "Prescribe" : "Update Health",
+                        style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),

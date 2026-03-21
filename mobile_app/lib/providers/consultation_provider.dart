@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../features/user/services/doctor_service.dart';
 import '../core/services/signaling_service.dart';
-import '../features/user/screens/call_screen.dart';
+import '../features/user/screens/incoming_call_screen.dart';
 import '../main.dart';
 
 class ConsultationProvider extends ChangeNotifier {
@@ -25,41 +25,19 @@ class ConsultationProvider extends ChangeNotifier {
 
   void _handleIncomingCall(Map<String, dynamic> data) {
     final consultationId = data['consultationId'].toString();
-    final callerName = data['callerName'] ?? 'Patient';
+    final callerName = data['callerName'] ?? 'Doctor';
     final callType = data['callType'] ?? 'VIDEO';
     
-    // Show incoming call dialog
     final context = navigatorKey.currentContext;
     if (context != null) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: Text('Incoming $callType Call'),
-          content: Text('$callerName is requesting a consultation.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Reject', style: TextStyle(color: Colors.red)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CallScreen(
-                      consultationId: consultationId,
-                      doctorName: callerName,
-                      isVideo: callType == 'VIDEO',
-                      isOfferer: false,
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Accept'),
-            ),
-          ],
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => IncomingCallScreen(
+            consultationId: consultationId,
+            callerName: callerName,
+            callType: callType,
+          ),
         ),
       );
     }
