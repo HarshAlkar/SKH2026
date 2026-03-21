@@ -17,8 +17,34 @@ import datetime
 class UserSerializer(serializers.ModelSerializer):
     profile_details = serializers.SerializerMethodField()
     
+    profile_details = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
+        fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'created_at', 'profile_details']
+
+    def get_profile_details(self, obj):
+        if obj.role == 'doctor' and hasattr(obj, 'doctor_profile'):
+            return {
+                "specialization": obj.doctor_profile.specialization,
+                "experience_years": obj.doctor_profile.experience_years,
+                "hospital_name": obj.doctor_profile.hospital_name,
+                "qualification": obj.doctor_profile.qualification,
+                "is_available": obj.doctor_profile.is_available
+            }
+        elif obj.role == 'asha_worker' and hasattr(obj, 'asha_profile'):
+            return {
+                "assigned_village": obj.asha_profile.assigned_village,
+                "phc_center": obj.asha_profile.phc_center
+            }
+        elif obj.role == 'user' and hasattr(obj, 'patient_profile'):
+            return {
+                "age": obj.patient_profile.age,
+                "gender": obj.patient_profile.gender,
+                "address": obj.patient_profile.address,
+                "blood_group": obj.patient_profile.blood_group
+            }
+        return None
         fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'created_at', 'profile_details']
 
     def get_profile_details(self, obj):
@@ -68,7 +94,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Relaxed validation to support various formats or email-as-phone during transition
         if not value:
             return value
+        # Relaxed validation to support various formats or email-as-phone during transition
+        if not value:
+            return value
         if User.objects.filter(phone_number=value).exists() or User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("This identifier is already registered.")
             raise serializers.ValidationError("This identifier is already registered.")
         return value
 
@@ -149,6 +179,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='login')
     def login(self, request):
         identifier = request.data.get('phone_number') or request.data.get('email') or request.data.get('username')
+        identifier = request.data.get('phone_number') or request.data.get('email') or request.data.get('username')
         password = request.data.get('password')
         role = request.data.get('role')
         
@@ -156,10 +187,16 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({"error": "Role is required"}, status=status.HTTP_400_BAD_REQUEST)
         if not identifier or not password:
             return Response({"error": "Identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
+        if not identifier or not password:
+            return Response({"error": "Identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Try to find user by phone number, email, or username
         from django.db.models import Q
+        # Try to find user by phone number, email, or username
+        from django.db.models import Q
         try:
+            user_obj = User.objects.get(Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier))
+            
             user_obj = User.objects.get(Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier))
             
             # Check if role matches
@@ -268,6 +305,31 @@ class UserViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             # This shouldn't happen if they have an OTP, but just in case
             return Response({"message": "OTP verified for unregistered number"}, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='doctors')
+    def get_doctors(self, request):
+        doctors = User.objects.filter(role='doctor')
+        serializer = self.get_serializer(doctors, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='asha-workers')
+    def get_asha_workers(self, request):
+        workers = User.objects.filter(role='asha_worker')
+        serializer = self.get_serializer(workers, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='patients')
+    def get_patients(self, request):
+        patients = User.objects.filter(role='user')
+        serializer = self.get_serializer(patients, many=True)
+        return Response(serializer.data)
+
+    # Allow custom list behavior
+    def list(self, request, *args, **kwargs):
+        role = request.query_params.get('role')
+        if role:
+            self.queryset = User.objects.filter(role=role)
+        return super().list(request, *args, **kwargs)
 
     @action(detail=False, methods=['get'], url_path='doctors')
     def get_doctors(self, request):

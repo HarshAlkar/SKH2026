@@ -54,10 +54,10 @@ class AuthProvider extends ChangeNotifier {
     _user = UserModel(
       id: 1,
       name: role == 'asha_worker' ? 'Lakshmi Devi (ASHA)' : 'Dr. Smith',
-      email: role == 'asha_worker' ? 'asha@gramin.com' : 'doctor@gramin.com',
+      email: role == 'asha_worker' ? 'asha@vitalreach.com' : 'doctor@vitalreach.com',
       role: role,
       phoneNumber: '9876543210',
-      village: 'Gramin Village',
+      village: 'VitalReach Village',
     );
     
     _isLoading = false;

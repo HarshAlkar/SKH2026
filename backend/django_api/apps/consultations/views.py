@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from .models import Consultation
 from .serializers import ConsultationSerializer
 from apps.patients.models import Patient
+from apps.doctors.models import Doctor
+import uuid
+
 
 class ConsultationViewSet(viewsets.ModelViewSet):
     serializer_class = ConsultationSerializer
@@ -15,29 +18,53 @@ class ConsultationViewSet(viewsets.ModelViewSet):
             return Consultation.objects.filter(doctor__user=user)
         elif user.role == 'user':
             return Consultation.objects.filter(patient__user=user)
+        elif user.role == 'asha_worker':
+            from apps.asha_workers.models import ASHAWorker
+            try:
+                asha = ASHAWorker.objects.get(user=user)
+                return Consultation.objects.filter(patient__user__village=asha.assigned_village)
+            except ASHAWorker.DoesNotExist:
+                return Consultation.objects.none()
         return Consultation.objects.none()
 
     @action(detail=False, methods=['post'])
     def start(self, request):
-        doctor_id = request.data.get('doctor_id')
-        call_type = request.data.get('call_type', 'VIDEO')
-        
+        # Expected payload: doctor_user_id, optional patient_id (for ASHA), call_type
+        doctor_user_id = request.data.get('doctor_user_id')
+        if not doctor_user_id:
+            return Response({'error': 'doctor_user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            patient = Patient.objects.get(user=request.user)
-        except Patient.DoesNotExist:
-            return Response({'error': 'Patient profile not found'}, status=status.HTTP_404_NOT_FOUND)
-            
-        import uuid
+            doctor = Doctor.objects.get(user__id=doctor_user_id)
+        except Doctor.DoesNotExist:
+            return Response({'error': 'Doctor not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        call_type = request.data.get('call_type', 'VIDEO')
+        patient_id = request.data.get('patient_id')
+
+        if request.user.role == 'user':
+            try:
+                patient = Patient.objects.get(user=request.user)
+            except Patient.DoesNotExist:
+                return Response({'error': 'Patient profile not found'}, status=status.HTTP_404_NOT_FOUND)
+        elif request.user.role == 'asha_worker':
+            if not patient_id:
+                return Response({'error': 'patient_id is required when ASHA worker initiates consultation'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                patient = Patient.objects.get(user__id=patient_id)
+            except Patient.DoesNotExist:
+                return Response({'error': 'Patient not found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return Response({'error': 'Only patients and ASHA workers can start consultations'}, status=status.HTTP_403_FORBIDDEN)
+
         meeting_link = f"https://meet.jit.si/CareSync-{uuid.uuid4().hex[:8]}" if call_type == 'VIDEO' else None
-        
+
         consultation = Consultation.objects.create(
             patient=patient,
-            doctor_id=doctor_id,
+            doctor=doctor,
             call_type=call_type,
             status='PENDING',
             meeting_link=meeting_link
         )
-        
         serializer = self.get_serializer(consultation)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 

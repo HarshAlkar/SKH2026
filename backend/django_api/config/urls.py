@@ -21,7 +21,7 @@ from django.http import JsonResponse
 def api_root_view(request):
     return JsonResponse({
         "status": "online",
-        "project": "Gramin Health Connect API",
+        "project": "VitalReach API",
         "documentation": "Visit /admin/ for administrative control or /api/ for specific endpoints.",
         "endpoints": [
             "/api/auth/",

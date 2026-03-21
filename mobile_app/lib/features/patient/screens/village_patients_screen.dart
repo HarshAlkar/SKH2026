@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../core/widgets/common_appbar.dart';
 import '../../../routes/app_routes.dart';
 import '../../asha_worker/widgets/asha_drawer.dart';
@@ -84,6 +86,9 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final isAsha = auth.user?.role == 'asha_worker';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: const CommonAppBar(title: 'Village Patients'),

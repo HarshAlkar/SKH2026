@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../models/patient_model.dart';
 import 'status_badge.dart';
 import '../../asha_worker/screens/update_health_screen.dart';
@@ -18,6 +20,9 @@ class _PatientCardState extends State<PatientCard> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final isDoctor = auth.user?.role == 'doctor';
+
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -138,9 +143,9 @@ class _PatientCardState extends State<PatientCard> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
-                        "Update Health",
-                        style: TextStyle(
+                      child: Text(
+                        isDoctor ? "Prescribe" : "Update Health",
+                        style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
                         ),

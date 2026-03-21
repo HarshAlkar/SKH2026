@@ -242,7 +242,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
                               controller: _emailPhoneController,
                               keyboardType: TextInputType.emailAddress,
                               decoration: InputDecoration(
-                                hintText: "doctor@graminhealth.com",
+                                hintText: "doctor@vitalreach.com",
                                 hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
                                 prefixIcon: const Icon(Icons.alternate_email, color: primaryColor, size: 20),
                                 contentPadding: const EdgeInsets.symmetric(vertical: 16),

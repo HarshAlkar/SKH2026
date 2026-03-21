@@ -186,7 +186,7 @@ class DoctorProfileScreen extends StatelessWidget {
       title: 'Contact Information',
       children: [
         _buildInfoRow(Icons.phone_outlined, 'Phone Number', '+91 98765 43210'),
-        _buildInfoRow(Icons.email_outlined, 'Email', 'dr.amitsharma@graminhealth.com'),
+        _buildInfoRow(Icons.email_outlined, 'Email', 'dr.amitsharma@vitalreach.com'),
       ],
     );
   }

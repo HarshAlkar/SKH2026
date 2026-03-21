@@ -8,23 +8,31 @@ class ApiService {
 
   final StorageService _storageService = StorageService();
 
-  Future<Map<String, String>> _getHeaders(Map<String, String>? extra) async {
+  Future<Map<String, String>> _getHeaders(String endpoint, Map<String, String>? extra) async {
     final token = _storageService.getString('token');
+    
+    final isAuthEndpoint = endpoint.contains('login') || 
+                           endpoint.contains('register') || 
+                           endpoint.contains('send-otp') || 
+                           endpoint.contains('verify-otp') || 
+                           endpoint.contains('reset-password');
+
     return {
       'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Token $token',
+      if (token != null && token.isNotEmpty && !isAuthEndpoint) 'Authorization': 'Token $token',
       ...?extra,
     };
   }
 
   Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
     try {
-      final combinedHeaders = await _getHeaders(headers);
+      final combinedHeaders = await _getHeaders(endpoint, headers);
       final response = await _client.get(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
         headers: combinedHeaders,
       );
       return _processResponse(response);
+
     } catch (e) {
       rethrow;
     }
@@ -36,7 +44,7 @@ class ApiService {
     dynamic body,
   }) async {
     try {
-      final combinedHeaders = await _getHeaders({
+      final combinedHeaders = await _getHeaders(endpoint, {
         'Content-Type': 'application/json',
         ...?headers,
       });
@@ -57,7 +65,7 @@ class ApiService {
     dynamic body,
   }) async {
     try {
-      final combinedHeaders = await _getHeaders({
+      final combinedHeaders = await _getHeaders(endpoint, {
         'Content-Type': 'application/json',
         ...?headers,
       });
@@ -78,7 +86,7 @@ class ApiService {
     dynamic body,
   }) async {
     try {
-      final combinedHeaders = await _getHeaders({
+      final combinedHeaders = await _getHeaders(endpoint, {
         'Content-Type': 'application/json',
         ...?headers,
       });
@@ -95,7 +103,7 @@ class ApiService {
 
   Future<dynamic> delete(String endpoint, {Map<String, String>? headers}) async {
     try {
-      final combinedHeaders = await _getHeaders(headers);
+      final combinedHeaders = await _getHeaders(endpoint, headers);
       final response = await _client.delete(
         Uri.parse('${ApiConstants.baseUrl}$endpoint'),
         headers: combinedHeaders,

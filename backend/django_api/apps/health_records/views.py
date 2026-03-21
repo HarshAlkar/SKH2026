@@ -58,7 +58,7 @@ class HealthRecordViewSet(viewsets.ModelViewSet):
                 return Response({"error": "patient_id is required"}, status=status.HTTP_400_BAD_REQUEST)
                 
             try:
-                patient = Patient.objects.get(id=patient_id)
+                patient = Patient.objects.get(user__id=patient_id)
             except Patient.DoesNotExist:
                 return Response({"error": "Patient not found"}, status=status.HTTP_404_NOT_FOUND)
                 

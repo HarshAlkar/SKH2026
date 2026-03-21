@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../routes/app_routes.dart';
-import '../../../core/widgets/common_appbar.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/quick_action_button.dart';
 import '../widgets/asha_drawer.dart';
 import '../widgets/activity_tile.dart';
-import '../../notifications/widgets/notification_badge.dart';
-import '../../activity/models/activity_model.dart';
-import '../../../core/services/api_service.dart';
-import '../../../core/constants/api_constants.dart';
+import '../widgets/emergency_button.dart';
+import '../widgets/asha_sidebar.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../core/services/api_service.dart';
+import '../../../routes/app_routes.dart';
 
 class AshaDashboard extends StatefulWidget {
   const AshaDashboard({super.key});
@@ -20,30 +18,14 @@ class AshaDashboard extends StatefulWidget {
 }
 
 class _AshaDashboardState extends State<AshaDashboard> {
-  final ApiService _apiService = ApiService();
-  bool _isLoading = true;
-  String? _error;
-
-  Map<String, dynamic>? _stats;
-  List<dynamic>? _recentActivity;
-  String _workerName = "ASHA Worker";
-  String _village = "Unknown Village";
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
-    if (user != null) {
-      _workerName = user.name;
-      _village = user.village;
-    }
-  }
-
   final Color primaryColor = const Color(0xFF2A7DE1);
-  final Color secondaryBlue = const Color(0xFF4A90E2);
   final Color lightBackground = const Color(0xFFF5F7FA);
-  final Color backgroundColor = const Color(0xFFF5F7FA);
+  
+  bool _isLoading = true;
+  int _totalPatients = 0;
+  int _highRiskCount = 0;
+  int _newAlerts = 0;
+  List<dynamic> _recentActivity = [];
 
   @override
   void initState() {
@@ -52,397 +34,237 @@ class _AshaDashboardState extends State<AshaDashboard> {
   }
 
   Future<void> _fetchDashboardData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
+    setState(() => _isLoading = true);
+    final api = ApiService();
     try {
-      final response = await _apiService.get(
-        ApiConstants.ashaDashboardEndpoint,
-      );
+      // Fetch patients count
+      final patients = await api.get('/users/patients/');
+      // Fetch alerts
+      final alerts = await api.get('/alerts/notifications/');
+      
       setState(() {
-        _stats = response['stats'];
-        _recentActivity = response['recent_activity'];
-        _workerName = response['worker_name'] ?? _workerName;
-        _village = response['village'] ?? _village;
+        _totalPatients = patients.length;
+        _newAlerts = alerts.length;
+        _highRiskCount = alerts.where((a) => a['severity'] == 'High' || a['severity'] == 'Critical').length;
+        _recentActivity = alerts.take(3).toList();
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
-  // Helper method to format date slightly nicer
-  String _formatDate(String isoString) {
-    try {
-      final dt = DateTime.parse(isoString);
-      // Rough time ago
-      final diff = DateTime.now().difference(dt);
-      if (diff.inDays > 0) return '${diff.inDays} days ago';
-      if (diff.inHours > 0) return '${diff.inHours} hrs ago';
-      if (diff.inMinutes > 0) return '${diff.inMinutes} mins ago';
-      return 'Just now';
-    } catch (_) {
-      return '';
+      debugPrint('Error fetching asha dashboard data: $e');
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final user = auth.user;
+
     return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: const CommonAppBar(
-        title: "ASHA Dashboard",
-        showNotification: false,
+      backgroundColor: lightBackground,
+      appBar: AppBar(
+        backgroundColor: lightBackground,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchDashboardData,
+          ),
+          const SizedBox(width: 8)
+        ],
       ),
-      drawer: const AshaDrawer(currentRoute: AppRoutes.ashaDashboard),
-      floatingActionButton: null,
+      drawer: const AshaSidebar(),
+      floatingActionButton: EmergencyButton(
+        onTap: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Emergency Alert sent to PHC')),
+          );
+        },
+      ),
       body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+        child: RefreshIndicator(
+          onRefresh: _fetchDashboardData,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Greeting Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 60,
-                      color: Colors.redAccent,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Welcome, ${user?.name.split(' ').first ?? 'ASHA'} 👋",
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Village: ${user?.village ?? 'Unknown'}",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Error: $_error',
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _fetchDashboardData,
-                      child: const Text('Retry'),
+                    IconButton(
+                      icon: const Icon(Icons.notifications_outlined),
+                      onPressed: () {},
                     ),
                   ],
                 ),
-              )
-            : RefreshIndicator(
-                onRefresh: _fetchDashboardData,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20.0,
-                    vertical: 8.0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 24),
+
+                // Stats Cards Grid
+                if (_isLoading)
+                  const Center(child: Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(),
+                  ))
+                else
+                  GridView.count(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    childAspectRatio: 1.0,
                     children: [
-                      // Greeting Section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Hello $_workerName 👋",
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "$_village Health Overview",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Stack(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.notifications_outlined),
-                                onPressed: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.ashaNotifications,
-                                  );
-                                },
-                              ),
-                              if (_stats != null &&
-                                  (_stats!['new_alerts'] ?? 0) > 0)
-                                Positioned(
-                                  right: 8,
-                                  top: 8,
-                                  child: NotificationBadge(
-                                    count: _stats!['new_alerts'],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
+                      StatsCard(
+                        icon: Icons.people_alt_outlined,
+                        number: "$_totalPatients",
+                        label: "PATIENTS",
+                        iconColor: primaryColor,
+                        iconBackgroundColor: primaryColor.withOpacity(0.1),
                       ),
-                      const SizedBox(height: 24),
-
-                      // Stats Cards Grid
-                      GridView.count(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        childAspectRatio: 1.0,
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.pushNamed(
-                              context,
-                              AppRoutes.villagePatients,
-                            ),
-                            child: StatsCard(
-                              icon: Icons.people_alt_outlined,
-                              number:
-                                  _stats?['total_patients']?.toString() ?? "0",
-                              label: "TOTAL PATIENTS",
-                              iconColor: primaryColor,
-                              iconBackgroundColor: primaryColor.withOpacity(
-                                0.1,
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => Navigator.pushNamed(
-                              context,
-                              AppRoutes.riskAlerts,
-                            ),
-                            child: StatsCard(
-                              icon: Icons.monitor_heart_outlined,
-                              number:
-                                  _stats?['high_risk_alerts']?.toString() ??
-                                  "0",
-                              label: "HIGH RISK",
-                              iconColor: Colors.redAccent,
-                              iconBackgroundColor: Colors.redAccent.withOpacity(
-                                0.1,
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => Navigator.pushNamed(
-                              context,
-                              AppRoutes.villageVisits,
-                            ),
-                            child: StatsCard(
-                              icon: Icons.calendar_month_outlined,
-                              number:
-                                  _stats?['pending_visits']?.toString() ?? "0",
-                              label: "PENDING VISITS",
-                              iconColor: Colors.orange,
-                              iconBackgroundColor: Colors.orange.withOpacity(
-                                0.1,
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => Navigator.pushNamed(
-                              context,
-                              AppRoutes.ashaNotifications,
-                            ),
-                            child: StatsCard(
-                              icon: Icons.notifications_none_outlined,
-                              number: _stats?['new_alerts']?.toString() ?? "0",
-                              label: "NEW ALERTS",
-                              iconColor: secondaryBlue,
-                              iconBackgroundColor: secondaryBlue.withOpacity(
-                                0.1,
-                              ),
-                            ),
-                          ),
-                        ],
+                      StatsCard(
+                        icon: Icons.monitor_heart_outlined,
+                        number: "$_highRiskCount",
+                        label: "HIGH RISK",
+                        iconColor: Colors.redAccent,
+                        iconBackgroundColor: Colors.redAccent.withOpacity(0.1),
                       ),
-                      const SizedBox(height: 32),
-
-                      // Quick Actions
-                      const Text(
-                        "QUICK ACTIONS",
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.0,
-                          color: Colors.grey,
-                        ),
+                      StatsCard(
+                        icon: Icons.calendar_month_outlined,
+                        number: "12",
+                        label: "PENDING VISITS",
+                        iconColor: Colors.orange,
+                        iconBackgroundColor: Colors.orange.withOpacity(0.1),
                       ),
-                      const SizedBox(height: 16),
-                      Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: QuickActionButton(
-                                  icon: Icons.person_add_outlined,
-                                  label: "Register Patient",
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.villagePatients,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: QuickActionButton(
-                                  icon: Icons.edit_document,
-                                  label: "Update Health",
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.updateHealth,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: QuickActionButton(
-                                  icon: Icons.warning_amber_rounded,
-                                  label: "View Risk Alerts",
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.riskAlerts,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: QuickActionButton(
-                                  icon: Icons.analytics_outlined,
-                                  label: "Health Report",
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.villageHealthReport,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: QuickActionButton(
-                                  icon: Icons.medical_services_outlined,
-                                  label: "Consult Doctor",
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.ashaConsultDoctor,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                      StatsCard(
+                        icon: Icons.notifications_none_outlined,
+                        number: "$_newAlerts",
+                        label: "NEW ALERTS",
+                        iconColor: const Color(0xFF4A90E2),
+                        iconBackgroundColor: const Color(0xFF4A90E2).withOpacity(0.1),
                       ),
-                      const SizedBox(height: 32),
-
-                      // Recent Activity Section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            "RECENT ACTIVITY",
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pushNamed(
-                                context,
-                                AppRoutes.ashaAllActivity,
-                              );
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: const Size(50, 30),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              "View All",
-                              style: TextStyle(
-                                color: primaryColor,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      if (_recentActivity == null || _recentActivity!.isEmpty)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(24.0),
-                            child: Text(
-                              "No recent activity to show.",
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        ..._recentActivity!.map((activity) {
-                          bool isError = activity['icon_type'] == 'error';
-                          return ActivityTile(
-                            icon: isError
-                                ? Icons.error_outline
-                                : Icons.warning_amber_rounded,
-                            name: activity['patientName'] ?? 'Unknown',
-                            activity:
-                                "${activity['description']} • ${_formatDate(activity['timestamp'] ?? '')}",
-                            iconBackgroundColor: isError
-                                ? const Color(0xFFFFEBEE)
-                                : const Color(0xFFFFF7E6),
-                            iconColor: isError
-                                ? Colors.redAccent
-                                : Colors.orange,
-                            onTap: () {
-                              Navigator.pushNamed(
-                                context,
-                                AppRoutes.ashaActivityDetails,
-                                arguments: ActivityModel(
-                                  id: activity['id'].toString(),
-                                  patientName:
-                                      activity['patientName'] ?? 'Unknown',
-                                  activityType:
-                                      activity['activityType'] ?? 'Alert',
-                                  description: activity['description'] ?? '',
-                                  timestamp:
-                                      DateTime.tryParse(
-                                        activity['timestamp'],
-                                      ) ??
-                                      DateTime.now(),
-                                  village: _village,
-                                  reportedBy: 'System',
-                                ),
-                              );
-                            },
-                          );
-                        }),
-
-                      const SizedBox(height: 24),
                     ],
                   ),
+                const SizedBox(height: 32),
+
+                // Quick Actions
+                const Text(
+                  "QUICK ACTIONS",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                    color: Colors.grey,
+                  ),
                 ),
-              ),
+                const SizedBox(height: 16),
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: QuickActionButton(
+                            icon: Icons.person_add_outlined,
+                            label: "List Patients",
+                            onTap: () => Navigator.pushNamed(context, '/village_patients'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: QuickActionButton(
+                            icon: Icons.edit_document,
+                            label: "Update Health",
+                            onTap: () => Navigator.pushNamed(context, '/update_health'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: QuickActionButton(
+                            icon: Icons.warning_amber_rounded,
+                            label: "View Alerts",
+                            onTap: () => Navigator.pushNamed(context, '/risk_alerts'),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: QuickActionButton(
+                            icon: Icons.medical_services_outlined,
+                            label: "Consult Doctor",
+                            onTap: () => Navigator.pushNamed(context, AppRoutes.registeredDoctors),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+
+                // Recent Activity Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "RECENT ALERTS",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pushNamed(context, '/risk_alerts'),
+                      child: const Text("View All"),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                if (_recentActivity.isEmpty && !_isLoading)
+                   const Center(child: Text("No recent alerts in your village"))
+                else
+                  ..._recentActivity.map((alert) => ActivityTile(
+                    icon: Icons.warning_amber_rounded,
+                    name: alert['patient_name'] ?? "Unknown Patient",
+                    activity: "${alert['disease']} • ${alert['severity']}",
+                    iconBackgroundColor: alert['severity'] == 'High' ? Colors.red.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                    iconColor: alert['severity'] == 'High' ? Colors.red : Colors.orange,
+                    onTap: () {},
+                  )),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
