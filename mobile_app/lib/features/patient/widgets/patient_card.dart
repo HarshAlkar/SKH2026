@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/auth_provider.dart';
-import '../models/patient_model.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
+import 'package:hs053/shared/models/patient_model.dart';
 import 'status_badge.dart';
-import '../../asha_worker/screens/update_health_screen.dart';
-import '../../../routes/app_routes.dart';
+import 'package:hs053/features/asha_worker/screens/update_health_screen.dart';
+import 'package:hs053/core/routes/app_routes.dart';
 
 class PatientCard extends StatefulWidget {
   final PatientModel patient;

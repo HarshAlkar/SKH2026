@@ -1,4 +1,4 @@
-import '../../../core/services/api_service.dart';
+import 'package:hs053/core/services/api_service.dart';
 
 class MedicineService {
   final ApiService _apiService = ApiService();

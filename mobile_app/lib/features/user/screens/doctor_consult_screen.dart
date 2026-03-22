@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:hs053/core/theme/app_colors.dart';
 import '../widgets/user_sidebar.dart';
 import '../services/doctor_service.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../core/services/signaling_service.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
+import 'package:hs053/core/services/signaling_service.dart';
 import 'call_screen.dart';
 
 class DoctorConsultScreen extends StatefulWidget {

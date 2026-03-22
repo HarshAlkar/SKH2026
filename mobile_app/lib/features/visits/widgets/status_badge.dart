@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/visit_model.dart';
+import 'package:hs053/shared/models/visit_model.dart';
 
 class StatusBadge extends StatelessWidget {
   final VisitStatus status;
@@ -23,6 +23,10 @@ class StatusBadge extends StatelessWidget {
       case VisitStatus.missed:
         color = Colors.red;
         text = "Missed";
+        break;
+      case VisitStatus.cancelled:
+        color = Colors.grey;
+        text = "Cancelled";
         break;
     }
 

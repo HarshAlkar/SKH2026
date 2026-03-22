@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/common_appbar.dart';
-import '../../../routes/app_routes.dart';
-import '../../asha_worker/widgets/asha_drawer.dart';
-import '../models/consultation_model.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/features/asha_worker/widgets/asha_drawer.dart';
+import 'package:hs053/shared/models/consultation_model.dart';
 import '../widgets/consultation_card.dart';
 import 'request_consultation_screen.dart';
 
@@ -16,7 +16,6 @@ class ConsultDoctorScreen extends StatefulWidget {
 class _ConsultDoctorScreenState extends State<ConsultDoctorScreen> {
   final Color primaryColor = const Color(0xFF2F4DB6);
   final Color backgroundColor = const Color(0xFFF5F7FA);
-
 
   // Mock recent consultations
   final List<ConsultationModel> _recentConsultations = [
@@ -41,7 +40,6 @@ class _ConsultDoctorScreenState extends State<ConsultDoctorScreen> {
       timestamp: DateTime.now().subtract(const Duration(hours: 2)),
     ),
   ];
-
 
   @override
   Widget build(BuildContext context) {

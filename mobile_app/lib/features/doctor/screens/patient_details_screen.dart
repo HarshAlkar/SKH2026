@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
-import 'video_consultation_screen.dart';
 import 'create_prescription_screen.dart';
+import 'video_consultation_screen.dart';
+import 'package:hs053/core/services/api_service.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:hs053/core/models/patient_model.dart';
+import 'package:hs053/core/services/signaling_service.dart';
 
+class SymptomData {
+  final String label;
+  final Color bgColor;
+  final Color textColor;
+
+  SymptomData({
+    required this.label,
+    required this.bgColor,
+    required this.textColor,
+  });
+}
 
 class PatientData {
   final String name;
@@ -27,6 +43,21 @@ class PatientData {
     required this.symptoms,
     required this.aiInsights,
   });
+
+  factory PatientData.fromPatient(Patient p) {
+    return PatientData(
+      name: p.name,
+      age: p.age,
+      gender: 'N/A',
+      village: p.village,
+      bloodType: 'N/A',
+      chronicConditions: 'N/A',
+      pastSurgeries: 'N/A',
+      allergies: 'N/A',
+      symptoms: [],
+      aiInsights: 'N/A',
+    );
+  }
 
   static PatientData getDummySarah() {
     return PatientData(
@@ -102,471 +133,356 @@ class PatientData {
   }
 }
 
-class SymptomData {
-  final String label;
-  final Color bgColor;
-  final Color textColor;
+class PatientDetailsScreen extends StatefulWidget {
+  final dynamic patient;
+  final PatientData? data;
 
-  SymptomData({required this.label, required this.bgColor, required this.textColor});
+  const PatientDetailsScreen({super.key, this.patient, this.data});
+
+  @override
+  State<PatientDetailsScreen> createState() => _PatientDetailsScreenState();
 }
 
-class PatientDetailsScreen extends StatelessWidget {
-  final PatientData patient;
+class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
+  late PatientData patientData;
+  bool _isInitiatingCall = false;
 
-  const PatientDetailsScreen({super.key, required this.patient});
+  @override
+  void initState() {
+    super.initState();
+    if (widget.patient is Patient) {
+      patientData = PatientData.fromPatient(widget.patient as Patient);
+    } else if (widget.patient is PatientData) {
+      patientData = widget.patient as PatientData;
+    } else if (widget.data != null) {
+      patientData = widget.data!;
+    } else {
+      patientData = PatientData.getDummySarah();
+    }
+  }
+
+  Future<void> _startVideoCall() async {
+    // If we have a real patient object, we can use its ID.
+    // If not, we can't really call the backend.
+    if (widget.patient == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot call a dummy patient. Please select a registered patient.')),
+      );
+      return;
+    }
+
+    setState(() => _isInitiatingCall = true);
+    try {
+      final api = ApiService();
+      final response = await api.post('/consultations/start/', body: {
+        'patient_id': widget.patient!.id,
+        'doctor_user_id': Provider.of<AuthProvider>(context, listen: false).user?.id,
+        'call_type': 'VIDEO',
+      });
+
+      if (!mounted) return;
+
+      // Emit call-request so the patient can receive the incoming call
+      final signaling = SignalingService();
+      signaling.sendCallRequest(
+        receiverId: widget.patient!.userId.toString(),
+        consultationId: response['id'].toString(),
+        callerName: Provider.of<AuthProvider>(context, listen: false).user?.name ?? 'Doctor',
+        callType: 'VIDEO',
+      );
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VideoConsultationScreen(
+            consultationId: response['id'].toString(),
+            patientName: patientData.name,
+            isOfferer: true,
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to start call: $e')),
+      );
+    } finally {
+      setState(() => _isInitiatingCall = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    const textPrimary = Color(0xFF1F2937);
-    const backgroundColor = Color(0xFFF8FAFC);
+    const primaryBlue = Color(0xFF2A7DE1);
+    const textGray = Color(0xFF6B7280);
+    const bgGray = Color(0xFFF9FAFB);
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: bgGray,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: textPrimary),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Patient Details',
           style: TextStyle(
-            color: textPrimary,
+            color: Color(0xFF1F2937),
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert, color: Color(0xFF1F2937)),
+            onPressed: () {},
+          ),
+        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           children: [
-            _buildProfileCard(),
-            const SizedBox(height: 20),
-            _buildActionButtons(context),
-            const SizedBox(height: 20),
-            _buildPersonalInfoCard(),
-            const SizedBox(height: 20),
-            _buildHealthHistoryCard(),
-            const SizedBox(height: 20),
-            _buildSymptomsCard(),
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileCard() {
-    const primaryBlue = Color(0xFF2A7DE1);
-    const textPrimary = Color(0xFF1F2937);
-    const textSecondary = Color(0xFF6B7280);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
-      ),
-      child: Column(
-        children: [
-          const CircleAvatar(
-            radius: 40,
-            backgroundColor: Color(0xFFE8F1FF),
-            child: Icon(Icons.person, size: 50, color: primaryBlue),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            patient.name,
-            style: const TextStyle(
-              color: textPrimary,
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: primaryBlue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  patient.gender,
-                  style: const TextStyle(
-                    color: primaryBlue,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${patient.age} years old',
-                  style: const TextStyle(
-                    color: textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.location_on_outlined, size: 16, color: textSecondary),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  'Village: ${patient.village}',
-                  style: const TextStyle(
-                    color: textSecondary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons(BuildContext context) {
-    const primaryBlue = Color(0xFF2A7DE1);
-
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const VideoConsultationScreen(),
-                ),
-              );
-            },
-            icon: const Icon(Icons.videocam_outlined, size: 20),
-            label: const Text(
-              'Start Video Consultation',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryBlue,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.phone_outlined,
-              size: 20,
-              color: primaryBlue,
-            ),
-            label: const Text(
-              'Start Audio Call',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: primaryBlue,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: primaryBlue, width: 1.5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CreatePrescriptionScreen(patientName: patient.name),
-                ),
-              );
-            },
-            icon: const Icon(Icons.assignment_outlined, size: 20),
-            label: const Text(
-              'Create Prescription',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPersonalInfoCard() {
-    return _buildCardBase(
-      title: 'Personal Info',
-      iconUrl: Icons.person_outline,
-      child: Column(
-        children: [
-          _buildInfoRow('Full Name', patient.name),
-          const Divider(height: 24, color: Color(0xFFF1F5F9)),
-          _buildInfoRow('Age', patient.age),
-          const Divider(height: 24, color: Color(0xFFF1F5F9)),
-          _buildInfoRow('Location', patient.village),
-          const Divider(height: 24, color: Color(0xFFF1F5F9)),
-          _buildInfoRow('Blood Type', patient.bloodType),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHealthHistoryCard() {
-    return _buildCardBase(
-      title: 'Health History',
-      iconUrl: Icons.history,
-      child: Column(
-        children: [
-          _buildHistorySection(
-            'CHRONIC CONDITIONS',
-            patient.chronicConditions,
-          ),
-          const SizedBox(height: 12),
-          _buildHistorySection('PAST SURGERIES', patient.pastSurgeries),
-          const SizedBox(height: 12),
-          _buildHistorySection('ALLERGIES', patient.allergies),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSymptomsCard() {
-    return _buildCardBase(
-      title: 'Symptoms',
-      iconUrl: Icons.medical_services_outlined,
-      titleBadge: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2A7DE1).withOpacity(0.15),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: const Text(
-          'AI ANALYZED',
-          style: TextStyle(
-            color: Color(0xFF2A7DE1),
-            fontSize: 9,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: patient.symptoms.map((s) => _buildSymptomChip(s.label, s.bgColor, s.textColor)).toList(),
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                  color: Color(0xFF475569),
-                  fontSize: 13,
-                  height: 1.5,
-                ),
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(20),
+              child: Row(
                 children: [
-                  const TextSpan(
-                    text: 'AI Insights: ',
-                    style: TextStyle(
-                      color: Color(0xFF2A7DE1),
-                      fontWeight: FontWeight.bold,
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: primaryBlue.withOpacity(0.1),
+                    child: Text(
+                      patientData.name.isNotEmpty ? patientData.name[0] : '?',
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: primaryBlue,
+                      ),
                     ),
                   ),
-                  TextSpan(
-                    text: patient.aiInsights,
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          patientData.name,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '${patientData.age} Years · ${patientData.gender} · ${patientData.village}',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: textGray,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'ABHA Verified',
+                            style: TextStyle(
+                              color: Color(0xFF059669),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isInitiatingCall ? null : _startVideoCall,
+                      icon: _isInitiatingCall 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.videocam_rounded, color: Colors.white, size: 20),
+                      label: const Text(
+                        'VIDEO CONSULT',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryBlue,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.message_outlined, color: primaryBlue),
+                      onPressed: () {},
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  _buildInfoCard(
+                    title: 'Current Symptoms',
+                    icon: Icons.personal_injury_outlined,
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: patientData.symptoms.isEmpty 
+                        ? [const Text('No recent symptoms reported')]
+                        : patientData.symptoms.map((s) => _buildSymptomBadge(s)).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInfoCard(
+                    title: 'AI Insights & Triage',
+                    icon: Icons.auto_awesome_outlined,
+                    child: Text(
+                      patientData.aiInsights,
+                      style: const TextStyle(color: Color(0xFF374151), height: 1.5, fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInfoCard(
+                    title: 'Medical Background',
+                    icon: Icons.history_edu_outlined,
+                    child: Column(
+                      children: [
+                        _buildDetailRow('Blood Group', patientData.bloodType),
+                        _buildDetailRow('Chronic', patientData.chronicConditions),
+                        _buildDetailRow('Allergies', patientData.allergies),
+                        _buildDetailRow('Surgeries', patientData.pastSurgeries),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 100),
+          ],
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        width: double.infinity,
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CreatePrescriptionScreen()),
+            );
+          },
+          backgroundColor: const Color(0xFF1F2937),
+          elevation: 4,
+          icon: const Icon(Icons.note_add_outlined, color: Colors.white),
+          label: const Text(
+            'CREATE PRESCRIPTION',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
           ),
-        ],
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
       ),
     );
   }
 
-  Widget _buildCardBase({
-    required String title,
-    required IconData iconUrl,
-    Widget? titleBadge,
-    required Widget child,
-  }) {
-    const primaryBlue = Color(0xFF2A7DE1);
-    const textPrimary = Color(0xFF1F2937);
-
+  Widget _buildInfoCard({required String title, required IconData icon, required Widget child}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withOpacity(0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(iconUrl, color: primaryBlue, size: 22),
-              const SizedBox(width: 8),
+              Icon(icon, size: 18, color: const Color(0xFF2A7DE1)),
+              const SizedBox(width: 10),
               Text(
-                title,
+                title.toUpperCase(),
                 style: const TextStyle(
-                  color: textPrimary,
-                  fontSize: 16,
+                  fontSize: 12,
                   fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  color: Color(0xFF6B7280),
                 ),
               ),
-              if (titleBadge != null) ...[const SizedBox(width: 8), titleBadge],
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           child,
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF64748B),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Color(0xFF0F172A),
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHistorySection(String title, String content) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Color(0xFF3B82F6),
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            content,
-            style: const TextStyle(
-              color: Color(0xFF334155),
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSymptomChip(String label, Color bgColor, Color textColor) {
+  Widget _buildSymptomBadge(SymptomData data) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: textColor.withOpacity(0.2)),
+        color: data.bgColor,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        label,
+        data.label,
         style: TextStyle(
-          color: textColor,
+          color: data.textColor,
           fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.bold,
         ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13)),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(color: Color(0xFF1F2937), fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
     );
   }

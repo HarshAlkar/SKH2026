@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../patient/models/patient_model.dart';
-import '../models/health_record_model.dart';
+import 'package:hs053/shared/models/patient_model.dart';
+import 'package:hs053/shared/models/health_record_model.dart';
 import '../widgets/health_record_card.dart';
-import '../../../core/services/api_service.dart';
-import '../../../core/constants/api_constants.dart';
+import 'package:hs053/core/services/api_service.dart';
+import 'package:hs053/core/constants/api_constants.dart';
 
 class RecordDetailsScreen extends StatefulWidget {
   final PatientModel patient;

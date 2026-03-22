@@ -275,7 +275,11 @@ class ScheduleScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const VideoConsultationScreen(),
+                  builder: (context) => VideoConsultationScreen(
+                    consultationId: 'room_${appointment.patientName.replaceAll(' ', '_')}',
+                    patientName: appointment.patientName,
+                    isOfferer: true,
+                  ),
                 ),
               );
             },

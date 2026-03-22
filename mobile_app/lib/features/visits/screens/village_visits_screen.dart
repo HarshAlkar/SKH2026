@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/common_appbar.dart';
-import '../../../routes/app_routes.dart';
-import '../../asha_worker/widgets/asha_drawer.dart';
-import '../models/visit_model.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/features/asha_worker/widgets/asha_drawer.dart';
+import 'package:hs053/shared/models/visit_model.dart';
 import '../widgets/visit_card.dart';
 import 'schedule_visit_screen.dart';
-import '../../../core/services/api_service.dart';
+import 'package:hs053/core/services/api_service.dart';
 
 class VillageVisitsScreen extends StatefulWidget {
   const VillageVisitsScreen({super.key});

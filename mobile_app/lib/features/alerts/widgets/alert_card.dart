@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/alert_model.dart';
-import '../../patient/screens/patient_details_screen.dart';
+import 'package:hs053/shared/models/alert_model.dart';
+import 'package:hs053/features/patient/screens/patient_details_screen.dart';
 import 'severity_badge.dart';
 
 class AlertCard extends StatelessWidget {

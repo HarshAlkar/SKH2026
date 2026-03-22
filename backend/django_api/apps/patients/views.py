@@ -2,7 +2,9 @@ from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
-from .models import Patient
+from .models import Patient, FamilyMember, PatientReport
+from apps.prescriptions.models import Prescription
+from apps.symptom_analysis.models import SymptomRecord, SymptomAnalysis
 from apps.asha_workers.models import ASHAWorker
 from apps.users.models import User
 from django.db import IntegrityError, transaction
@@ -38,6 +40,7 @@ class PatientViewSet(viewsets.ModelViewSet):
         for p in queryset:
             data.append({
                 "id": p.id,
+                "user_id": p.user.id,
                 "name": p.user.name or p.user.username,
                 "age": p.age,
                 "village": p.user.village or "Unknown",
@@ -45,7 +48,8 @@ class PatientViewSet(viewsets.ModelViewSet):
                 "gender": p.gender,
                 "blood_group": p.blood_group,
                 "address": p.address,
-                "status": "Stable" 
+                "status": "Stable",
+                "abha_id": p.user.abha_id,
             })
         return Response(data, status=status.HTTP_200_OK)
 
@@ -130,10 +134,151 @@ class PatientViewSet(viewsets.ModelViewSet):
         patient.blood_group = data.get('blood_group', patient.blood_group)
         patient.address = data.get('address', patient.address)
         patient.medical_history = data.get('medical_history', patient.medical_history)
+        patient.allergies = data.get('allergies', patient.allergies)
+        patient.emergency_notes = data.get('emergency_notes', patient.emergency_notes)
         patient.save()
         
-        return Response({"message": "Patient updated successfully"}, status=status.HTTP_200_OK)
+        return Response({"message": "Patient updated successfully", "id": patient.id}, status=status.HTTP_200_OK)
 
+    @action(detail=False, methods=['get'], url_path='emergency-details')
+    def emergency_details(self, request):
+        abha_id = request.query_params.get('abha_id')
+        if not abha_id:
+            return Response({"error": "ABHA ID required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Find user by ABHA ID
+            user = User.objects.get(abha_id=abha_id)
+            patient = user.patient_profile
+            
+            # Fetch family members
+            family = FamilyMember.objects.filter(patient=patient)
+            family_data = [{
+                "name": f.name,
+                "relationship": f.relationship,
+                "phone_number": f.phone_number
+            } for f in family]
+
+            # Fetch prescriptions
+            prescriptions = Prescription.objects.filter(patient=patient).order_by('-issued_at')[:5]
+            prescription_data = [{
+                "medications": p.medications,
+                "doctor": p.doctor.user.name if p.doctor else "Unknown",
+                "date": p.issued_at.strftime('%Y-%m-%d'),
+                "notes": p.notes
+            } for p in prescriptions]
+            
+            return Response({
+                "name": user.name or user.username,
+                "phone_number": user.phone_number,
+                "abha_id": user.abha_id,
+                "age": patient.age,
+                "gender": patient.gender,
+                "blood_group": patient.blood_group,
+                "allergies": patient.allergies,
+                "emergency_notes": patient.emergency_notes,
+                "medical_history": patient.medical_history,
+                "family_members": family_data,
+                "prescriptions": prescription_data
+            }, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({"error": "User with this ABHA ID not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'], url_path='clinical-details')
+    def clinical_details(self, request):
+        if request.user.role != 'doctor':
+            return Response({"error": "Only doctors can access clinical details"}, status=status.HTTP_403_FORBIDDEN)
+            
+        abha_id = request.query_params.get('abha_id')
+        if not abha_id:
+            return Response({"error": "ABHA ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            user = User.objects.get(abha_id=abha_id)
+            patient = user.patient_profile
+            
+            # Fetch family members
+            family = FamilyMember.objects.filter(patient=patient)
+            family_data = [{"name": f.name, "relationship": f.relationship, "phone_number": f.phone_number} for f in family]
+
+            # Fetch prescriptions
+            prescriptions = Prescription.objects.filter(patient=patient).order_by('-issued_at')
+            prescription_data = [{
+                "medications": p.medications,
+                "doctor": p.doctor.user.name if p.doctor else "Unknown",
+                "date": p.issued_at.strftime('%Y-%m-%d'),
+                "notes": p.notes
+            } for p in prescriptions]
+
+            # Fetch reports
+            reports = PatientReport.objects.filter(patient=patient).order_by('-created_at')
+            report_data = [{
+                "title": r.title,
+                "file": request.build_absolute_uri(r.report_file.url) if r.report_file else None,
+                "image": request.build_absolute_uri(r.report_image.url) if r.report_image else None,
+                "notes": r.notes,
+                "date": r.created_at.strftime('%Y-%m-%d')
+            } for r in reports]
+
+            # Fetch AI Analysis
+            ai_history = SymptomAnalysis.objects.filter(user=user).order_by('-created_at')
+            ai_data = [{
+                "disease": a.predicted_disease,
+                "severity": a.severity_level,
+                "symptoms": a.symptoms_text,
+                "date": a.created_at.strftime('%Y-%m-%d')
+            } for a in ai_history]
+            
+            return Response({
+                "basic_info": {
+                    "name": user.name or user.username,
+                    "phone": user.phone_number,
+                    "abha_id": user.abha_id,
+                    "age": patient.age,
+                    "gender": patient.gender,
+                    "address": patient.address
+                },
+                "medical_info": {
+                    "blood_group": patient.blood_group,
+                    "allergies": patient.allergies,
+                    "emergency_notes": patient.emergency_notes,
+                    "medical_history": patient.medical_history,
+                },
+                "family_members": family_data,
+                "prescriptions": prescription_data,
+                "reports": report_data,
+                "ai_history": ai_data
+            }, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({"error": "User with this ABHA ID not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
     @action(detail=False, methods=['post'], url_path='create-patient') # Alias for clarity if needed
     def create_patient(self, request):
         return self.create(request)
+
+class FamilyMemberViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    
+    class FamilyMemberSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = FamilyMember
+            fields = '__all__'
+
+    def get_queryset(self):
+        try:
+            patient = self.request.user.patient_profile
+            return FamilyMember.objects.filter(patient=patient)
+        except:
+            return FamilyMember.objects.none()
+
+    def get_serializer_class(self):
+        return self.FamilyMemberSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(patient=self.request.user.patient_profile)

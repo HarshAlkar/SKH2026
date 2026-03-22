@@ -1,9 +1,9 @@
 // import 'dart:convert';
-// import '../../../core/database/database_service.dart';
-// import '../../../core/sync/sync_queue_service.dart';
-// import '../../../core/connectivity/connectivity_service.dart';
-// import '../../../core/models/patient_model.dart';
-// import '../../../core/sync/sync_service.dart';
+// import 'package:hs053/core/database/database_service.dart';
+// import 'package:hs053/core/sync/sync_queue_service.dart';
+// import 'package:hs053/core/connectivity/connectivity_service.dart';
+// import 'package:hs053/core/models/patient_model.dart';
+// import 'package:hs053/core/sync/sync_service.dart';
 
 // class PatientService {
 //   final DatabaseService _dbService = DatabaseService();

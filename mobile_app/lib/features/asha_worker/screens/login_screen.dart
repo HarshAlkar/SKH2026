@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'asha_register_screen.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../core/utils/helpers.dart';
-import '../../../routes/app_routes.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
+import 'package:hs053/core/utils/helpers.dart';
+import 'package:hs053/core/routes/app_routes.dart';
 
 class AshaLoginScreen extends StatefulWidget {
   const AshaLoginScreen({super.key});

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../routes/app_routes.dart';
-import '../../../core/widgets/common_appbar.dart';
-import '../../asha_worker/widgets/asha_drawer.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
+import 'package:hs053/features/asha_worker/widgets/asha_drawer.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/health_chart.dart';
 import '../widgets/progress_indicator_widget.dart';
-import '../../../providers/auth_provider.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
 import '../widgets/village_selector_sheet.dart';
 import 'package:intl/intl.dart';
 

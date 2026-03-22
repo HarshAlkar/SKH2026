@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/consultation_model.dart';
+import 'package:hs053/shared/models/consultation_model.dart';
 import '../widgets/consultation_form_field.dart';
 import '../widgets/consultation_dropdown.dart';
-import '../../../core/widgets/common_appbar.dart';
-import '../../asha_worker/widgets/asha_drawer.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
+import 'package:hs053/features/asha_worker/widgets/asha_drawer.dart';
 
 class RequestConsultationScreen extends StatefulWidget {
   const RequestConsultationScreen({super.key});
@@ -47,7 +47,7 @@ class _RequestConsultationScreenState extends State<RequestConsultationScreen> {
       final request = ConsultationModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         patientName: _selectedPatient!,
-        doctorName: 'Pending Assignment', // Will be assigned by system
+        doctorName: 'Pending Assignment',
         symptoms: _symptomsController.text,
         urgency: _selectedUrgency,
         type: _selectedType,
@@ -82,7 +82,7 @@ class _RequestConsultationScreenState extends State<RequestConsultationScreen> {
       appBar: const CommonAppBar(
         title: "Request Consultation",
       ),
-      drawer: const AshaDrawer(currentRoute: ''), // Not a main drawer route
+      drawer: const AshaDrawer(currentRoute: ''),
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -92,7 +92,6 @@ class _RequestConsultationScreenState extends State<RequestConsultationScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Patient Selection
                   ConsultationDropdown<String>(
                     label: "Select Patient",
                     value: _selectedPatient!,
@@ -101,8 +100,6 @@ class _RequestConsultationScreenState extends State<RequestConsultationScreen> {
                     onChanged: (val) => setState(() => _selectedPatient = val),
                   ),
                   const SizedBox(height: 20),
-
-                  // Symptoms
                   ConsultationFormField(
                     label: "Patient Symptoms",
                     hint: "Describe symptoms reported by the patient.",
@@ -112,65 +109,25 @@ class _RequestConsultationScreenState extends State<RequestConsultationScreen> {
                     validator: (val) => val == null || val.isEmpty ? "Please describe patient symptoms" : null,
                   ),
                   const SizedBox(height: 20),
-
-                  // Urgency Level
-                  const Text(
-                    "Urgency Level",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
+                  const Text("Urgency Level", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<UrgencyLevel>(
-                    initialValue: _selectedUrgency,
+                    value: _selectedUrgency,
                     decoration: InputDecoration(
                       prefixIcon: const Icon(Icons.emergency_outlined, color: primaryColor),
                       filled: true,
                       fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
                     ),
                     items: [
-                      DropdownMenuItem(
-                        value: UrgencyLevel.normal,
-                        child: Row(
-                          children: [
-                            Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)),
-                            const SizedBox(width: 8),
-                            const Text("Normal"),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: UrgencyLevel.moderate,
-                        child: Row(
-                          children: [
-                            Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle)),
-                            const SizedBox(width: 8),
-                            const Text("Moderate"),
-                          ],
-                        ),
-                      ),
-                      DropdownMenuItem(
-                        value: UrgencyLevel.urgent,
-                        child: Row(
-                          children: [
-                            Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
-                            const SizedBox(width: 8),
-                            const Text("Urgent"),
-                          ],
-                        ),
-                      ),
+                      DropdownMenuItem(value: UrgencyLevel.normal, child: Row(children: [Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.green, shape: BoxShape.circle)), const SizedBox(width: 8), const Text("Normal")])),
+                      DropdownMenuItem(value: UrgencyLevel.moderate, child: Row(children: [Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle)), const SizedBox(width: 8), const Text("Moderate")])),
+                      DropdownMenuItem(value: UrgencyLevel.urgent, child: Row(children: [Container(width: 12, height: 12, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)), const SizedBox(width: 8), const Text("Urgent")])),
                     ],
                     onChanged: (val) => setState(() => _selectedUrgency = val!),
                   ),
                   const SizedBox(height: 24),
-
-                  // Consultation Type
-                  const Text(
-                    "Preferred Consultation Type",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
+                  const Text("Preferred Consultation Type", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -182,44 +139,24 @@ class _RequestConsultationScreenState extends State<RequestConsultationScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-
-                  // Attach Report
                   OutlinedButton.icon(
                     onPressed: _simulateFileUpload,
                     icon: const Icon(Icons.attachment_outlined),
                     label: Text(_attachedFileName ?? "Attach Health Report (Optional)"),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      foregroundColor: primaryColor,
-                      side: const BorderSide(color: primaryColor),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
+                    style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16), foregroundColor: primaryColor, side: const BorderSide(color: primaryColor), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   ),
                   const SizedBox(height: 32),
-
-                  // Request Button
                   ElevatedButton.icon(
                     onPressed: _isLoading ? null : _handleSubmit,
                     icon: const Icon(Icons.medical_services_outlined, color: Colors.white),
-                    label: const Text(
-                      "Send Consultation Request",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
+                    label: const Text("Send Consultation Request", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    style: ElevatedButton.styleFrom(backgroundColor: primaryColor, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                   ),
                 ],
               ),
             ),
           ),
-          if (_isLoading)
-            Container(
-              color: Colors.black26,
-              child: const Center(child: CircularProgressIndicator(color: primaryColor)),
-            ),
+          if (_isLoading) Container(color: Colors.black26, child: const Center(child: CircularProgressIndicator(color: primaryColor))),
         ],
       ),
     );
@@ -228,32 +165,14 @@ class _RequestConsultationScreenState extends State<RequestConsultationScreen> {
   Widget _buildTypeButton(ConsultationType type, IconData icon, String label) {
     bool isSelected = _selectedType == type;
     const Color primaryColor = Color(0xFF2F4DB6);
-
     return Expanded(
       child: GestureDetector(
         onTap: () => setState(() => _selectedType = type),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? primaryColor : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade300),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: isSelected ? Colors.white : Colors.grey[600]),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.grey[600],
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
+          decoration: BoxDecoration(color: isSelected ? primaryColor : Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: isSelected ? primaryColor : Colors.grey.shade300)),
+          child: Column(children: [Icon(icon, color: isSelected ? Colors.white : Colors.grey[600]), const SizedBox(height: 4), Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.grey[600], fontSize: 12, fontWeight: FontWeight.bold))]),
         ),
       ),
     );

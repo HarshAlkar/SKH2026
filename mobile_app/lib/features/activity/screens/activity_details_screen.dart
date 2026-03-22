@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/activity_model.dart';
-import '../../../core/widgets/common_appbar.dart';
-import '../../asha_worker/widgets/asha_drawer.dart';
-import '../../../routes/app_routes.dart';
+import 'package:hs053/features/activity/models/activity_model.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
+import 'package:hs053/features/asha_worker/widgets/asha_drawer.dart';
+import 'package:hs053/core/routes/app_routes.dart';
 import 'package:intl/intl.dart';
 
 class ActivityDetailsScreen extends StatelessWidget {
@@ -92,7 +92,7 @@ class ActivityDetailsScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.pushNamed(context, '/asha/patient-details', arguments: activity.patientName);
+                    Navigator.pushNamed(context, AppRoutes.ashaPatientDetails, arguments: activity.patientName);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryColor,

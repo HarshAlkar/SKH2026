@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../routes/app_routes.dart';
-import '../../../providers/auth_provider.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
 
 class AshaSidebar extends StatelessWidget {
   const AshaSidebar({super.key});

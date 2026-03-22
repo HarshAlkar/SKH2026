@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../routes/app_routes.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../core/widgets/common_appbar.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
 import '../widgets/asha_drawer.dart';
 
 class AshaSettingsScreen extends StatefulWidget {
@@ -227,7 +227,7 @@ class _AshaSettingsScreenState extends State<AshaSettingsScreen> {
       trailing: Switch(
         value: value,
         onChanged: onChanged,
-        activeThumbColor: primaryColor,
+        activeColor: primaryColor,
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     );

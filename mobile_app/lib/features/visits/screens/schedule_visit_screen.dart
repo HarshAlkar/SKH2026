@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../core/widgets/common_appbar.dart';
-import '../../../routes/app_routes.dart';
-import '../../asha_worker/widgets/asha_drawer.dart';
-import '../../../core/services/api_service.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/features/asha_worker/widgets/asha_drawer.dart';
+import 'package:hs053/core/services/api_service.dart';
 
 class ScheduleVisitScreen extends StatefulWidget {
   const ScheduleVisitScreen({super.key});
@@ -175,7 +175,7 @@ class _ScheduleVisitScreenState extends State<ScheduleVisitScreen> {
                     // Patient Selection
                     _buildLabel("Select Patient"),
                     DropdownButtonFormField<String>(
-                      initialValue: _selectedPatientId,
+                      value: _selectedPatientId,
                       decoration: _inputDecoration(Icons.person_outline),
                       hint: const Text("Choose a patient"),
                       items: _patients.map((p) {

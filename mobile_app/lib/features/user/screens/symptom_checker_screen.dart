@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../routes/app_routes.dart';
-import '../../../providers/alert_provider.dart';
-import '../../../providers/symptom_provider.dart';
-import '../../../models/alert_model.dart';
+import 'package:hs053/core/theme/app_colors.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/shared/providers/alert_provider.dart';
+import 'package:hs053/shared/providers/symptom_provider.dart';
+import 'package:hs053/shared/models/alert_model.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
 import '../widgets/user_sidebar.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
@@ -419,13 +420,20 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           final alertProvider = Provider.of<AlertProvider>(context, listen: false);
+                          final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                          final userName = authProvider.user?.name ?? 'Patient';
+
                           alertProvider.addAlert(
                             AlertModel(
-                              id: DateTime.now().toString(),
+                              id: DateTime.now().millisecondsSinceEpoch.toString(),
+                              patientName: userName,
+                              alertType: 'Symptom Alert',
+                              description: 'Patient reported symptoms and AI suggested Viral Fever (Moderate).',
+                              severityLevel: AlertSeverity.moderate,
+                              timestamp: 'Just now',
                               title: 'Symptom Alert: Viral Fever',
-                              message: 'Patient Ramesh reported symptoms and AI suggested Viral Fever (Moderate).',
+                              message: 'AI suggested Viral Fever (Moderate).',
                               severity: 'Warning',
-                              timestamp: DateTime.now(),
                             ),
                           );
                           ScaffoldMessenger.of(context).showSnackBar(

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../providers/medicine_provider.dart';
-import '../../../models/medicine_model.dart';
+import 'package:hs053/core/theme/app_colors.dart';
+import 'package:hs053/shared/providers/medicine_provider.dart';
+import 'package:hs053/shared/models/medicine_model.dart';
 
 class FullScheduleScreen extends StatelessWidget {
   const FullScheduleScreen({super.key});

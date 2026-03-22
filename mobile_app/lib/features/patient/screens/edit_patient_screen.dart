@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/common_appbar.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
 import '../widgets/custom_input_field.dart';
 import '../widgets/custom_dropdown_field.dart';
-import '../../../core/services/api_service.dart';
-import '../../../core/constants/api_constants.dart';
-import '../models/patient_model.dart';
+import 'package:hs053/core/services/api_service.dart';
+import 'package:hs053/core/constants/api_constants.dart';
+import 'package:hs053/shared/models/patient_model.dart';
 
 class EditPatientScreen extends StatefulWidget {
   const EditPatientScreen({super.key});

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../routes/app_routes.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../core/utils/validators.dart';
-import '../../../core/utils/helpers.dart';
+import 'package:hs053/core/theme/app_colors.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
+import 'package:hs053/core/utils/validators.dart';
+import 'package:hs053/core/utils/helpers.dart';
+import 'package:hs053/core/localization/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -46,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleLogin() async {
+    final lang = AppLocalizations.of(context);
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final success = await authProvider.login(
@@ -59,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen>
       } else if (mounted) {
         Helpers.showSnackBar(
           context,
-          authProvider.error ?? 'Login failed. Please check your credentials.',
+          authProvider.error ?? lang?.translate('error_occurred') ?? 'Login failed. Please check your credentials.',
           isError: true,
         );
       }
@@ -67,8 +69,9 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Future<void> _handleOtpLogin() async {
+    final lang = AppLocalizations.of(context);
     if (_phoneController.text.length != 10) {
-      Helpers.showSnackBar(context, 'Please enter a valid 10-digit phone number', isError: true);
+      Helpers.showSnackBar(context, lang?.translate('invalid_phone') ?? 'Please enter a valid 10-digit phone number', isError: true);
       return;
     }
 
@@ -88,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen>
     } else if (mounted) {
       Helpers.showSnackBar(
         context,
-        authProvider.error ?? 'Failed to send OTP. Is your phone number registered?',
+        authProvider.error ?? lang?.translate('error_occurred') ?? 'Failed to send OTP. Is your phone number registered?',
         isError: true,
       );
     }
@@ -96,6 +99,8 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+    
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -114,27 +119,27 @@ class _LoginScreenState extends State<LoginScreen>
                   const SizedBox(height: 40),
 
                   // Login Form
-                  _buildLoginForm(),
+                  _buildLoginForm(lang),
                   const SizedBox(height: 16),
 
                   // Actions: Remember Me & Forgot Password
-                  _buildMiddleActions(),
+                  _buildMiddleActions(lang),
                   const SizedBox(height: 24),
 
                   // Primary Login Button
-                  _buildLoginButton(),
+                  _buildLoginButton(lang),
                   const SizedBox(height: 24),
 
                   // Secondary Action: Create Account
-                  _buildSecondaryActions(),
+                  _buildSecondaryActions(lang),
                   const SizedBox(height: 32),
 
                   // Info Card
-                  _buildInfoCard(),
+                  _buildInfoCard(lang),
                   const SizedBox(height: 32),
 
                   // Bottom Section: Banner
-                  _buildBottomBanner(),
+                  _buildBottomBanner(lang),
                 ],
               ),
             ),
@@ -170,13 +175,13 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildLoginForm() {
+  Widget _buildLoginForm(AppLocalizations? lang) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Phone Number',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        Text(
+          lang?.translate('phone_number') ?? 'Phone Number',
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -184,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen>
           keyboardType: TextInputType.number,
           validator: (value) => Validators.validatePhone(value),
           decoration: InputDecoration(
-            hintText: 'Enter 10-digit mobile number',
+            hintText: lang?.translate('phone_number') ?? 'Enter 10-digit mobile number',
             prefixIcon: const Icon(
               Icons.phone_outlined,
               color: AppColors.textSecondary,
@@ -205,16 +210,16 @@ class _LoginScreenState extends State<LoginScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Password',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            Text(
+              lang?.translate('password') ?? 'Password',
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
             ),
             GestureDetector(
               onTap: () =>
                   Navigator.pushNamed(context, AppRoutes.forgotPassword),
-              child: const Text(
-                'Forgot?',
-                style: TextStyle(
+              child: Text(
+                lang?.translate('forgot_password') ?? 'Forgot?',
+                style: const TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
                 ),
@@ -228,7 +233,7 @@ class _LoginScreenState extends State<LoginScreen>
           obscureText: _obscurePassword,
           validator: (value) => Validators.validatePassword(value),
           decoration: InputDecoration(
-            hintText: 'Enter your password',
+            hintText: lang?.translate('password') ?? 'Enter your password',
             prefixIcon: const Icon(
               Icons.lock_outline,
               color: AppColors.textSecondary,
@@ -257,7 +262,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildMiddleActions() {
+  Widget _buildMiddleActions(AppLocalizations? lang) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -275,24 +280,24 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ),
             const SizedBox(width: 8),
-            const Text(
-              'Remember me',
-              style: TextStyle(color: AppColors.textSecondary),
+            Text(
+              lang?.translate('remember_me') ?? 'Remember me',
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
         ),
         GestureDetector(
           onTap: _handleOtpLogin,
-          child: const Row(
+          child: Row(
             children: [
               Text(
-                'Login with OTP',
-                style: TextStyle(
+                lang?.translate('login_with_otp') ?? 'Login with OTP',
+                style: const TextStyle(
                   color: AppColors.secondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Icon(Icons.arrow_forward, size: 16, color: AppColors.secondary),
+              const Icon(Icons.arrow_forward, size: 16, color: AppColors.secondary),
             ],
           ),
         ),
@@ -300,7 +305,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildLoginButton() {
+  Widget _buildLoginButton(AppLocalizations? lang) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         return SizedBox(
@@ -324,18 +329,18 @@ class _LoginScreenState extends State<LoginScreen>
                       strokeWidth: 2,
                     ),
                   )
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Login',
-                        style: TextStyle(
+                        lang?.translate('login') ?? 'Login',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Icon(Icons.login_outlined),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.login_outlined),
                     ],
                   ),
           ),
@@ -344,19 +349,19 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildSecondaryActions() {
+  Widget _buildSecondaryActions(AppLocalizations? lang) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text(
-          'New user? ',
-          style: TextStyle(color: AppColors.textSecondary),
+        Text(
+          '${lang?.translate('new_user') ?? 'New user'}? ',
+          style: const TextStyle(color: AppColors.textSecondary),
         ),
         GestureDetector(
           onTap: () => Navigator.pushNamed(context, AppRoutes.register),
-          child: const Text(
-            'Create Account',
-            style: TextStyle(
+          child: Text(
+            lang?.translate('create_account') ?? 'Create Account',
+            style: const TextStyle(
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
             ),
@@ -366,7 +371,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildInfoCard() {
+  Widget _buildInfoCard(AppLocalizations? lang) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -374,15 +379,15 @@ class _LoginScreenState extends State<LoginScreen>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.blue.withOpacity(0.1)),
       ),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline, color: AppColors.secondary),
-          SizedBox(width: 12),
+          const Icon(Icons.info_outline, color: AppColors.secondary),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Use this app to check symptoms, track medicines, and consult doctors directly from your phone. Connecting rural healthcare.',
-              style: TextStyle(
+              lang?.translate('app_info_desc') ?? 'Use this app to check symptoms, track medicines, and consult doctors directly from your phone. Connecting rural healthcare.',
+              style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 13,
                 height: 1.4,
@@ -394,7 +399,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildBottomBanner() {
+  Widget _buildBottomBanner(AppLocalizations? lang) {
     return Container(
       width: double.infinity,
       height: 180,
@@ -407,9 +412,9 @@ class _LoginScreenState extends State<LoginScreen>
       ),
       alignment: Alignment.bottomLeft,
       padding: const EdgeInsets.all(16),
-      child: const Text(
-        'Your health is our priority, \nwherever you are.',
-        style: TextStyle(
+      child: Text(
+        lang?.translate('health_priority_banner') ?? 'Your health is our priority, \nwherever you are.',
+        style: const TextStyle(
           color: Colors.white,
           fontSize: 14,
           fontWeight: FontWeight.bold,

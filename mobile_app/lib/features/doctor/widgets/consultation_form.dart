@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/consultation_model.dart';
+import 'package:hs053/shared/models/consultation_model.dart';
 
 class ConsultationForm extends StatefulWidget {
   final Function(Map<String, dynamic>) onSubmit;
@@ -74,7 +74,7 @@ class _ConsultationFormState extends State<ConsultationForm> {
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<UrgencyLevel>(
-            initialValue: _urgency,
+            value: _urgency,
             decoration: InputDecoration(
               prefixIcon: const Icon(
                 Icons.emergency_outlined,

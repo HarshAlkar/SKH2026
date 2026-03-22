@@ -50,11 +50,20 @@ class ConsultationViewSet(viewsets.ModelViewSet):
             if not patient_id:
                 return Response({'error': 'patient_id is required when ASHA worker initiates consultation'}, status=status.HTTP_400_BAD_REQUEST)
             try:
-                patient = Patient.objects.get(user__id=patient_id)
+                # Use user ID or patient ID? backend usually matches user__id for simplicity if profile is linked
+                patient = Patient.objects.get(id=patient_id)
             except Patient.DoesNotExist:
                 return Response({'error': 'Patient not found'}, status=status.HTTP_404_NOT_FOUND)
+        elif request.user.role == 'doctor':
+            if not patient_id:
+                return Response({'error': 'patient_id is required for doctor to start call'}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                doctor = Doctor.objects.get(user=request.user)
+                patient = Patient.objects.get(id=patient_id)
+            except (Doctor.DoesNotExist, Patient.DoesNotExist):
+                return Response({'error': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
         else:
-            return Response({'error': 'Only patients and ASHA workers can start consultations'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'error': 'Unauthorized role to start consultation'}, status=status.HTTP_403_FORBIDDEN)
 
         meeting_link = f"https://meet.jit.si/CareSync-{uuid.uuid4().hex[:8]}" if call_type == 'VIDEO' else None
 

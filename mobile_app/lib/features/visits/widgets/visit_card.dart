@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/visit_model.dart';
+import 'package:hs053/shared/models/visit_model.dart';
 import 'status_badge.dart';
-import '../../../routes/app_routes.dart';
+import 'package:hs053/core/routes/app_routes.dart';
 
 class VisitCard extends StatelessWidget {
   final VisitModel visit;

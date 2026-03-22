@@ -9,6 +9,7 @@ class Prescription(models.Model):
     medications = models.TextField() # List of meds
     dosage_instructions = models.TextField(blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
+    diagnosis = models.TextField(blank=True, null=True)
     issued_at = models.DateTimeField(auto_now_add=True)
     consultation = models.OneToOneField(Consultation, on_delete=models.SET_NULL, null=True, blank=True)
 

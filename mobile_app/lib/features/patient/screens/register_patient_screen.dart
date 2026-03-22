@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'dart:convert';
-import '../../../core/widgets/common_appbar.dart';
-import '../../../routes/app_routes.dart';
-import '../../asha_worker/widgets/asha_drawer.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/features/asha_worker/widgets/asha_drawer.dart';
 import '../widgets/custom_input_field.dart';
 import '../widgets/custom_dropdown_field.dart';
-import '../../../core/services/api_service.dart';
-import '../../../core/constants/api_constants.dart';
+import 'package:hs053/core/services/api_service.dart';
+import 'package:hs053/core/constants/api_constants.dart';
 
 class RegisterPatientScreen extends StatefulWidget {
   const RegisterPatientScreen({super.key});
@@ -100,32 +101,23 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
           'name': _nameController.text.trim(),
           'age': _ageController.text.trim(),
           'gender': _selectedGender,
-          'village': _finalVillageName, // Push the extracted GPS map string
+          'village': _finalVillageName, 
           'phone_number': _phoneController.text.trim(),
           'blood_group': _selectedBloodGroup,
           'disease': _diseaseController.text.trim(),
         };
 
-        await ApiService().post(ApiConstants.patientsEndpoint, body: payload);
+        final response = await ApiService().post(ApiConstants.patientsEndpoint, body: payload);
+        
+        // Extract ABHA ID from user profile
+        final abhaId = response['user']?['abha_id'] ?? 'N/A';
 
         if (mounted) {
           setState(() {
             _isLoading = false;
           });
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                "Patient registered successfully",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-
-          // Return to previous screen so VillagePatientsScreen will refresh completely
-          Navigator.pop(context, true); 
+          _showRegistrationSuccess(abhaId);
         }
       } catch (e) {
         if (mounted) {
@@ -142,6 +134,69 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
         }
       }
     }
+  }
+
+  void _showRegistrationSuccess(String abhaId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Column(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green, size: 60),
+              SizedBox(height: 16),
+              Text('Registration Successful', textAlign: TextAlign.center),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'The patient has been registered. Here is their digital Health ID (ABHA).',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: QrImageView(
+                  data: abhaId,
+                  version: QrVersions.auto,
+                  size: 200.0,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                abhaId,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1.2),
+              ),
+            ],
+          ),
+          actions: [
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context, true); // Return to list
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2F4DB6),
+                  minimumSize: const Size(200, 45),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: const Text('Back to Dashboard', style: TextStyle(color: Colors.white)),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildSectionCard({required String title, required Widget child}) {
@@ -199,14 +254,11 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
             return await _searchMapsVillages(textEditingValue.text);
           },
           onSelected: (String selection) {
-            // Because you requested the full format (Village, City, State, Country)
-            // we will absolutely retain the full selection!
             setState(() {
               _finalVillageName = selection.trim();
             });
           },
           fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-            // Keep background state updated in case they manually override and don't pick
             controller.addListener(() {
               _finalVillageName = controller.text; 
             });
@@ -247,7 +299,7 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
                 borderRadius: BorderRadius.circular(12),
                 child: SizedBox(
                   width: MediaQuery.of(context).size.width - 80, 
-                  height: 200, // Constrain popup size securely over other fields
+                  height: 200, 
                   child: ListView.builder(
                     padding: const EdgeInsets.all(0),
                     itemCount: options.length,
@@ -287,7 +339,6 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // SECTION 1: BASIC DETAILS
                 _buildSectionCard(
                   title: "BASIC DETAILS",
                   child: Column(
@@ -345,12 +396,11 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
                   ),
                 ),
 
-                // SECTION 2: LOCATION & CONTACT
                 _buildSectionCard(
                   title: "LOCATION & CONTACT",
                   child: Column(
                     children: [
-                      _buildMapsAutocomplete(), // GPS Map Autocomplete Field Fully Replaces original CustomInputField
+                      _buildMapsAutocomplete(), 
                       const SizedBox(height: 16),
                       CustomInputField(
                         label: "Phone Number",
@@ -375,7 +425,6 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
                   ),
                 ),
 
-                // SECTION 3: MEDICAL HISTORY
                 _buildSectionCard(
                   title: "MEDICAL HISTORY",
                   child: Column(
@@ -413,7 +462,6 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
 
                 const SizedBox(height: 8),
 
-                // SAVE BUTTON
                 ElevatedButton.icon(
                   onPressed: _isLoading ? null : _handleSavePatient,
                   icon: _isLoading

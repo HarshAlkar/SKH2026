@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../core/widgets/common_appbar.dart';
-import '../../../routes/app_routes.dart';
-import '../../asha_worker/widgets/asha_drawer.dart';
-import '../models/patient_model.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/features/asha_worker/widgets/asha_drawer.dart';
+import 'package:hs053/shared/models/patient_model.dart';
 import '../widgets/patient_card.dart';
 import '../widgets/add_patient_button.dart';
-import '../../../core/services/api_service.dart';
-import '../../../core/constants/api_constants.dart';
+import 'package:hs053/core/services/api_service.dart';
+import 'package:hs053/core/constants/api_constants.dart';
 
 class VillagePatientsScreen extends StatefulWidget {
   const VillagePatientsScreen({super.key});

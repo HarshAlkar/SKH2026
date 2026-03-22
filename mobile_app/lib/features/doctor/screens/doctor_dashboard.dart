@@ -7,10 +7,11 @@ import 'my_patients_screen.dart';
 import 'upcoming_consultations_screen.dart';
 import 'schedule_screen.dart';
 import 'doctor_profile_screen.dart';
-import '../../../providers/auth_provider.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
 import '../widgets/doctor_navigation_drawer.dart';
-import '../../../providers/consultation_provider.dart';
-import '../../../core/services/api_service.dart';
+import 'package:hs053/shared/providers/consultation_provider.dart';
+import 'package:hs053/core/services/api_service.dart';
+import 'doctor_qr_scanner_screen.dart';
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({super.key});
@@ -161,6 +162,16 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         ),
       ),
       actions: [
+        IconButton(
+          icon: Icon(Icons.qr_code_scanner, color: primaryBlue),
+          tooltip: 'Scan Patient QR',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DoctorQRScannerScreen()),
+            );
+          },
+        ),
         Stack(
           alignment: Alignment.center,
           children: [

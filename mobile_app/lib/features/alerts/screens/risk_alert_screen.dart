@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/common_appbar.dart';
-import '../../../routes/app_routes.dart';
-import '../../asha_worker/widgets/asha_drawer.dart';
-import '../models/alert_model.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/features/asha_worker/widgets/asha_drawer.dart';
+import 'package:hs053/shared/models/alert_model.dart';
 import '../widgets/alert_card.dart';
 import 'create_alert_screen.dart';
-import '../../../core/services/api_service.dart';
+import 'package:hs053/core/services/api_service.dart';
 
 class RiskAlertScreen extends StatefulWidget {
   const RiskAlertScreen({super.key});

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../core/widgets/common_appbar.dart';
-import '../../../routes/app_routes.dart';
-import '../../asha_worker/widgets/asha_drawer.dart';
-import '../../patient/widgets/custom_input_field.dart';
-import '../../../core/services/api_service.dart';
-import '../../../core/constants/api_constants.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/features/asha_worker/widgets/asha_drawer.dart';
+import 'package:hs053/features/patient/widgets/custom_input_field.dart';
+import 'package:hs053/core/services/api_service.dart';
+import 'package:hs053/core/constants/api_constants.dart';
 
 class UpdateHealthScreen extends StatefulWidget {
   final String? initialPatientId;
@@ -177,7 +177,7 @@ class _UpdateHealthScreenState extends State<UpdateHealthScreen> {
                   _isFetchingPatients 
                       ? const Center(child: Padding(padding: EdgeInsets.all(10), child: CircularProgressIndicator()))
                       : DropdownButtonFormField<String>(
-                          initialValue: _selectedPatientId,
+                          value: _selectedPatientId,
                           hint: Text(
                             "Choose a patient",
                             style: TextStyle(color: Colors.grey[400], fontSize: 14),
@@ -319,7 +319,7 @@ class _UpdateHealthScreenState extends State<UpdateHealthScreen> {
                       ),
                     ),
                     value: _notifyDoctor,
-                    activeThumbColor: primaryColor,
+                    activeColor: primaryColor,
                     contentPadding: EdgeInsets.zero,
                     onChanged: (bool value) {
                       setState(() {

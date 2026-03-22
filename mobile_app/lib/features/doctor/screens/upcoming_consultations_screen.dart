@@ -216,7 +216,13 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const VideoConsultationScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => VideoConsultationScreen(
+                                consultationId: 'room_${consultation.patientName.replaceAll(' ', '_')}',
+                                patientName: consultation.patientName,
+                                isOfferer: true,
+                              ),
+                            ),
                           );
                         },
                         style: ElevatedButton.styleFrom(

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/notification_model.dart';
+import 'package:hs053/shared/models/notification_model.dart';
 import 'package:intl/intl.dart';
 
 class NotificationCard extends StatelessWidget {

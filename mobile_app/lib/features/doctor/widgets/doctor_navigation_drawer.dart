@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../screens/doctor_dashboard.dart';
-import '../../../routes/app_routes.dart';
+import 'package:hs053/core/routes/app_routes.dart';
 import '../screens/patient_requests_screen.dart';
 import '../screens/create_prescription_screen.dart';
 import '../screens/consultation_history_screen.dart';
 import '../screens/health_reports_screen.dart';
 import '../screens/my_patients_screen.dart';
 import '../screens/doctor_settings_screen.dart';
-import '../../../providers/auth_provider.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
 
 
 

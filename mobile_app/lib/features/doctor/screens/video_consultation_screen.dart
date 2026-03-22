@@ -1,36 +1,135 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:hs053/core/services/webrtc_service.dart';
 
 class VideoConsultationScreen extends StatefulWidget {
-  const VideoConsultationScreen({super.key});
+  final String consultationId;
+  final String patientName;
+  final bool isOfferer;
+
+  const VideoConsultationScreen({
+    super.key,
+    this.consultationId = "demo_consultation",
+    this.patientName = "Sarah Jenkins",
+    this.isOfferer = true,
+  });
 
   @override
   State<VideoConsultationScreen> createState() => _VideoConsultationScreenState();
 }
 
 class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
+  final _webrtcService = WebRTCService();
+  final _localRenderer = RTCVideoRenderer();
+  final _remoteRenderer = RTCVideoRenderer();
   bool _isMuted = false;
   bool _isCameraOff = false;
+  bool _isConnecting = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _initWebRTC();
+  }
+
+  Future<void> _initWebRTC() async {
+    try {
+      // Request permissions
+      await [Permission.camera, Permission.microphone].request();
+
+      await _localRenderer.initialize();
+      await _remoteRenderer.initialize();
+
+      await _webrtcService.init(widget.consultationId, isOfferer: widget.isOfferer);
+      
+      _webrtcService.onRemoteStream.listen((stream) {
+        if (stream != null && mounted) {
+          setState(() {
+            _remoteRenderer.srcObject = stream;
+            _isConnecting = false;
+          });
+        }
+      });
+
+      if (mounted) {
+        setState(() {
+          _localRenderer.srcObject = _webrtcService.localStream;
+        });
+      }
+    } catch (e) {
+      debugPrint('WebRTC Error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Connection error: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _localRenderer.dispose();
+    _remoteRenderer.dispose();
+    _webrtcService.dispose();
+    super.dispose();
+  }
+
+  void _onHangup() {
+    Navigator.pop(context);
+  }
+
+  void _onToggleMute() {
+    setState(() {
+      _isMuted = !_isMuted;
+      _webrtcService.toggleMute();
+    });
+  }
+
+  void _onToggleCamera() {
+    setState(() {
+      _isCameraOff = !_isCameraOff;
+      _webrtcService.toggleVideo();
+    });
+  }
+
+  void _onSwitchCamera() {
+    _webrtcService.switchCamera();
+  }
 
   @override
   Widget build(BuildContext context) {
     const primaryBlue = Color(0xFF2A7DE1);
 
     return Scaffold(
-      backgroundColor: Colors.black, // Full screen video background
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: Stack(
           children: [
-            // 1. simulated background video feed
+            // 1. REAL Remote Video Feed
             Positioned.fill(
               child: Container(
-                color: const Color(0xFF1E293B), // Dark slate fallback if no image
-                child: Center(
-                  child: Icon(
-                    Icons.person,
-                    size: 150,
-                    color: Colors.white.withOpacity(0.1),
-                  ),
-                ),
+                color: const Color(0xFF1E293B),
+                child: _remoteRenderer.srcObject != null
+                    ? RTCVideoView(
+                        _remoteRenderer,
+                        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                      )
+                    : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (_isConnecting)
+                              const CircularProgressIndicator(color: primaryBlue),
+                            const SizedBox(height: 20),
+                            Icon(
+                              Icons.person,
+                              size: 150,
+                              color: Colors.white.withOpacity(0.1),
+                            ),
+                          ],
+                        ),
+                      ),
               ),
             ),
 
@@ -46,7 +145,7 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.arrow_back, color: Color(0xFF1F2937)),
-                      onPressed: () => Navigator.pop(context),
+                      onPressed: _onHangup,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -67,14 +166,14 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
                                 width: 8,
                                 height: 8,
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFF10B981), // Green dot
+                                  color: Color(0xFF10B981),
                                   shape: BoxShape.circle,
                                 ),
                               ),
                               const SizedBox(width: 6),
-                              const Text(
-                                '08:42 · Live',
-                                style: TextStyle(
+                              Text(
+                                _isConnecting ? 'Waiting for patient...' : 'Live Session',
+                                style: const TextStyle(
                                   color: Color(0xFF6B7280),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
@@ -86,13 +185,13 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
                       ),
                     ),
                     Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF3F4F6),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF3F4F6),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.settings_outlined, color: Color(0xFF4B5563), size: 20),
-                        onPressed: () {},
+                        icon: const Icon(Icons.flip_camera_ios, color: Color(0xFF4B5563), size: 20),
+                        onPressed: _onSwitchCamera,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -107,7 +206,7 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
                           Icon(Icons.signal_cellular_alt, color: primaryBlue, size: 14),
                           const SizedBox(width: 4),
                           Text(
-                            'Stable',
+                            _isConnecting ? 'Pending' : 'Stable',
                             style: TextStyle(
                               color: primaryBlue,
                               fontSize: 12,
@@ -122,7 +221,7 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
               ),
             ),
 
-            // 3. Floating Doctor Preview
+            // 3. REAL Local Doctor Preview
             Positioned(
               top: 90,
               right: 20,
@@ -130,7 +229,7 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
                 width: 100,
                 height: 140,
                 decoration: BoxDecoration(
-                  color: Colors.teal.shade700,
+                  color: Colors.black54,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -143,14 +242,21 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
                 ),
                 child: Stack(
                   children: [
-                    if (!_isCameraOff)
-                      const Center(
-                        child: Icon(Icons.person, size: 60, color: Colors.white54),
-                      ),
-                    if (_isCameraOff)
-                      const Center(
-                        child: Icon(Icons.videocam_off, size: 40, color: Colors.white),
-                      ),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: _localRenderer.srcObject != null && !_isCameraOff
+                          ? RTCVideoView(
+                              _localRenderer,
+                              mirror: true,
+                              objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                            )
+                          : Container(
+                              color: Colors.grey.shade800,
+                              child: const Center(
+                                child: Icon(Icons.videocam_off, color: Colors.white54),
+                              ),
+                            ),
+                    ),
                     Positioned(
                       bottom: 8,
                       left: 8,
@@ -185,9 +291,9 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
                   color: Colors.black.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  'Sarah Jenkins (Patient)',
-                  style: TextStyle(
+                child: Text(
+                  '${widget.patientName} (Patient)',
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -196,33 +302,33 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
               ),
             ),
 
-            // 5. Connection Message & Control Panel
+            // 5. Control Panel
             Positioned(
               bottom: 0,
               left: 0,
               right: 0,
               child: Column(
                 children: [
-                  // Connection Message
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B).withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(24),
+                  if (_isConnecting)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E293B).withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(Icons.info_outline, color: Color(0xFFFBBF24), size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            'Connecting to peer...',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.info_outline, color: Color(0xFFFBBF24), size: 16),
-                        SizedBox(width: 8),
-                        Text(
-                          'If internet is slow, call will switch to audio.',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
                   const SizedBox(height: 16),
                   
                   // Control Panel Bottom Area
@@ -239,44 +345,40 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Chat Button
                         _buildControlButton(
                           icon: Icons.chat_bubble_outline,
                           label: '',
-                          onTap: () {},
+                          onTap: () {
+                             ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Chat feature coming soon')),
+                            );
+                          },
                           isSmall: true,
                         ),
                         
-                        // Notes Button
                         _buildControlButton(
                           icon: Icons.note_add_outlined,
                           label: '',
-                          onTap: () {},
+                          onTap: () {
+                             ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Notes feature coming soon')),
+                            );
+                          },
                           isSmall: true,
                         ),
 
-                        // Mute Button
                         _buildControlButton(
                           icon: _isMuted ? Icons.mic_off : Icons.mic_none,
                           label: 'MUTE',
                           isActive: _isMuted,
-                          onTap: () {
-                            setState(() {
-                              _isMuted = !_isMuted;
-                            });
-                          },
+                          onTap: _onToggleMute,
                         ),
 
-                        // Camera Button
                         _buildControlButton(
                           icon: _isCameraOff ? Icons.videocam_off : Icons.videocam_outlined,
                           label: 'CAMERA',
                           isActive: _isCameraOff,
-                          onTap: () {
-                            setState(() {
-                              _isCameraOff = !_isCameraOff;
-                            });
-                          },
+                          onTap: _onToggleCamera,
                         ),
 
                         // End Call Button
@@ -284,9 +386,7 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             InkWell(
-                              onTap: () {
-                                Navigator.pop(context);
-                              },
+                              onTap: _onHangup,
                               borderRadius: BorderRadius.circular(30),
                               child: Container(
                                 width: 60,
@@ -345,16 +445,12 @@ class _VideoConsultationScreenState extends State<VideoConsultationScreen> {
             width: isSmall ? 48 : 56,
             height: isSmall ? 48 : 56,
             decoration: BoxDecoration(
-              color: isActive ? const Color(0xFFF3F4F6) : Colors.white,
+              color: isActive ? const Color(0xFFFEE2E2) : const Color(0xFFF3F4F6),
               shape: BoxShape.circle,
-              border: Border.all(
-                color: isActive ? Colors.transparent : const Color(0xFFE5E7EB),
-                width: 1.5,
-              ),
             ),
             child: Icon(
               icon,
-              color: const Color(0xFF374151),
+              color: isActive ? Colors.red : const Color(0xFF374151),
               size: isSmall ? 20 : 24,
             ),
           ),

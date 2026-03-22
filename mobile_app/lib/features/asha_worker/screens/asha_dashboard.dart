@@ -6,9 +6,9 @@ import '../widgets/asha_drawer.dart';
 import '../widgets/activity_tile.dart';
 import '../widgets/emergency_button.dart';
 import '../widgets/asha_sidebar.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../core/services/api_service.dart';
-import '../../../routes/app_routes.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
+import 'package:hs053/core/services/api_service.dart';
+import 'package:hs053/core/routes/app_routes.dart';
 
 class AshaDashboard extends StatefulWidget {
   const AshaDashboard({super.key});
@@ -191,7 +191,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                           child: QuickActionButton(
                             icon: Icons.person_add_outlined,
                             label: "List Patients",
-                            onTap: () => Navigator.pushNamed(context, '/village_patients'),
+                            onTap: () => Navigator.pushNamed(context, AppRoutes.villagePatients),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -199,7 +199,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                           child: QuickActionButton(
                             icon: Icons.edit_document,
                             label: "Update Health",
-                            onTap: () => Navigator.pushNamed(context, '/update_health'),
+                            onTap: () => Navigator.pushNamed(context, AppRoutes.updateHealth),
                           ),
                         ),
                       ],
@@ -211,7 +211,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                           child: QuickActionButton(
                             icon: Icons.warning_amber_rounded,
                             label: "View Alerts",
-                            onTap: () => Navigator.pushNamed(context, '/risk_alerts'),
+                            onTap: () => Navigator.pushNamed(context, AppRoutes.riskAlerts),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -242,7 +242,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => Navigator.pushNamed(context, '/risk_alerts'),
+                      onPressed: () => Navigator.pushNamed(context, AppRoutes.riskAlerts),
                       child: const Text("View All"),
                     ),
                   ],

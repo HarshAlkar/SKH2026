@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../routes/app_routes.dart';
-import '../../../providers/auth_provider.dart';
+import 'package:hs053/core/theme/app_colors.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
 import '../widgets/user_sidebar.dart';
-
-
-import '../../../providers/consultation_provider.dart';
+import '../widgets/voice_assistant_fab.dart';
+import 'package:hs053/shared/providers/consultation_provider.dart';
+import 'package:hs053/core/localization/app_localizations.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   const UserDashboardScreen({super.key});
@@ -32,8 +32,11 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = AppLocalizations.of(context);
+    
     return Scaffold(
       backgroundColor: Colors.white,
+      floatingActionButton: const VoiceAssistantFab(),
       appBar: AppBar(
         leading: Builder(
           builder: (context) => IconButton(
@@ -41,14 +44,18 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        title: const Text(
-          'VitalReach',
-          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+        title: Text(
+          lang?.translate('app_title') ?? 'VitalReach',
+          style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner, color: AppColors.primary),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.qrScanner),
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_none_outlined, color: AppColors.primary),
             onPressed: () {},
@@ -60,31 +67,31 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildWelcomeSection(),
+            _buildWelcomeSection(lang),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSymptomCheckerCard(),
+                  _buildSymptomCheckerCard(lang),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Quick Actions',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                  Text(
+                    lang?.translate('quick_actions') ?? 'Quick Actions',
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                   ),
                   const SizedBox(height: 16),
-                  _buildQuickActionsGrid(),
+                  _buildQuickActionsGrid(lang),
                   const SizedBox(height: 24),
                   if (_showReminder) _buildMedicineReminder(),
                   const SizedBox(height: 24),
-                  const Text(
-                    "Today's Health Tips",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                  Text(
+                    lang?.translate('health_tips_today') ?? "Today's Health Tips",
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                   ),
                   const SizedBox(height: 16),
                   _buildHealthTipsList(),
                   const SizedBox(height: 24),
-                  _buildEmergencyCard(),
+                  _buildEmergencyCard(lang),
                   const SizedBox(height: 40),
                 ],
               ),
@@ -96,7 +103,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   }
 
 
-  Widget _buildWelcomeSection() {
+  Widget _buildWelcomeSection(AppLocalizations? lang) {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         final name = auth.user?.name ?? 'User';
@@ -114,13 +121,13 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Hello $name 👋',
+                '${lang?.translate('hello') ?? 'Hello'} $name 👋',
                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'How are you feeling today?',
-                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              Text(
+                lang?.translate('how_feeling') ?? 'How are you feeling today?',
+                style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -129,7 +136,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     );
   }
 
-  Widget _buildSymptomCheckerCard() {
+  Widget _buildSymptomCheckerCard(AppLocalizations? lang) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -161,20 +168,20 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.heart_broken_outlined, color: Colors.white, size: 28),
-                  SizedBox(width: 12),
+                  const Icon(Icons.heart_broken_outlined, color: Colors.white, size: 28),
+                  const SizedBox(width: 12),
                   Text(
-                    'AI Symptom \nChecker',
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, height: 1.2),
+                    lang?.translate('symptom_checker_title') ?? 'AI Symptom \nChecker',
+                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, height: 1.2),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Check your symptoms and get \ninstant guidance.',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
+              Text(
+                lang?.translate('symptom_checker_desc') ?? 'Check your symptoms and get \ninstant guidance.',
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -186,7 +193,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   elevation: 0,
                 ),
-                child: const Text('Check Symptoms', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(lang?.translate('check_symptoms') ?? 'Check Symptoms', style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -195,7 +202,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     );
   }
 
-  Widget _buildQuickActionsGrid() {
+  Widget _buildQuickActionsGrid(AppLocalizations? lang) {
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
@@ -204,12 +211,16 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
       mainAxisSpacing: 16,
       childAspectRatio: 1.1,
       children: [
-        _buildActionCard('Medicine Tracker', Icons.medication_outlined, AppRoutes.medicineTracker),
-        _buildActionCard('Nearby Clinics', Icons.location_on_outlined, AppRoutes.nearbyClinics),
-        _buildActionCard('Consult Doctor', Icons.video_camera_front_outlined, AppRoutes.consultDoctor),
-        _buildActionCard('My Prescriptions', Icons.description_outlined, AppRoutes.myPrescriptions),
-        _buildActionCard('Health Tips', Icons.lightbulb_outline, AppRoutes.healthTips),
-        _buildActionCard('Settings', Icons.settings_outlined, AppRoutes.settings),
+        _buildActionCard(lang?.translate('medicine_tracker') ?? 'Medicine Tracker', Icons.medication_outlined, AppRoutes.medicineTracker),
+        _buildActionCard(lang?.translate('nearby_clinics') ?? 'Nearby Clinics', Icons.location_on_outlined, AppRoutes.nearbyClinics),
+        _buildActionCard(lang?.translate('consult_doctor') ?? 'Consult Doctor', Icons.video_camera_front_outlined, AppRoutes.consultDoctor),
+        _buildActionCard(lang?.translate('my_prescriptions') ?? 'My Prescriptions', Icons.description_outlined, AppRoutes.myPrescriptions),
+        _buildActionCard(lang?.translate('health_tips') ?? 'Health Tips', Icons.lightbulb_outline, AppRoutes.healthTips),
+        _buildActionCard(
+        lang?.translate('my_profile') ?? 'My Profile',
+        Icons.person_outline,
+        AppRoutes.profile,
+      ),
       ],
     );
   }
@@ -245,7 +256,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
             const SizedBox(height: 12),
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1E293B)),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF1E293B)),
             ),
           ],
         ),
@@ -340,7 +352,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     );
   }
 
-  Widget _buildEmergencyCard() {
+  Widget _buildEmergencyCard(AppLocalizations? lang) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -359,17 +371,17 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
             child: const Icon(Icons.emergency_outlined, color: Colors.red, size: 28),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Emergency Help',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 18),
+                  lang?.translate('emergency_help') ?? 'Emergency Help',
+                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 Text(
-                  'Immediate medical support',
-                  style: TextStyle(color: Colors.redAccent, fontSize: 13),
+                  lang?.translate('emergency_desc') ?? 'Immediate medical support',
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 13),
                 ),
               ],
             ),
@@ -382,7 +394,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               elevation: 0,
             ),
-            child: const Text('Call Emergency', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(lang?.translate('call_emergency') ?? 'Call Emergency', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

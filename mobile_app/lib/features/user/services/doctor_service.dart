@@ -1,4 +1,4 @@
-import '../../../core/services/api_service.dart';
+import 'package:hs053/core/services/api_service.dart';
 
 class DoctorService {
   final ApiService _apiService = ApiService();
@@ -19,7 +19,7 @@ class DoctorService {
   Future<Map<String, dynamic>> startConsultation(int doctorId, String callType) async {
     try {
       final response = await _apiService.post('/consultations/start/', body: {
-        'doctor_id': doctorId,
+        'doctor_user_id': doctorId,
         'call_type': callType,
       });
       return Map<String, dynamic>.from(response);

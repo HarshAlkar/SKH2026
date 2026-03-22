@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/services/api_service.dart';
-import '../../../core/services/signaling_service.dart';
-import '../../../providers/auth_provider.dart';
-import '../../user/services/doctor_service.dart';
-import '../../user/screens/call_screen.dart';
+import 'package:hs053/core/services/api_service.dart';
+import 'package:hs053/core/services/signaling_service.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
+import 'package:hs053/features/user/services/doctor_service.dart';
+import 'package:hs053/features/user/screens/call_screen.dart';
 
 class RegisteredDoctorsScreen extends StatefulWidget {
   const RegisteredDoctorsScreen({super.key});

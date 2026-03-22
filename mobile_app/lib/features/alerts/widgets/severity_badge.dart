@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/alert_model.dart';
+import 'package:hs053/shared/models/alert_model.dart';
 
 class SeverityBadge extends StatelessWidget {
   final AlertSeverity severity;

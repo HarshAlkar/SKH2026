@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/services/api_service.dart';
-import '../../../providers/auth_provider.dart';
+import 'package:hs053/core/services/api_service.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
 
 class CreatePrescriptionScreen extends StatefulWidget {
   final String? patientName;
@@ -94,9 +94,12 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
         'medications': medications,
         'diagnosis': _diagnosisController.text,
         'notes': _instructionsController.text,
+        'dosage_instructions': _instructionsController.text, // Mirror instructions to dosage_instructions
       };
 
-      await _api.post('/prescriptions/', body: body);
+      debugPrint('DEBUG: Sending Prescription Request Body: $body');
+      final response = await _api.post('/prescriptions/', body: body);
+      debugPrint('DEBUG: Prescription Response: $response');
 
       if (!mounted) return;
       Navigator.pop(context); // Close dialog
@@ -109,10 +112,13 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
         ),
       );
     } catch (e) {
-      debugPrint('Error saving prescription: $e');
+      debugPrint('CRITICAL: Error saving prescription: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save prescription: $e')),
+          SnackBar(
+            content: Text('Failed to save prescription: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {

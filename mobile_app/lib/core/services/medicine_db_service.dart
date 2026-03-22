@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import '../../models/medicine_model.dart';
+import 'package:hs053/shared/models/medicine_model.dart';
 
 class MedicineDbService {
   static final MedicineDbService instance = MedicineDbService._init();

@@ -6,8 +6,9 @@ class ApiConstants {
       return 'http://localhost:8000/api';
     }
     
-    // For Android Emulator, always use 10.0.2.2
-    return 'http://10.0.2.2:8000/api';
+    // For Android Emulator, always use 10.0.2.2.
+    // For Physical Phone on same WiFi, use machine IP: 10.111.60.198
+    return 'http://10.111.60.198:8000/api';
   }
 
   static const String loginEndpoint = '/auth/login/';
@@ -23,5 +24,5 @@ class ApiConstants {
   static const String alertsEndpoint = '/alerts/';
   static const String recordsEndpoint = '/records/';
   static const String ashaDashboardEndpoint = '/asha-workers/dashboard/';
+  static const String profileEndpoint = '/users/profile/me/';
 }
-

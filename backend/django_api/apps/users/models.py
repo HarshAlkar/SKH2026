@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
+import random
 
 class User(AbstractUser):
     ROLE_CHOICES = (
@@ -12,7 +13,15 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     village = models.CharField(max_length=100, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
+    abha_id = models.CharField(max_length=20, unique=True, null=True, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.abha_id:
+            # Format: XXXX-XXXX-XXXX-XX (14 digits)
+            digits = "".join([str(random.randint(0, 9)) for _ in range(14)])
+            self.abha_id = f"{digits[0:4]}-{digits[4:8]}-{digits[8:12]}-{digits[12:14]}"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.name or self.username} ({self.role})"

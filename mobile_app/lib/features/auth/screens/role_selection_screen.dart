@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../routes/app_routes.dart';
+import 'package:hs053/core/theme/app_colors.dart';
+import 'package:hs053/core/routes/app_routes.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});

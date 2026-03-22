@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../routes/app_routes.dart';
-import '../../../core/utils/validators.dart';
-import '../../../core/utils/helpers.dart';
-import '../../../providers/auth_provider.dart';
+import 'package:hs053/core/theme/app_colors.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/core/utils/validators.dart';
+import 'package:hs053/core/utils/helpers.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});

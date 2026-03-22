@@ -148,4 +148,15 @@ class AuthenticationService {
     }
     return null;
   }
+
+  Future<Map<String, dynamic>> getProfile() async {
+    try {
+      final response = await _apiService.get(ApiConstants.profileEndpoint);
+      // Success. Cache it
+      await _storageService.saveString('user_data', jsonEncode(response));
+      return response;
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

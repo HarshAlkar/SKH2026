@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../../core/services/webrtc_service.dart';
-import '../../user/services/doctor_service.dart';
+import 'package:hs053/core/services/webrtc_service.dart';
+import 'package:hs053/features/user/services/doctor_service.dart';
 
 class CallScreen extends StatefulWidget {
   final String consultationId;

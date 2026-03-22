@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../models/notification_model.dart';
+import 'package:hs053/shared/models/notification_model.dart';
 import '../widgets/notification_card.dart';
-import '../../../core/widgets/common_appbar.dart';
-import '../../asha_worker/widgets/asha_drawer.dart';
-import '../../../routes/app_routes.dart';
+import 'package:hs053/core/widgets/common_appbar.dart';
+import 'package:hs053/features/asha_worker/widgets/asha_drawer.dart';
+import 'package:hs053/core/routes/app_routes.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});

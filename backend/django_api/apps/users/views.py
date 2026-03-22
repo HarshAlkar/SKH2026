@@ -17,11 +17,9 @@ import datetime
 class UserSerializer(serializers.ModelSerializer):
     profile_details = serializers.SerializerMethodField()
     
-    profile_details = serializers.SerializerMethodField()
-    
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'created_at', 'profile_details']
+        fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'abha_id', 'created_at', 'profile_details']
 
     def get_profile_details(self, obj):
         if obj.role == 'doctor' and hasattr(obj, 'doctor_profile'):
@@ -39,30 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
             }
         elif obj.role == 'user' and hasattr(obj, 'patient_profile'):
             return {
-                "age": obj.patient_profile.age,
-                "gender": obj.patient_profile.gender,
-                "address": obj.patient_profile.address,
-                "blood_group": obj.patient_profile.blood_group
-            }
-        return None
-        fields = ['id', 'username', 'email', 'role', 'phone_number', 'village', 'name', 'created_at', 'profile_details']
-
-    def get_profile_details(self, obj):
-        if obj.role == 'doctor' and hasattr(obj, 'doctor_profile'):
-            return {
-                "specialization": obj.doctor_profile.specialization,
-                "experience_years": obj.doctor_profile.experience_years,
-                "hospital_name": obj.doctor_profile.hospital_name,
-                "qualification": obj.doctor_profile.qualification,
-                "is_available": obj.doctor_profile.is_available
-            }
-        elif obj.role == 'asha_worker' and hasattr(obj, 'asha_profile'):
-            return {
-                "assigned_village": obj.asha_profile.assigned_village,
-                "phc_center": obj.asha_profile.phc_center
-            }
-        elif obj.role == 'user' and hasattr(obj, 'patient_profile'):
-            return {
+                "abha_id": obj.abha_id,
                 "age": obj.patient_profile.age,
                 "gender": obj.patient_profile.gender,
                 "address": obj.patient_profile.address,
@@ -91,14 +66,9 @@ class RegisterSerializer(serializers.ModelSerializer):
                   'specialization', 'experience_years', 'hospital_name', 'assigned_village', 'phc_center', 'license_number', 'worker_id', 'district']
     
     def validate_phone_number(self, value):
-        # Relaxed validation to support various formats or email-as-phone during transition
-        if not value:
-            return value
-        # Relaxed validation to support various formats or email-as-phone during transition
         if not value:
             return value
         if User.objects.filter(phone_number=value).exists() or User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("This identifier is already registered.")
             raise serializers.ValidationError("This identifier is already registered.")
         return value
 
@@ -179,7 +149,6 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='login')
     def login(self, request):
         identifier = request.data.get('phone_number') or request.data.get('email') or request.data.get('username')
-        identifier = request.data.get('phone_number') or request.data.get('email') or request.data.get('username')
         password = request.data.get('password')
         role = request.data.get('role')
         
@@ -187,19 +156,11 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({"error": "Role is required"}, status=status.HTTP_400_BAD_REQUEST)
         if not identifier or not password:
             return Response({"error": "Identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
-        if not identifier or not password:
-            return Response({"error": "Identifier and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Try to find user by phone number, email, or username
-        from django.db.models import Q
-        # Try to find user by phone number, email, or username
         from django.db.models import Q
         try:
             user_obj = User.objects.get(Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier))
             
-            user_obj = User.objects.get(Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier))
-            
-            # Check if role matches
             if user_obj.role != role:
                 return Response({
                     "error": f"Invalid module. Your account is registered as {user_obj.get_role_display()}."
@@ -210,7 +171,6 @@ class UserViewSet(viewsets.ModelViewSet):
         except User.DoesNotExist:
             return Response({"error": "Invalid credentials or user not found"}, status=status.HTTP_401_UNAUTHORIZED)
         except User.MultipleObjectsReturned:
-            # Fallback for multiple users matching the identifier
             user_obj = User.objects.filter(Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier), role=role).first()
             if not user_obj:
                 return Response({"error": "Invalid credentials or user not found for this role"}, status=status.HTTP_401_UNAUTHORIZED)
@@ -239,7 +199,6 @@ class UserViewSet(viewsets.ModelViewSet):
         if not phone_number or len(phone_number) != 10:
             return Response({"error": "Valid 10-digit phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Check if user exists (Optional based on requirement, but user said "Phone number not registered" should be handled)
         try:
             user = User.objects.get(phone_number=phone_number)
         except User.DoesNotExist:
@@ -253,20 +212,18 @@ class UserViewSet(viewsets.ModelViewSet):
             otp_code=otp_code, 
             expiry_time=expiry_time
         )
-        
-        # In a real scenario, send SMS. Here we just log it.
         print(f"DEBUG: OTP for {phone_number} is {otp_code}")
         
         return Response({
             "message": f"OTP sent to {phone_number}",
-            "otp": otp_code # Returning for development ease
+            "otp": otp_code 
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], url_path='verify-otp')
     def verify_otp(self, request):
         phone_number = request.data.get('phone_number')
-        otp_code = request.data.get('otp') # Use 'otp' instead of 'otp_code'
-        role = request.data.get('role') # Optional: if login, verify role
+        otp_code = request.data.get('otp')
+        role = request.data.get('role')
         
         if not phone_number or not otp_code:
             return Response({"error": "Phone number and OTP code are required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -282,15 +239,11 @@ class UserViewSet(viewsets.ModelViewSet):
         if otp_record.is_expired():
             return Response({"error": "OTP has expired"}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Mark as verified
         otp_record.is_verified = True
         otp_record.save()
         
-        # If this is for login, return token
         try:
             user = User.objects.get(phone_number=phone_number)
-            
-            # If role is provided, check if it matches
             if role and user.role != role:
                 return Response({
                     "error": f"Invalid module. Your account is registered as {user.get_role_display()}."
@@ -303,7 +256,6 @@ class UserViewSet(viewsets.ModelViewSet):
                 "user": UserSerializer(user).data
             }, status=status.HTTP_200_OK)
         except User.DoesNotExist:
-            # This shouldn't happen if they have an OTP, but just in case
             return Response({"message": "OTP verified for unregistered number"}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['get'], url_path='doctors')
@@ -320,36 +272,13 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='patients')
     def get_patients(self, request):
+        abha_id = request.query_params.get('abha_id')
         patients = User.objects.filter(role='user')
+        if abha_id:
+            patients = patients.filter(abha_id=abha_id)
         serializer = self.get_serializer(patients, many=True)
         return Response(serializer.data)
 
-    # Allow custom list behavior
-    def list(self, request, *args, **kwargs):
-        role = request.query_params.get('role')
-        if role:
-            self.queryset = User.objects.filter(role=role)
-        return super().list(request, *args, **kwargs)
-
-    @action(detail=False, methods=['get'], url_path='doctors')
-    def get_doctors(self, request):
-        doctors = User.objects.filter(role='doctor')
-        serializer = self.get_serializer(doctors, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['get'], url_path='asha-workers')
-    def get_asha_workers(self, request):
-        workers = User.objects.filter(role='asha_worker')
-        serializer = self.get_serializer(workers, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['get'], url_path='patients')
-    def get_patients(self, request):
-        patients = User.objects.filter(role='user')
-        serializer = self.get_serializer(patients, many=True)
-        return Response(serializer.data)
-
-    # Allow custom list behavior
     def list(self, request, *args, **kwargs):
         role = request.query_params.get('role')
         if role:
@@ -377,10 +306,7 @@ class UserViewSet(viewsets.ModelViewSet):
             user = User.objects.get(phone_number=phone_number)
             user.set_password(new_password)
             user.save()
-            
-            # Delete record after use
             otp_record.delete()
-            
             return Response({"message": "Password reset successfully"}, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response({"error": "User does not exist"}, status=status.HTTP_404_NOT_FOUND)

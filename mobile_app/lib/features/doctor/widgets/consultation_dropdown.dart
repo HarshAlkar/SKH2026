@@ -29,7 +29,7 @@ class ConsultationDropdown<T> extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<T>(
-          initialValue: value,
+          value: value,
           icon: const Icon(Icons.arrow_drop_down),
           decoration: InputDecoration(
             prefixIcon: Icon(icon, color: primaryColor),

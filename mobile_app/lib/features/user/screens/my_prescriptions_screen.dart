@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:hs053/core/theme/app_colors.dart';
 import '../widgets/user_sidebar.dart';
-import '../../../core/services/api_service.dart';
+import 'package:hs053/core/services/api_service.dart';
+import 'package:hs053/core/routes/app_routes.dart';
 import 'package:intl/intl.dart';
 
 class MyPrescriptionsScreen extends StatefulWidget {
@@ -34,12 +35,13 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
     setState(() => _isLoading = true);
     try {
       final data = await _api.get('/prescriptions/user/');
+      debugPrint('DEBUG: Fetched User Prescriptions: $data');
       setState(() {
-        _prescriptions = data;
+        _prescriptions = data is List ? data : [];
         _isLoading = false;
       });
     } catch (e) {
-      debugPrint('Error fetching prescriptions: $e');
+      debugPrint('CRITICAL: Error fetching prescriptions: $e');
       setState(() => _isLoading = false);
     }
   }
@@ -89,24 +91,28 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
       ),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
-        : TabBarView(
-            controller: _tabController,
-            children: [
-              _buildCurrentTab(),
-              _buildPastRecordsTab(),
-            ],
+        : RefreshIndicator(
+            onRefresh: _fetchPrescriptions,
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildCurrentTab(),
+                _buildPastRecordsTab(),
+              ],
+            ),
           ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: _fetchPrescriptions,
         backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.refresh, color: Colors.white),
       ),
     );
   }
 
   Widget _buildCurrentTab() {
     final current = _prescriptions.where((p) {
-      final date = DateTime.tryParse(p['created_at'] ?? '') ?? DateTime.now();
+      final dateStr = p['issued_at'] ?? p['created_at'] ?? '';
+      final date = DateTime.tryParse(dateStr) ?? DateTime.now();
       return DateTime.now().difference(date).inDays < 30;
     }).toList();
 
@@ -130,7 +136,8 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
 
   Widget _buildPastRecordsTab() {
     final past = _prescriptions.where((p) {
-      final date = DateTime.tryParse(p['created_at'] ?? '') ?? DateTime.now();
+      final dateStr = p['issued_at'] ?? p['created_at'] ?? '';
+      final date = DateTime.tryParse(dateStr) ?? DateTime.now();
       return DateTime.now().difference(date).inDays >= 30;
     }).toList();
 
@@ -153,7 +160,8 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
   }
 
   Widget _buildPrescriptionFromData(dynamic data, {bool isPast = false}) {
-    final date = DateTime.tryParse(data['created_at'] ?? '') ?? DateTime.now();
+    final dateStr = data['issued_at'] ?? data['created_at'] ?? '';
+    final date = DateTime.tryParse(dateStr) ?? DateTime.now();
     final formattedDate = DateFormat('dd MMM yyyy').format(date);
     
     // Medications parsing: Medications is a string of comma separated values usually
@@ -304,7 +312,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
                         ),
                       )
                     : OutlinedButton.icon(
-                        onPressed: () => Navigator.pushNamed(context, '/medicine-tracker'),
+                        onPressed: () => Navigator.pushNamed(context, AppRoutes.medicineTracker),
                         icon: const Icon(Icons.alarm_add, size: 18),
                         label: const Text('Add Tracker'),
                         style: OutlinedButton.styleFrom(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/health_record_model.dart';
+import 'package:hs053/shared/models/health_record_model.dart';
 import 'risk_badge.dart';
-import '../../asha_worker/screens/update_health_screen.dart';
+import 'package:hs053/features/asha_worker/screens/update_health_screen.dart';
 
 class HealthRecordCard extends StatelessWidget {
   final HealthRecordModel record;

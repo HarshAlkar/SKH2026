@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/consultation_model.dart';
+import 'package:hs053/shared/models/consultation_model.dart';
 import 'package:intl/intl.dart';
 
 class ConsultationCard extends StatelessWidget {
@@ -21,13 +21,21 @@ class ConsultationCard extends StatelessWidget {
         statusColor = Colors.purple;
         statusText = "Approved";
         break;
-      case ConsultationStatus.adviceProvided:
+      case ConsultationStatus.inProgress:
         statusColor = Colors.blue;
+        statusText = "In Progress";
+        break;
+      case ConsultationStatus.adviceProvided:
+        statusColor = Colors.indigo;
         statusText = "Advice Provided";
         break;
       case ConsultationStatus.completed:
         statusColor = Colors.green;
         statusText = "Completed";
+        break;
+      case ConsultationStatus.cancelled:
+        statusColor = Colors.grey;
+        statusText = "Cancelled";
         break;
       case ConsultationStatus.rejected:
         statusColor = Colors.red;
@@ -65,7 +73,7 @@ class ConsultationCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  consultation.doctorName,
+                  consultation.doctorName ?? 'Doctor',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,

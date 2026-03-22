@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/health_record_model.dart';
+import 'package:hs053/shared/models/health_record_model.dart';
 
 class RiskBadge extends StatelessWidget {
   final RiskLevel riskLevel;

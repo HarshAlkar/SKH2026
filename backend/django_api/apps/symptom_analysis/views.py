@@ -33,6 +33,28 @@ class SymptomAnalysisView(APIView):
         'कमजोरी': 'weakness',
     }
 
+    MARATHI_MAPPING = {
+        'ताप': 'fever',
+        'खोकला': 'cough',
+        'डोकेदुखी': 'headache',
+        'उलट्या': 'vomiting',
+        'वेदना': 'pain',
+        'थकवा': 'fatigue',
+        'अंगात': 'body',
+        'खाज': 'itching',
+        'पुरळ': 'rash',
+        'शिंका': 'sneezing',
+        'सर्दी': 'cold',
+        'श्वास': 'breath',
+        'चक्कर': 'dizziness',
+        'घाबरणे': 'anxiety',
+        'बद्धकोष्ठता': 'constipation',
+        'अतिसार': 'diarrhoea',
+        'काविळ': 'jaundice',
+        'घाम': 'sweating',
+        'कमकुवतपणा': 'weakness',
+    }
+
     def post(self, request):
         user = request.user
         recognized_text = request.data.get('recognized_text', '')
@@ -50,11 +72,13 @@ class SymptomAnalysisView(APIView):
         # Support Unicode words for Hindi
         words = re.findall(r'[\w\u0900-\u097F]+', symptoms_text.lower())
         
-        # Translate Hindi words to English for the AI engine
+        # Translate Hindi/Marathi words to English for the AI engine
         symptoms_list = []
         for word in words:
             if word in self.HINDI_MAPPING:
                 symptoms_list.append(self.HINDI_MAPPING[word])
+            elif word in self.MARATHI_MAPPING:
+                symptoms_list.append(self.MARATHI_MAPPING[word])
             else:
                 symptoms_list.append(word)
         

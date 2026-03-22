@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
-import '../../../core/theme/app_colors.dart';
+import 'package:hs053/core/theme/app_colors.dart';
 import '../widgets/user_sidebar.dart';
 
 class NearbyHealthcareScreen extends StatefulWidget {

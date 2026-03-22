@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/theme/app_colors.dart';
+import 'package:hs053/core/theme/app_colors.dart';
 import 'call_screen.dart';
 
 class IncomingCallScreen extends StatelessWidget {

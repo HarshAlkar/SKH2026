@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../routes/app_routes.dart';
-import '../../../core/utils/helpers.dart';
+import 'package:hs053/core/theme/app_colors.dart';
+import 'package:hs053/shared/providers/auth_provider.dart';
+import 'package:hs053/core/routes/app_routes.dart';
+import 'package:hs053/core/utils/helpers.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;

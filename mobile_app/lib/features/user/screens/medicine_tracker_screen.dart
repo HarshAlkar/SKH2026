@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../routes/app_routes.dart';
+import 'package:hs053/core/theme/app_colors.dart';
+import 'package:hs053/core/routes/app_routes.dart';
 import '../widgets/user_sidebar.dart';
-import '../../../providers/medicine_provider.dart';
-import '../../../models/medicine_model.dart';
+import 'package:hs053/shared/providers/medicine_provider.dart';
+import 'package:hs053/shared/models/medicine_model.dart';
 
 class MedicineTrackerScreen extends StatefulWidget {
   const MedicineTrackerScreen({super.key});
@@ -58,6 +58,15 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
         ),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.timer_outlined, color: Color(0xFF1E293B)),
+            onPressed: () {
+              context.read<MedicineProvider>().testAlarm();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Test alarm scheduled for 10 seconds from now')),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.calendar_month_outlined, color: Color(0xFF1E293B)),
             onPressed: () async {

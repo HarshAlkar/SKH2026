@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../routes/app_routes.dart';
+import 'package:hs053/core/routes/app_routes.dart';
 
 class DoctorSettingsScreen extends StatefulWidget {
   const DoctorSettingsScreen({super.key});
@@ -357,7 +357,7 @@ class _DoctorSettingsScreenState extends State<DoctorSettingsScreen> {
         ),
       ),
       subtitle: subtitle != null ? Text(subtitle, style: TextStyle(fontSize: 12, color: textSecondary)) : null,
-      activeThumbColor: primaryBlue,
+      activeColor: primaryBlue,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }
