@@ -7,6 +7,15 @@ An integrated healthcare ecosystem designed to bridge the gap between rural comm
 ## 1. Project Overview
 The goal of this project is to improve access to healthcare in rural areas by connecting patients, doctors, and ASHA (Accredited Social Health Activist) workers through a high-performance mobile application. The platform focuses on **reliability**, **offline accessibility**, and **triage-first** medical care.
 
+<img width="424" height="1061" alt="Screenshot 2026-03-06 003309" src="https://github.com/user-attachments/assets/877e620b-69d7-45d7-a39a-53cee1cc78b2" />
+<img width="261" height="1020" alt="Screenshot 2026-03-13 152010" src="https://github.com/user-attachments/assets/c2728fd3-ce19-48b0-b832-044c098b0f17" />
+<img width="206" height="1044" alt="Screenshot 2026-03-13 150812" src="https://github.com/user-attachments/assets/ed95730d-6913-48c5-bec4-fb8971d7d4ab" />
+<img width="528" height="1102" alt="Screenshot 2026-03-13 191311" src="https://github.com/user-attachments/assets/ba37973e-03b7-4e98-a925-79eca5166eae" />
+
+<img width="368" height="1066" alt="Screenshot 2026-03-13 153940" src="https://github.com/user-attachments/assets/80107dcd-19ff-47e9-badb-167299844a18" />
+
+<img width="447" height="1076" alt="Screenshot 2026-03-06 005705" src="https://github.com/user-attachments/assets/75e3d0ab-a9b8-4104-ba3e-4229b8501851" />
+
 ---
 
 ## 2. System Architecture
