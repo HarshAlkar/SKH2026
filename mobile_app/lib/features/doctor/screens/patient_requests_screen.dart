@@ -406,6 +406,10 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
       child: BottomNavigationBar(
         currentIndex: _bottomNavIndex,
         onTap: (index) {
+          if (index == 0 && Navigator.canPop(context)) {
+            Navigator.pop(context);
+            return;
+          }
           setState(() {
             _bottomNavIndex = index;
           });

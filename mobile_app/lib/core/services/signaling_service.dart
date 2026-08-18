@@ -1,35 +1,114 @@
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../config/app_config.dart';
 
+typedef SignalingCallback = void Function(Map<String, dynamic> data);
+
 class SignalingService {
   static final SignalingService _instance = SignalingService._internal();
   factory SignalingService() => _instance;
   SignalingService._internal();
 
   io.Socket? _socket;
-  final String serverUrl = AppConfig.signalingServerUrl;
+  String? _connectedUserId;
+  String? _activeConsultationId;
+
+  SignalingCallback? _onIncomingCall;
+  SignalingCallback? _onPeerJoined;
+  SignalingCallback? _onOffer;
+  SignalingCallback? _onAnswer;
+  SignalingCallback? _onIceCandidate;
+  SignalingCallback? _onHangup;
+  SignalingCallback? _onRejected;
+  SignalingCallback? _onNewMessage;
+  SignalingCallback? _onFallbackToChat;
+  void Function()? _onDisconnected;
+  void Function()? _onReconnected;
+
+  String get serverUrl => AppConfig.signalingServerUrl;
+  bool get isConnected => _socket?.connected ?? false;
 
   void connect(String userId) {
-    if (_socket?.connected ?? false) return;
+    if (_connectedUserId == userId && (_socket?.connected ?? false)) {
+      return;
+    }
 
-    _socket = io.io(serverUrl, io.OptionBuilder()
-      .setTransports(['websocket'])
-      .setQuery({'userId': userId})
-      .build());
+    disconnect();
+    _connectedUserId = userId;
 
-    _socket!.onConnect((_) {
-      print('Signaling connected for user $userId');
+    _socket = io.io(
+      serverUrl,
+      io.OptionBuilder()
+          .setTransports(['websocket'])
+          .setQuery({'userId': userId})
+          .enableForceNew()
+          .enableReconnection()
+          .setReconnectionAttempts(99)
+          .setReconnectionDelay(1000)
+          .build(),
+    );
+
+    _bindEvents();
+    _socket!.connect();
+  }
+
+  void _bindEvents() {
+    final socket = _socket;
+    if (socket == null) return;
+
+    socket.onConnect((_) {
+      print('Signaling connected for user $_connectedUserId');
+      if (_activeConsultationId != null) {
+        joinRoom(_activeConsultationId!);
+      }
+      _onReconnected?.call();
     });
+    socket.onDisconnect((_) {
+      print('Signaling disconnected');
+      _onDisconnected?.call();
+    });
+    socket.onConnectError((err) => print('Signaling Connect Error: $err'));
+    socket.onError((err) => print('Signaling Error: $err'));
 
-    _socket!.onDisconnect((_) => print('Signaling disconnected'));
-    
-    _socket!.onConnectError((err) => print('Signaling Connect Error: $err'));
-    _socket!.onError((err) => print('Signaling Error: $err'));
+    socket.on('incoming-call', (data) {
+      _onIncomingCall?.call(Map<String, dynamic>.from(data as Map));
+    });
+    socket.on('peer-joined', (data) {
+      _onPeerJoined?.call(Map<String, dynamic>.from(data as Map));
+    });
+    socket.on('offer', (data) {
+      _onOffer?.call(Map<String, dynamic>.from(data as Map));
+    });
+    socket.on('answer', (data) {
+      _onAnswer?.call(Map<String, dynamic>.from(data as Map));
+    });
+    socket.on('ice-candidate', (data) {
+      _onIceCandidate?.call(Map<String, dynamic>.from(data as Map));
+    });
+    socket.on('hangup', (data) {
+      _onHangup?.call(Map<String, dynamic>.from(data as Map));
+    });
+    socket.on('call-rejected', (data) {
+      _onRejected?.call(Map<String, dynamic>.from(data as Map));
+    });
+    socket.on('new-message', (data) {
+      _onNewMessage?.call(Map<String, dynamic>.from(data as Map));
+    });
+    socket.on('fallback-to-chat', (data) {
+      _onFallbackToChat?.call(Map<String, dynamic>.from(data as Map));
+    });
   }
 
   void joinRoom(String roomId) {
+    _activeConsultationId = roomId;
     print('Joining room: $roomId');
     _socket?.emit('join-consultation', roomId);
+  }
+
+  void leaveRoom(String roomId) {
+    if (_activeConsultationId == roomId) {
+      _activeConsultationId = null;
+    }
+    _socket?.emit('leave-consultation', roomId);
   }
 
   void sendCallRequest({
@@ -46,25 +125,47 @@ class SignalingService {
     });
   }
 
-  void onIncomingCall(Function(Map<String, dynamic>) callback) {
-    _socket?.on('incoming-call', (data) => callback(Map<String, dynamic>.from(data)));
+  void emitHangup(String roomId) {
+    _socket?.emit('hangup', {'consultationId': roomId});
   }
 
-  void onPeerJoined(Function(Map<String, dynamic>) callback) {
-    _socket?.on('peer-joined', (data) => callback(Map<String, dynamic>.from(data)));
+  void emitReject(String roomId, {String? receiverId}) {
+    _socket?.emit('reject-call', {
+      'consultationId': roomId,
+      if (receiverId != null) 'receiverId': receiverId,
+    });
   }
 
-  void onOffer(Function(Map<String, dynamic>) callback) {
-    _socket?.on('offer', (data) => callback(Map<String, dynamic>.from(data)));
+  void emitFallbackToChat(String roomId, String reason) {
+    _socket?.emit('fallback-to-chat', {
+      'consultationId': roomId,
+      'reason': reason,
+    });
   }
 
-  void onAnswer(Function(Map<String, dynamic>) callback) {
-    _socket?.on('answer', (data) => callback(Map<String, dynamic>.from(data)));
+  void sendMessage({
+    required String consultationId,
+    required String text,
+    required String senderId,
+  }) {
+    _socket?.emit('send-message', {
+      'consultationId': consultationId,
+      'text': text,
+      'senderId': senderId,
+    });
   }
 
-  void onIceCandidate(Function(Map<String, dynamic>) callback) {
-    _socket?.on('ice-candidate', (data) => callback(Map<String, dynamic>.from(data)));
-  }
+  void onIncomingCall(SignalingCallback callback) => _onIncomingCall = callback;
+  void onPeerJoined(SignalingCallback callback) => _onPeerJoined = callback;
+  void onOffer(SignalingCallback callback) => _onOffer = callback;
+  void onAnswer(SignalingCallback callback) => _onAnswer = callback;
+  void onIceCandidate(SignalingCallback callback) => _onIceCandidate = callback;
+  void onHangup(SignalingCallback callback) => _onHangup = callback;
+  void onRejected(SignalingCallback callback) => _onRejected = callback;
+  void onNewMessage(SignalingCallback callback) => _onNewMessage = callback;
+  void onFallbackToChat(SignalingCallback callback) => _onFallbackToChat = callback;
+  void onDisconnected(void Function() callback) => _onDisconnected = callback;
+  void onReconnected(void Function() callback) => _onReconnected = callback;
 
   void emitOffer(String roomId, Map<String, dynamic> offer) {
     print('Emitting offer for room: $roomId');
@@ -80,10 +181,28 @@ class SignalingService {
     _socket?.emit('ice-candidate', {'consultationId': roomId, 'candidate': candidate});
   }
 
-  void dispose() {
+  /// Drop in-call listeners so a disposed CallScreen cannot pop routes later.
+  void clearCallListeners() {
+    _onPeerJoined = null;
+    _onOffer = null;
+    _onAnswer = null;
+    _onIceCandidate = null;
+    _onHangup = null;
+    _onRejected = null;
+    _onNewMessage = null;
+    _onFallbackToChat = null;
+    _onDisconnected = null;
+    _onReconnected = null;
+  }
+
+  void disconnect() {
+    _activeConsultationId = null;
     _socket?.dispose();
     _socket = null;
+    _connectedUserId = null;
   }
+
+  void dispose() => disconnect();
 
   io.Socket? get socket => _socket;
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/signaling_service.dart';
 import 'call_screen.dart';
 
 class IncomingCallScreen extends StatelessWidget {
@@ -79,6 +80,7 @@ class IncomingCallScreen extends StatelessWidget {
                     color: Colors.redAccent,
                     label: 'Decline',
                     onTap: () {
+                      SignalingService().emitReject(consultationId);
                       Navigator.pop(context);
                     },
                   ),
@@ -87,8 +89,7 @@ class IncomingCallScreen extends StatelessWidget {
                     color: Colors.greenAccent.shade700,
                     label: 'Accept',
                     onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (context) => CallScreen(

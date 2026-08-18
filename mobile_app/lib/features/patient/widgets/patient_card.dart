@@ -4,6 +4,7 @@ import '../models/patient_model.dart';
 import 'status_badge.dart';
 import '../screens/patient_details_screen.dart';
 import '../../asha_worker/screens/update_health_screen.dart';
+import '../../asha_worker/screens/registered_doctors_screen.dart';
 import '../../doctor/screens/create_prescription_screen.dart';
 import '../../../providers/auth_provider.dart';
 
@@ -164,6 +165,16 @@ class _PatientCardState extends State<PatientCard> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  if (!isDoctor)
+                    IconButton(
+                      tooltip: 'Call doctor for this patient',
+                      onPressed: () => _navigateTo(
+                        context,
+                        RegisteredDoctorsScreen(forPatientId: widget.patient.patientId ?? widget.patient.userId),
+                      ),
+                      icon: const Icon(Icons.video_call, color: Color(0xFF2A7DE1)),
+                    ),
                 ],
               ),
             ],

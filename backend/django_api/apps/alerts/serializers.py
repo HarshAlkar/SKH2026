@@ -5,6 +5,7 @@ class EmergencyAlertSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmergencyAlert
         fields = '__all__'
+        extra_kwargs = {'user': {'read_only': True}}
 
 class AlertNotificationSerializer(serializers.ModelSerializer):
     patient_name = serializers.CharField(source='patient.name', read_only=True)

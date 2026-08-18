@@ -14,7 +14,6 @@ const io = new Server(server, {
   }
 });
 
-// Import handlers
 const consultationHandler = require('./modules/socket_handlers/consultation_socket');
 
 io.on('connection', (socket) => {
@@ -34,6 +33,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Signaling server running on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Signaling server running on 0.0.0.0:${PORT}`);
 });

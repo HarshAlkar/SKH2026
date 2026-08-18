@@ -41,10 +41,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final response = await authProvider.sendOtp(phone);
     if (response != null && mounted) {
       setState(() => _currentStep = 2);
+      final otp = response['otp']?.toString();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('OTP sent successfully'), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text(otp != null && otp.isNotEmpty ? 'OTP sent. Debug code: $otp' : 'OTP sent successfully'),
+          backgroundColor: Colors.green,
+        ),
       );
-    } else {
+    } else if (mounted) {
       final error = context.read<AuthProvider>().error;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error ?? 'Failed to send OTP'), backgroundColor: Colors.red),
@@ -53,7 +57,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _handleVerifyOtp() async {
-    final phone = _phoneController.text.trim();
     final otp = _otpController.text.trim();
     if (otp.length != 6) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -61,16 +64,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       );
       return;
     }
-
-    final success = await context.read<AuthProvider>().verifyOtp(phone, otp);
-    if (success) {
-      setState(() => _currentStep = 3);
-    } else {
-      final error = context.read<AuthProvider>().error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error ?? 'Invalid OTP'), backgroundColor: Colors.red),
-      );
-    }
+    // Reset uses the OTP directly; do not log the user in here.
+    setState(() => _currentStep = 3);
   }
 
   void _handleResetPassword() async {
@@ -94,12 +89,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
 
     final success = await context.read<AuthProvider>().resetPassword(phone, otp, password);
-    if (success) {
+    if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password reset successful! Please login.'), backgroundColor: Colors.green),
       );
       Navigator.pop(context); // Go back to login
-    } else {
+    } else if (mounted) {
       final error = context.read<AuthProvider>().error;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error ?? 'Failed to reset password'), backgroundColor: Colors.red),

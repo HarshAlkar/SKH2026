@@ -16,16 +16,18 @@ class DoctorService {
     }
   }
 
-  Future<Map<String, dynamic>> startConsultation(int doctorId, String callType) async {
-    try {
-      final response = await _apiService.post('/consultations/start/', body: {
-        'doctor_id': doctorId,
-        'call_type': callType,
-      });
-      return Map<String, dynamic>.from(response);
-    } catch (e) {
-      rethrow;
-    }
+  Future<Map<String, dynamic>> startConsultation({
+    int? doctorId,
+    int? patientId,
+    required String callType,
+  }) async {
+    final body = <String, dynamic>{
+      'call_type': callType,
+      if (doctorId != null) 'doctor_id': doctorId,
+      if (patientId != null) 'patient_id': patientId,
+    };
+    final response = await _apiService.post('/consultations/start/', body: body);
+    return Map<String, dynamic>.from(response);
   }
 
   Future<void> endConsultation(String consultationId) async {

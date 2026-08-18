@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../core/services/api_service.dart';
-import '../../../core/services/signaling_service.dart';
-import '../../../providers/auth_provider.dart';
-import '../../user/services/doctor_service.dart';
-import '../../user/screens/call_screen.dart';
+import '../../../core/services/call_launcher.dart';
 
 class RegisteredDoctorsScreen extends StatefulWidget {
-  const RegisteredDoctorsScreen({super.key});
+  final int? forPatientId;
+  const RegisteredDoctorsScreen({super.key, this.forPatientId});
 
   @override
   State<RegisteredDoctorsScreen> createState() => _RegisteredDoctorsScreenState();
@@ -15,7 +12,6 @@ class RegisteredDoctorsScreen extends StatefulWidget {
 
 class _RegisteredDoctorsScreenState extends State<RegisteredDoctorsScreen> {
   final ApiService _api = ApiService();
-  final DoctorService _doctorService = DoctorService();
   List<dynamic> _doctors = [];
   bool _isLoading = true;
 
@@ -31,7 +27,7 @@ class _RegisteredDoctorsScreenState extends State<RegisteredDoctorsScreen> {
   Future<void> _fetchDoctors() async {
     setState(() => _isLoading = true);
     try {
-      final data = await _api.get('/users/doctors/');
+      final data = await _api.get('/doctors/');
       setState(() {
         _doctors = data;
         _isLoading = false;
@@ -43,47 +39,16 @@ class _RegisteredDoctorsScreenState extends State<RegisteredDoctorsScreen> {
   }
 
   Future<void> _startCall(Map<String, dynamic> doctor, String type) async {
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
-      final consultation = await _doctorService.startConsultation(doctor['id'], type.toUpperCase());
-      
-      if (mounted) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final signaling = SignalingService();
-        
-        signaling.sendCallRequest(
-          receiverId: doctor['user_id']?.toString() ?? doctor['id'].toString(),
-          consultationId: consultation['id'].toString(),
-          callerName: authProvider.user?.name ?? 'ASHA Worker',
-          callType: type.toUpperCase(),
-        );
-
-        Navigator.pop(context); // Remove loading indicator
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CallScreen(
-              consultationId: consultation['id'].toString(),
-              doctorName: doctor['full_name'] ?? doctor['name'] ?? 'Doctor',
-              isVideo: type == 'video',
-              isOfferer: true,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start call: $e')),
-        );
-      }
-    }
+    final doctorId = int.tryParse(doctor['id'].toString());
+    if (doctorId == null) return;
+    await CallLauncher.start(
+      context: context,
+      peerName: doctor['full_name']?.toString() ?? doctor['name']?.toString() ?? 'Doctor',
+      receiverUserId: doctor['user_id']?.toString() ?? doctor['id'].toString(),
+      isVideo: type == 'video',
+      doctorId: doctorId,
+      patientId: widget.forPatientId,
+    );
   }
 
   @override

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../routes/app_routes.dart';
 
 class DoctorSettingsScreen extends StatefulWidget {
@@ -459,7 +461,9 @@ class _DoctorSettingsScreenState extends State<DoctorSettingsScreen> {
       width: double.infinity,
       height: 56,
       child: OutlinedButton.icon(
-        onPressed: () {
+        onPressed: () async {
+          await context.read<AuthProvider>().logout();
+          if (!context.mounted) return;
           Navigator.pushNamedAndRemoveUntil(
             context,
             AppRoutes.roleSelection,

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-a4c^3j_@1k@po*kh&5e8i444+@xw&o(18vyapdmcc^m))g1f-!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*']  # Use: python manage.py runserver 0.0.0.0:8000 so phones can connect
 
 
 # Application definition
@@ -55,6 +55,9 @@ INSTALLED_APPS = [
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
     ],
 }
 

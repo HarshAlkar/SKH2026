@@ -7,6 +7,7 @@ django.setup()
 from apps.users.models import User
 from apps.doctors.models import Doctor
 from apps.asha_workers.models import ASHAWorker
+from apps.patients.models import Patient
 
 def seed_data():
     # Users (Patients)
@@ -18,17 +19,28 @@ def seed_data():
     ]
 
     for data in users_data:
-        if not User.objects.filter(phone_number=data["phone"]).exists():
-            User.objects.create_user(
-                username=data["phone"],
-                phone_number=data["phone"],
-                name=data["name"],
-                village=data["village"],
-                email=data["email"],
-                password="password123",
-                role="user"
-            )
+        user, created = User.objects.get_or_create(
+            phone_number=data["phone"],
+            defaults={
+                "username": data["phone"],
+                "name": data["name"],
+                "village": data["village"],
+                "email": data["email"],
+                "role": "user",
+            },
+        )
+        if created:
+            user.set_password("password123")
+            user.save()
             print(f"Created user: {data['name']}")
+        Patient.objects.get_or_create(
+            user=user,
+            defaults={
+                "age": 0,
+                "gender": "Not Set",
+                "address": data["village"],
+            },
+        )
 
     # Doctors
     doctors_data = [

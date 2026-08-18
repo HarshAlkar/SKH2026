@@ -67,6 +67,7 @@ class _DoctorLoginScreenState extends State<DoctorLoginScreen> {
           'phoneNumber': identifier,
           'role': 'doctor',
           'isForgotPassword': false,
+          'debugOtp': response['otp'],
         },
       );
     } else if (mounted) {

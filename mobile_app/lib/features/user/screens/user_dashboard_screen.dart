@@ -7,6 +7,9 @@ import '../widgets/user_sidebar.dart';
 
 
 import '../../../providers/consultation_provider.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/services/signaling_service.dart';
+import 'call_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   const UserDashboardScreen({super.key});
@@ -17,6 +20,7 @@ class UserDashboardScreen extends StatefulWidget {
 
 class _UserDashboardScreenState extends State<UserDashboardScreen> {
   bool _showReminder = true;
+  Map<String, dynamic>? _assignedAsha;
 
   @override
   void initState() {
@@ -26,7 +30,18 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
       if (user != null) {
         context.read<ConsultationProvider>().initSignaling(user.id.toString());
       }
+      _loadAssignedAsha();
     });
+  }
+
+  Future<void> _loadAssignedAsha() async {
+    try {
+      final data = await ApiService().get('/users/asha-workers/');
+      if (!mounted) return;
+      if (data is List && data.isNotEmpty) {
+        setState(() => _assignedAsha = Map<String, dynamic>.from(data.first as Map));
+      }
+    } catch (_) {}
   }
 
 
@@ -61,6 +76,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildWelcomeSection(),
+            if (_assignedAsha != null) _buildAssignedAshaCard(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
               child: Column(
@@ -95,6 +111,79 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     );
   }
 
+
+  Widget _buildAssignedAshaCard() {
+    final name = _assignedAsha?['name']?.toString() ?? 'ASHA Worker';
+    final phone = _assignedAsha?['phone_number']?.toString() ?? '';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.lightBlue,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              backgroundColor: Colors.white,
+              child: Icon(Icons.health_and_safety, color: AppColors.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Your ASHA worker',
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (phone.isNotEmpty)
+                    Text(phone, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'Call ASHA',
+              onPressed: () async {
+                final userId = _assignedAsha?['id']?.toString();
+                if (userId == null) return;
+                final auth = context.read<AuthProvider>();
+                final roomId =
+                    'direct-${auth.user?.id}-$userId-${DateTime.now().millisecondsSinceEpoch}';
+                SignalingService().sendCallRequest(
+                  receiverId: userId,
+                  consultationId: roomId,
+                  callerName: auth.user?.name ?? 'Patient',
+                  callType: 'VIDEO',
+                );
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CallScreen(
+                      consultationId: roomId,
+                      doctorName: name,
+                      isVideo: true,
+                      isOfferer: true,
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.video_call, color: AppColors.primary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildWelcomeSection() {
     return Consumer<AuthProvider>(

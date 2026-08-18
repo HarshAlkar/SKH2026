@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../widgets/custom_input_field.dart';
 import '../widgets/custom_dropdown_field.dart';
+import '../../../core/services/api_service.dart';
+import '../../../providers/auth_provider.dart';
 
 class RegisterPatientScreen extends StatefulWidget {
   const RegisterPatientScreen({super.key});
@@ -43,14 +46,21 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
         _isLoading = true;
       });
 
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
+      try {
+        final asha = context.read<AuthProvider>().user;
+        final phone = _phoneController.text.trim();
+        await ApiService().post('/users/register/', body: {
+          'name': _nameController.text.trim(),
+          'phone_number': phone,
+          'username': phone,
+          'password': phone.length >= 6 ? phone.substring(phone.length - 6) : '123456',
+          'role': 'user',
+          'village': _villageController.text.trim().isNotEmpty
+              ? _villageController.text.trim()
+              : (asha?.village ?? ''),
         });
-
+        if (!mounted) return;
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -61,9 +71,13 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-
-        // Navigate back to the Dashboard/Village Patients list smoothly
         Navigator.pop(context);
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not register patient: $e')),
+        );
       }
     }
   }

@@ -75,7 +75,8 @@ class SymptomAnalysisView(APIView):
         
         predicted_disease = analysis_result.get('disease', 'Unknown')
         severity = analysis_result.get('severity', 'Low')
-        
+        confidence = analysis_result.get('confidence', 0)
+
         # 4. Store Analysis Result
         analysis = SymptomAnalysis.objects.create(
             user=user,
@@ -83,15 +84,15 @@ class SymptomAnalysisView(APIView):
             predicted_disease=predicted_disease,
             severity_level=severity
         )
-        
+
         # 5. Alert system for Doctors & ASHA
         alert_sent = False
         if severity in ['High', 'Critical']:
-            # Find assigned ASHA
-            asha = ASHAWorker.objects.filter(assigned_village=user.village).first()
-            # Find any doctor
-            doctor = Doctor.objects.first()
-            
+            asha = None
+            if user.village:
+                asha = ASHAWorker.objects.filter(assigned_village__iexact=user.village).first()
+            doctor = Doctor.objects.filter(is_available=True).first() or Doctor.objects.first()
+
             AlertNotification.objects.create(
                 patient=user,
                 doctor=doctor,
@@ -100,10 +101,11 @@ class SymptomAnalysisView(APIView):
                 severity=severity
             )
             alert_sent = True
-        
+
         return Response({
             "analysis_id": analysis.id,
             "disease": predicted_disease,
             "severity": severity,
+            "confidence": confidence,
             "alert_sent": alert_sent
         }, status=status.HTTP_200_OK)

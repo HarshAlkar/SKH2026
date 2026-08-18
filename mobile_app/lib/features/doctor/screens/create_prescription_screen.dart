@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../core/services/api_service.dart';
-import '../../../providers/auth_provider.dart';
 
 class CreatePrescriptionScreen extends StatefulWidget {
   final String? patientName;
@@ -65,6 +63,24 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
     super.dispose();
   }
 
+  int? _patientPk(String? selected) {
+    if (selected == null) return null;
+    Map? match;
+    for (final p in _patients) {
+      if (p is Map && p['id'].toString() == selected) {
+        match = p;
+        break;
+      }
+    }
+    if (match != null) {
+      final details = match['profile_details'];
+      if (details is Map && details['patient_id'] != null) {
+        return int.tryParse(details['patient_id'].toString());
+      }
+    }
+    return int.tryParse(selected);
+  }
+
   void _generatePrescription() {
     if (_formKey.currentState!.validate()) {
       showDialog(
@@ -84,16 +100,21 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final auth = context.read<AuthProvider>();
-      
+      final patientPk = _patientPk(_selectedPatientId);
+      if (patientPk == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a valid patient')),
+        );
+        return;
+      }
+
       final medications = "${_medicineNameController.text} (${_dosageController.text}) - ${_durationController.text}\nTimings: ${_selectedTimings.join(', ')}\nInstructions: ${_instructionsController.text}";
 
       final body = {
-        'patient': int.parse(_selectedPatientId!),
-        'doctor': auth.user!.id,
+        'patient': patientPk,
         'medications': medications,
-        'diagnosis': _diagnosisController.text,
-        'notes': _instructionsController.text,
+        'dosage_instructions': _instructionsController.text,
+        'notes': _diagnosisController.text,
       };
 
       await _api.post('/prescriptions/', body: body);

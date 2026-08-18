@@ -1,6 +1,8 @@
 from django.db import models
+from django.conf import settings
 from apps.patients.models import Patient
 from apps.doctors.models import Doctor
+
 
 class Consultation(models.Model):
     STATUS_CHOICES = (
@@ -13,9 +15,22 @@ class Consultation(models.Model):
         ('AUDIO', 'Audio'),
         ('VIDEO', 'Video'),
     )
-    
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='consultations')
+
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name='consultations',
+        null=True,
+        blank=True,
+    )
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='consultations')
+    initiated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='started_consultations',
+    )
     call_type = models.CharField(max_length=10, choices=CALL_TYPE_CHOICES, default='VIDEO')
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(auto_now_add=True)

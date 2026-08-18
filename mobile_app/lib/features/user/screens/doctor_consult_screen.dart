@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/user_sidebar.dart';
 import '../services/doctor_service.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../core/services/signaling_service.dart';
-import 'call_screen.dart';
+import '../../../core/services/call_launcher.dart';
 
 class DoctorConsultScreen extends StatefulWidget {
   const DoctorConsultScreen({super.key});
@@ -45,49 +42,15 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
   }
 
   Future<void> _startCall(Map<String, dynamic> doctor, String type) async {
-    try {
-      // Show connecting overlay
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
-      final consultation = await _doctorService.startConsultation(doctor['id'], type.toUpperCase());
-      
-      if (mounted) {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final signaling = SignalingService();
-        
-        // Send call request to doctor's private room
-        signaling.sendCallRequest(
-          receiverId: doctor['user_id']?.toString() ?? doctor['id'].toString(), // Use doctor's User ID
-          consultationId: consultation['id'].toString(),
-          callerName: authProvider.user?.name ?? 'Patient',
-          callType: type.toUpperCase(),
-        );
-
-        Navigator.pop(context); // Remove loading indicator
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CallScreen(
-              consultationId: consultation['id'].toString(),
-              doctorName: doctor['full_name'] ?? 'Doctor',
-              isVideo: type == 'video',
-              isOfferer: true,
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start call: $e')),
-        );
-      }
-    }
+    final doctorId = int.tryParse(doctor['id'].toString());
+    if (doctorId == null) return;
+    await CallLauncher.start(
+      context: context,
+      peerName: doctor['full_name']?.toString() ?? 'Doctor',
+      receiverUserId: doctor['user_id']?.toString() ?? doctor['id'].toString(),
+      isVideo: type == 'video',
+      doctorId: doctorId,
+    );
   }
 
   @override

@@ -10,12 +10,14 @@ class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
   final String role; // 'user', 'doctor', 'asha_worker'
   final bool isForgotPassword;
+  final String? debugOtp;
 
   const OtpVerificationScreen({
     super.key,
     required this.phoneNumber,
     required this.role,
     this.isForgotPassword = false,
+    this.debugOtp,
   });
 
   @override
@@ -34,6 +36,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void initState() {
     super.initState();
     _startTimer();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showDebugOtp(widget.debugOtp));
+  }
+
+  void _showDebugOtp(String? otp) {
+    if (otp == null || otp.isEmpty || !mounted) return;
+    Helpers.showSnackBar(context, 'Debug OTP: $otp');
   }
 
   @override
@@ -75,9 +83,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     final response = await authProvider.sendOtp(widget.phoneNumber);
 
     if (response != null) {
-      Helpers.showSnackBar(context, 'OTP resent successfully');
+      if (mounted) {
+        _showDebugOtp(response['otp']?.toString());
+        Helpers.showSnackBar(context, 'OTP resent successfully');
+      }
       _startTimer();
-    } else {
+    } else if (mounted) {
       Helpers.showSnackBar(
         context,
         authProvider.error ?? 'Failed to resend OTP',
@@ -179,6 +190,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   height: 1.5,
                 ),
               ),
+              if (widget.debugOtp != null && widget.debugOtp!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Dev code: ${widget.debugOtp}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
               const SizedBox(height: 40),
               
               // OTP Input Fields

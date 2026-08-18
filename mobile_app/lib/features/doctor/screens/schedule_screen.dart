@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'video_consultation_screen.dart';
-import 'audio_consultation_screen.dart';
+import 'my_patients_screen.dart';
 import 'patient_details_screen.dart';
 
 class ScheduleScreen extends StatelessWidget {
-  const ScheduleScreen({super.key});
+  final bool embedded;
+  const ScheduleScreen({super.key, this.embedded = false});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,10 @@ class ScheduleScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
+        automaticallyImplyLeading: !embedded,
+        leading: embedded
+            ? null
+            : IconButton(
           icon: const Icon(Icons.arrow_back, color: textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
@@ -274,9 +277,7 @@ class ScheduleScreen extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const VideoConsultationScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const MyPatientsScreen()),
               );
             },
             icon: const Icon(Icons.videocam, size: 18),
@@ -297,9 +298,7 @@ class ScheduleScreen extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const AudioConsultationScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const MyPatientsScreen()),
               );
             },
             icon: const Icon(Icons.phone, size: 18),

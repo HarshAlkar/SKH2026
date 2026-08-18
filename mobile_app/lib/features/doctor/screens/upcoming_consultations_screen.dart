@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'patient_details_screen.dart';
-import 'video_consultation_screen.dart';
+import 'my_patients_screen.dart';
 import 'dart:async';
 
 class Consultation {
@@ -216,7 +216,7 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const VideoConsultationScreen()),
+                            MaterialPageRoute(builder: (context) => const MyPatientsScreen()),
                           );
                         },
                         style: ElevatedButton.styleFrom(

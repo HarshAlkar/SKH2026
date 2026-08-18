@@ -7,6 +7,7 @@ import '../widgets/emergency_button.dart';
 import '../widgets/asha_sidebar.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../core/services/api_service.dart';
+import '../../../providers/consultation_provider.dart';
 import '../../../routes/app_routes.dart';
 
 class AshaDashboard extends StatefulWidget {
@@ -30,6 +31,12 @@ class _AshaDashboardState extends State<AshaDashboard> {
   void initState() {
     super.initState();
     _fetchDashboardData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<AuthProvider>().user;
+      if (user != null) {
+        context.read<ConsultationProvider>().initSignaling(user.id.toString());
+      }
+    });
   }
 
   Future<void> _fetchDashboardData() async {
@@ -190,7 +197,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                           child: QuickActionButton(
                             icon: Icons.person_add_outlined,
                             label: "List Patients",
-                            onTap: () => Navigator.pushNamed(context, '/village_patients'),
+                            onTap: () => Navigator.pushNamed(context, AppRoutes.villagePatients),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -198,7 +205,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                           child: QuickActionButton(
                             icon: Icons.edit_document,
                             label: "Update Health",
-                            onTap: () => Navigator.pushNamed(context, '/update_health'),
+                            onTap: () => Navigator.pushNamed(context, AppRoutes.updateHealth),
                           ),
                         ),
                       ],
@@ -210,7 +217,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                           child: QuickActionButton(
                             icon: Icons.warning_amber_rounded,
                             label: "View Alerts",
-                            onTap: () => Navigator.pushNamed(context, '/risk_alerts'),
+                            onTap: () => Navigator.pushNamed(context, AppRoutes.riskAlerts),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -241,7 +248,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                       ),
                     ),
                     TextButton(
-                      onPressed: () => Navigator.pushNamed(context, '/risk_alerts'),
+                      onPressed: () => Navigator.pushNamed(context, AppRoutes.riskAlerts),
                       child: const Text("View All"),
                     ),
                   ],

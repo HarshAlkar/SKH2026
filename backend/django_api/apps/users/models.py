@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 
+
 class User(AbstractUser):
     ROLE_CHOICES = (
         ('user', 'User'),
@@ -9,13 +10,14 @@ class User(AbstractUser):
         ('asha_worker', 'ASHA Worker'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
-    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    phone_number = models.CharField(max_length=15, blank=True, null=True, unique=True)
     village = models.CharField(max_length=100, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.name or self.username} ({self.role})"
+
 
 class OTPVerification(models.Model):
     phone_number = models.CharField(max_length=15)

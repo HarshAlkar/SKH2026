@@ -5,4 +5,4 @@ from .serializers import DoctorSerializer
 class DoctorViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Doctor.objects.all().order_by('-id')
     serializer_class = DoctorSerializer
-    permission_classes = [permissions.AllowAny] # Allow viewing doctors without login for now
+    permission_classes = [permissions.IsAuthenticated]

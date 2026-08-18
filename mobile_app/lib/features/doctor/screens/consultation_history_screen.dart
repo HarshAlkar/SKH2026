@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/doctor_navigation_drawer.dart';
+import '../../user/services/doctor_service.dart';
 
 class ConsultationRecord {
   final String patientName;
@@ -29,39 +30,39 @@ class ConsultationHistoryScreen extends StatefulWidget {
 class _ConsultationHistoryScreenState extends State<ConsultationHistoryScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  int _bottomNavIndex = 1; // History is index 1
-
-  final List<ConsultationRecord> _records = [
-    ConsultationRecord(
-      patientName: 'Sarah Jenkins',
-      age: 28,
-      village: 'Green Valley',
-      date: 'Oct 24, 2023',
-      status: 'Completed',
-      prescriptionSummary: '"Amoxicillin 500mg, Rest for 3 days, increased fluid intake."',
-    ),
-    ConsultationRecord(
-      patientName: 'Ramesh Patil',
-      age: 45,
-      village: 'Kaman',
-      date: 'Sep 12, 2023',
-      status: 'Follow-up',
-      prescriptionSummary: '"Cetirizine 10mg once daily for seasonal allergies. Avoid dust."',
-    ),
-    ConsultationRecord(
-      patientName: 'Sunita Deshmukh',
-      age: 32,
-      village: 'Pelhar',
-      date: 'Aug 05, 2023',
-      status: 'Completed',
-      prescriptionSummary: '"Annual checkup. Vitamin D supplements recommended."',
-    ),
-  ];
+  List<ConsultationRecord> _records = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final list = await DoctorService().getConsultationHistory();
+      if (!mounted) return;
+      setState(() {
+        _records = list.map((c) {
+          final status = (c['status'] ?? 'PENDING').toString();
+          return ConsultationRecord(
+            patientName: c['patient_name']?.toString() ?? 'Patient',
+            age: 0,
+            village: '',
+            date: c['created_at']?.toString().split('T').first ?? '',
+            status: status == 'COMPLETED' ? 'Completed' : status,
+            prescriptionSummary: (c['notes']?.toString().isNotEmpty == true)
+                ? c['notes'].toString()
+                : (c['call_type']?.toString() ?? 'Consultation'),
+          );
+        }).toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -131,7 +132,9 @@ class _ConsultationHistoryScreenState extends State<ConsultationHistoryScreen>
           ),
         ),
       ),
-      body: TabBarView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
         controller: _tabController,
         children: [
           _buildRecordList('All Sessions'),
@@ -139,7 +142,6 @@ class _ConsultationHistoryScreenState extends State<ConsultationHistoryScreen>
           _buildRecordList('Follow-up'),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -394,83 +396,6 @@ class _ConsultationHistoryScreenState extends State<ConsultationHistoryScreen>
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: BottomNavigationBar(
-        currentIndex: _bottomNavIndex,
-        onTap: (index) {
-          setState(() {
-            _bottomNavIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF2A7DE1),
-        unselectedItemColor: const Color(0xFF94A3B8),
-        selectedFontSize: 10,
-        unselectedFontSize: 10,
-        showUnselectedLabels: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.home_outlined),
-            ),
-            activeIcon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.home),
-            ),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.history_outlined),
-            ),
-            activeIcon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.history),
-            ),
-            label: 'History',
-          ),
-          BottomNavigationBarItem(
-            icon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.calendar_month_outlined),
-            ),
-            activeIcon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.calendar_month),
-            ),
-            label: 'Schedule',
-          ),
-          BottomNavigationBarItem(
-            icon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.person_outline),
-            ),
-            activeIcon: Padding(
-              padding: EdgeInsets.only(bottom: 4.0),
-              child: Icon(Icons.person),
-            ),
-            label: 'Profile',
           ),
         ],
       ),

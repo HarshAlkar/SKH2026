@@ -10,6 +10,7 @@ import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/forgot_password_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/otp_verification_screen.dart';
+import '../features/auth/screens/session_splash_screen.dart';
 
 import '../features/user/screens/symptom_checker_screen.dart';
 import '../features/user/screens/doctor_consult_screen.dart';
@@ -37,6 +38,8 @@ import '../features/asha_worker/screens/registered_doctors_screen.dart';
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case AppRoutes.splash:
+        return _fadeRoute(const SessionSplashScreen());
       case AppRoutes.roleSelection:
         return _fadeRoute(const RoleSelectionScreen());
       case AppRoutes.login:
@@ -55,11 +58,12 @@ class RouteGenerator {
       case AppRoutes.doctorDashboard:
         return _fadeRoute(const DoctorDashboard());
       case AppRoutes.loginWithOtp:
-        final args = settings.arguments as Map<String, dynamic>;
+        final args = (settings.arguments as Map?) ?? {};
         return _fadeRoute(OtpVerificationScreen(
-          phoneNumber: args['phoneNumber'],
-          role: args['role'] ?? 'user',
-          isForgotPassword: args['isForgotPassword'] ?? false,
+          phoneNumber: args['phoneNumber']?.toString() ?? '',
+          role: args['role']?.toString() ?? 'user',
+          isForgotPassword: args['isForgotPassword'] == true,
+          debugOtp: args['debugOtp']?.toString(),
         ));
       case AppRoutes.forgotPassword:
         return _fadeRoute(const ForgotPasswordScreen());

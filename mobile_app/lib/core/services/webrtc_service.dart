@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import '../config/app_config.dart';
 import 'signaling_service.dart';
 
 class WebRTCService {
@@ -7,9 +8,15 @@ class WebRTCService {
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
   MediaStream? _remoteStream;
-  
+  bool _hungUp = false;
+  bool _mediaStopped = false;
+  bool _wantVideo = true;
+
   MediaStream? get localStream => _localStream;
   MediaStream? get remoteStream => _remoteStream;
+
+  final _localStreamController = StreamController<MediaStream?>.broadcast();
+  Stream<MediaStream?> get onLocalStream => _localStreamController.stream;
 
   final _remoteStreamController = StreamController<MediaStream?>.broadcast();
   Stream<MediaStream?> get onRemoteStream => _remoteStreamController.stream;
@@ -19,16 +26,25 @@ class WebRTCService {
 
   final List<RTCIceCandidate> _remoteCandidatesQueue = [];
   bool _isRemoteDescriptionSet = false;
+  String? _consultationId;
 
-  Future<void> init(String consultationId, {bool isOfferer = true}) async {
-    _signaling.joinRoom(consultationId);
-    
-    // Listen for peer joined to trigger the call if we are offerer
+  Future<void> init(
+    String consultationId, {
+    bool isOfferer = true,
+    bool video = true,
+  }) async {
+    _consultationId = consultationId;
+    _hungUp = false;
+    _mediaStopped = false;
+    _wantVideo = video;
+
+    await _openLocalMedia(video: video);
+
     _signaling.onPeerJoined((data) async {
       print('Signaling: Peer joined ${data['socketId']}');
       if (isOfferer) {
         print('Signaling: Offerer detected peer, starting call...');
-        await startCall(consultationId);
+        await startCall(consultationId, video: video);
       }
     });
 
@@ -62,16 +78,30 @@ class WebRTCService {
         _remoteCandidatesQueue.add(candidate);
       }
     });
+
+    _signaling.joinRoom(consultationId);
+  }
+
+  Future<void> _openLocalMedia({bool video = true}) async {
+    if (_localStream != null) return;
+    try {
+      _localStream = await navigator.mediaDevices.getUserMedia({
+        'audio': true,
+        'video': video,
+      });
+      if (!_localStreamController.isClosed) {
+        _localStreamController.add(_localStream);
+      }
+    } catch (e) {
+      print('Error getting user media: $e');
+    }
   }
 
   Future<void> _setupPeerConnection(String consultationId) async {
     if (_peerConnection != null) return;
 
     final Map<String, dynamic> configuration = {
-      'iceServers': [
-        {'urls': 'stun:stun.l.google.com:19302'},
-        {'urls': 'stun:stun1.l.google.com:19302'},
-      ]
+      'iceServers': AppConfig.iceServers,
     };
 
     _peerConnection = await createPeerConnection(configuration);
@@ -83,26 +113,22 @@ class WebRTCService {
     _peerConnection!.onAddStream = (stream) {
       print('WebRTC: Remote stream added');
       _remoteStream = stream;
-      _remoteStreamController.add(stream);
+      if (!_remoteStreamController.isClosed) {
+        _remoteStreamController.add(stream);
+      }
     };
 
     _peerConnection!.onConnectionState = (state) {
       print('WebRTC: Connection state changed to $state');
-      _connectionStateController.add(state);
+      if (!_connectionStateController.isClosed) {
+        _connectionStateController.add(state);
+      }
     };
 
-    try {
-      _localStream = await navigator.mediaDevices.getUserMedia({
-        'audio': true,
-        'video': true,
-      });
-      
-      _localStream!.getTracks().forEach((track) {
-        _peerConnection!.addTrack(track, _localStream!);
-      });
-    } catch (e) {
-      print('Error getting user media: $e');
-    }
+    await _openLocalMedia(video: _wantVideo);
+    _localStream?.getTracks().forEach((track) {
+      _peerConnection!.addTrack(track, _localStream!);
+    });
   }
 
   Future<void> startCall(String consultationId, {bool video = true}) async {
@@ -110,7 +136,7 @@ class WebRTCService {
 
     RTCSessionDescription offer = await _peerConnection!.createOffer({
       'offerToReceiveAudio': true,
-      'offerToReceiveVideo': true,
+      'offerToReceiveVideo': video,
     });
     await _peerConnection!.setLocalDescription(offer);
 
@@ -172,16 +198,51 @@ class WebRTCService {
     }
   }
 
-  void dispose() {
+  Future<void> pauseMedia() async {
+    if (_mediaStopped) return;
+    _mediaStopped = true;
+    try {
+      Helper.setSpeakerphoneOn(false);
+    } catch (_) {}
     _localStream?.getTracks().forEach((track) {
       track.stop();
     });
-    _localStream?.dispose();
-    _remoteStream?.dispose();
-    _peerConnection?.dispose();
-    _remoteStreamController.close();
-    _connectionStateController.close();
+    await _localStream?.dispose();
+    await _remoteStream?.dispose();
+    await _peerConnection?.close();
+    await _peerConnection?.dispose();
+    _localStream = null;
+    _remoteStream = null;
+    _peerConnection = null;
     _isRemoteDescriptionSet = false;
     _remoteCandidatesQueue.clear();
+  }
+
+  Future<void> hangup({bool notifyPeer = true}) async {
+    if (_hungUp) return;
+    _hungUp = true;
+    if (notifyPeer && _consultationId != null) {
+      _signaling.emitHangup(_consultationId!);
+      _signaling.leaveRoom(_consultationId!);
+    }
+    await pauseMedia();
+  }
+
+  Future<void> dispose() async {
+    if (!_hungUp) {
+      await hangup(notifyPeer: false);
+    } else {
+      await pauseMedia();
+    }
+    _signaling.clearCallListeners();
+    if (!_localStreamController.isClosed) {
+      await _localStreamController.close();
+    }
+    if (!_remoteStreamController.isClosed) {
+      await _remoteStreamController.close();
+    }
+    if (!_connectionStateController.isClosed) {
+      await _connectionStateController.close();
+    }
   }
 }

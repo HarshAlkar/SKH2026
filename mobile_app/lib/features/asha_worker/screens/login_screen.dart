@@ -70,6 +70,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
           'phoneNumber': identifier,
           'role': 'asha_worker',
           'isForgotPassword': false,
+          'debugOtp': response['otp'],
         },
       );
     } else if (mounted) {

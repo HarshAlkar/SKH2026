@@ -255,7 +255,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                   if (context.mounted) {
                     Navigator.pushNamedAndRemoveUntil(
                       context,
-                      AppRoutes.login,
+                      AppRoutes.roleSelection,
                       (route) => false,
                     );
                   }

@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../core/services/authentication_service.dart';
+import '../core/services/signaling_service.dart';
+import '../core/utils/network_errors.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthenticationService _authService = AuthenticationService();
   UserModel? _user;
   bool _isLoading = false;
+  bool _isReady = false;
   String? _error;
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
+  bool get isReady => _isReady;
   String? get error => _error;
   bool get isAuthenticated => _user != null;
 
@@ -17,13 +21,30 @@ class AuthProvider extends ChangeNotifier {
     _loadCachedUser();
   }
 
+  Future<void> ensureLoaded() async {
+    if (_isReady) return;
+    await _loadCachedUser();
+  }
+
   Future<void> _loadCachedUser() async {
-    final cachedData = await _authService.getCachedUser();
-    if (cachedData != null) {
-      _user = UserModel.fromJson(cachedData['user']);
+    try {
+      final cachedData = await _authService.getCachedUser();
+      if (cachedData != null &&
+          cachedData['user'] is Map &&
+          cachedData['token'] != null) {
+        _user = UserModel.fromJson(
+          Map<String, dynamic>.from(cachedData['user'] as Map),
+        );
+      }
+    } catch (_) {
+      _user = null;
+    } finally {
+      _isReady = true;
       notifyListeners();
     }
   }
+
+  String _cleanError(Object e) => friendlyNetworkError(e);
 
   Future<bool> login(String phoneNumber, String password, String role) async {
     _isLoading = true;
@@ -32,12 +53,16 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final response = await _authService.login(phoneNumber, password, role);
-      _user = UserModel.fromJson(response['user']);
+      final userJson = response['user'];
+      if (userJson is! Map) {
+        throw Exception('Login succeeded but user data was missing.');
+      }
+      _user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = _cleanError(e);
       _isLoading = false;
       notifyListeners();
       return false;
@@ -51,12 +76,16 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       final response = await _authService.register(data);
-      _user = UserModel.fromJson(response['user']);
+      final userJson = response['user'];
+      if (userJson is! Map) {
+        throw Exception('Registration succeeded but user data was missing.');
+      }
+      _user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = _cleanError(e);
       _isLoading = false;
       notifyListeners();
       return false;
@@ -65,6 +94,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     await _authService.logout();
+    SignalingService().disconnect();
     _user = null;
     notifyListeners();
   }
@@ -79,7 +109,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return response;
     } catch (e) {
-      _error = e.toString();
+      _error = _cleanError(e);
       _isLoading = false;
       notifyListeners();
       return null;
@@ -92,14 +122,20 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final response = await _authService.verifyOtp(phoneNumber, otp, role: role);
-      if (response.containsKey('user')) {
-        _user = UserModel.fromJson(response['user']);
+      final userJson = response['user'];
+      final token = response['token'];
+      if (userJson is! Map || token == null) {
+        _error = 'OTP verified, but this number is not registered for login.';
+        _isLoading = false;
+        notifyListeners();
+        return false;
       }
+      _user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = _cleanError(e);
       _isLoading = false;
       notifyListeners();
       return false;
@@ -116,7 +152,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = _cleanError(e);
       _isLoading = false;
       notifyListeners();
       return false;

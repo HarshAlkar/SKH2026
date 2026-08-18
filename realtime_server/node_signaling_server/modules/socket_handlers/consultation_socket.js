@@ -1,26 +1,24 @@
 module.exports = (io, socket) => {
-  // Join a consultation room
   socket.on('join-consultation', (consultationId) => {
     socket.join(`consultation-${consultationId}`);
     console.log(`User ${socket.id} joined consultation ${consultationId}`);
-    
-    // Notify others in room that a peer has joined
+
     socket.to(`consultation-${consultationId}`).emit('peer-joined', {
       socketId: socket.id
     });
 
-    // If there's already another peer in the room, notify the joiner too
     const room = io.sockets.adapter.rooms.get(`consultation-${consultationId}`);
     if (room && room.size > 1) {
-      console.log(`Room ${consultationId} now has ${room.size} members. Notifying joiner of existing peer.`);
-      // We don't need the actual ID of the other person, just a trigger
       socket.emit('peer-joined', {
         socketId: 'existing-peer'
       });
     }
   });
 
-  // Notify a specific user of an incoming call
+  socket.on('leave-consultation', (consultationId) => {
+    socket.leave(`consultation-${consultationId}`);
+  });
+
   socket.on('call-request', (data) => {
     const { receiverId, consultationId, callerName, callType } = data;
     console.log(`Call request from ${callerName} to ${receiverId} for consultation ${consultationId}`);
@@ -32,7 +30,26 @@ module.exports = (io, socket) => {
     });
   });
 
-  // WebRTC Signaling: Offer
+  socket.on('reject-call', (data) => {
+    const { consultationId, receiverId } = data || {};
+    const payload = {
+      consultationId,
+      senderId: socket.id
+    };
+    socket.to(`consultation-${consultationId}`).emit('call-rejected', payload);
+    if (receiverId) {
+      socket.to(`user-${receiverId}`).emit('call-rejected', payload);
+    }
+  });
+
+  socket.on('hangup', (data) => {
+    const consultationId = data && data.consultationId;
+    socket.to(`consultation-${consultationId}`).emit('hangup', {
+      consultationId,
+      senderId: socket.id
+    });
+  });
+
   socket.on('offer', (data) => {
     console.log(`Relaying offer for room ${data.consultationId} from ${socket.id}`);
     socket.to(`consultation-${data.consultationId}`).emit('offer', {
@@ -41,7 +58,6 @@ module.exports = (io, socket) => {
     });
   });
 
-  // WebRTC Signaling: Answer
   socket.on('answer', (data) => {
     console.log(`Relaying answer for room ${data.consultationId} from ${socket.id}`);
     socket.to(`consultation-${data.consultationId}`).emit('answer', {
@@ -50,7 +66,6 @@ module.exports = (io, socket) => {
     });
   });
 
-  // WebRTC Signaling: ICE Candidate
   socket.on('ice-candidate', (data) => {
     socket.to(`consultation-${data.consultationId}`).emit('ice-candidate', {
       candidate: data.candidate,
@@ -58,12 +73,20 @@ module.exports = (io, socket) => {
     });
   });
 
-  // Chat messaging
   socket.on('send-message', (data) => {
     io.to(`consultation-${data.consultationId}`).emit('new-message', {
       text: data.text,
-      senderId: socket.id,
+      senderId: data.senderId || socket.id,
       timestamp: new Date().toISOString()
+    });
+  });
+
+  socket.on('fallback-to-chat', (data) => {
+    const consultationId = data && data.consultationId;
+    socket.to(`consultation-${consultationId}`).emit('fallback-to-chat', {
+      consultationId,
+      reason: (data && data.reason) || 'network',
+      senderId: socket.id
     });
   });
 };

@@ -1,7 +1,7 @@
 import '../config/app_config.dart';
 
 class ApiConstants {
-  static const String baseUrl = AppConfig.baseUrl;
+  static String get baseUrl => AppConfig.baseUrl;
   static const String loginEndpoint = '/auth/login/';
   static const String registerEndpoint = '/auth/register/';
   static const String logoutEndpoint = '/auth/logout/';

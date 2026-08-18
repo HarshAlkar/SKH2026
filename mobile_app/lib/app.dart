@@ -9,7 +9,7 @@ import 'providers/symptom_provider.dart';
 import 'providers/consultation_provider.dart';
 import 'providers/medicine_provider.dart';
 import 'providers/alert_provider.dart';
-import 'main.dart'; // Import to use navigatorKey
+import 'main.dart';
 
 class VitalReachApp extends StatelessWidget {
   const VitalReachApp({super.key});
@@ -27,10 +27,10 @@ class VitalReachApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'VitalReach',
-        navigatorKey: navigatorKey, // Set the key here
+        navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        initialRoute: AppRoutes.roleSelection,
+        initialRoute: AppRoutes.splash,
         onGenerateRoute: RouteGenerator.generateRoute,
       ),
     );

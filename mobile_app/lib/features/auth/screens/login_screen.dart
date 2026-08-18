@@ -83,6 +83,7 @@ class _LoginScreenState extends State<LoginScreen>
           'phoneNumber': _phoneController.text,
           'role': 'user',
           'isForgotPassword': false,
+          'debugOtp': response['otp'],
         },
       );
     } else if (mounted) {

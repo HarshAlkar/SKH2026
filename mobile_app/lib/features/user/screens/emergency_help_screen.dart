@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/services/api_service.dart';
 
 
 class EmergencyHelpScreen extends StatefulWidget {
@@ -301,10 +302,22 @@ class _EmergencyHelpScreenState extends State<EmergencyHelpScreen> with SingleTi
               subtitle: "Alert local health volunteer",
               icon: Icons.notification_important_outlined,
               iconColor: primaryBlue,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Alert sent to ASHA worker dashboard")),
-                );
+              onTap: () async {
+                try {
+                  await ApiService().post('/alerts/emergencies/', body: {
+                    'alert_type': 'Notify ASHA',
+                    'location': _currentLocation,
+                  });
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Alert sent to ASHA workers')),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Could not notify ASHA: $e')),
+                  );
+                }
               },
             ),
             _buildContactCard(

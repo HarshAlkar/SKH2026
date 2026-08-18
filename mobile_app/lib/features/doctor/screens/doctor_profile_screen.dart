@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
 
 class DoctorProfileScreen extends StatelessWidget {
-  const DoctorProfileScreen({super.key});
+  final bool embedded;
+  const DoctorProfileScreen({super.key, this.embedded = false});
 
   final Color primaryBlue = const Color(0xFF2A7DE1);
   final Color lightBg = const Color(0xFFF3F4F6);
@@ -18,7 +21,10 @@ class DoctorProfileScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
+        automaticallyImplyLeading: !embedded,
+        leading: embedded
+            ? null
+            : IconButton(
           icon: Icon(Icons.arrow_back, color: textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
@@ -34,7 +40,7 @@ class DoctorProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildProfileHeader(),
+            _buildProfileHeader(context),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -56,7 +62,10 @@ class DoctorProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(BuildContext context) {
+    final user = context.watch<AuthProvider>().user;
+    final name = user?.name.isNotEmpty == true ? user!.name : 'Doctor';
+    final village = user?.village.isNotEmpty == true ? user!.village : 'VitalReach Clinic';
     return Container(
       width: double.infinity,
       color: Colors.white,
@@ -94,7 +103,7 @@ class DoctorProfileScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'Dr. Amit Sharma',
+            name.startsWith('Dr') ? name : 'Dr. $name',
             style: TextStyle(
               color: textPrimary,
               fontSize: 22,
@@ -117,7 +126,7 @@ class DoctorProfileScreen extends StatelessWidget {
               Icon(Icons.location_on_outlined, size: 14, color: textSecondary),
               const SizedBox(width: 4),
               Text(
-                'Green Valley Health Center',
+                village,
                 style: TextStyle(
                   color: textSecondary,
                   fontSize: 13,

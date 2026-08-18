@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'video_consultation_screen.dart';
+import '../../../core/services/call_launcher.dart';
 import 'create_prescription_screen.dart';
 
 
@@ -14,6 +14,8 @@ class PatientData {
   final String allergies;
   final List<SymptomData> symptoms;
   final String aiInsights;
+  final int? userId;
+  final int? patientId;
 
   PatientData({
     required this.name,
@@ -26,6 +28,8 @@ class PatientData {
     required this.allergies,
     required this.symptoms,
     required this.aiInsights,
+    this.userId,
+    this.patientId,
   });
 
   static PatientData getDummySarah() {
@@ -256,6 +260,24 @@ class PatientDetailsScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _startCall(BuildContext context, {required bool isVideo}) async {
+    final userId = patient.userId;
+    final patientId = patient.patientId;
+    if (userId == null && patientId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This patient cannot receive a call yet.')),
+      );
+      return;
+    }
+    await CallLauncher.start(
+      context: context,
+      peerName: patient.name,
+      receiverUserId: (userId ?? patientId).toString(),
+      isVideo: isVideo,
+      patientId: patientId ?? userId,
+    );
+  }
+
   Widget _buildActionButtons(BuildContext context) {
     const primaryBlue = Color(0xFF2A7DE1);
 
@@ -265,14 +287,7 @@ class PatientDetailsScreen extends StatelessWidget {
           width: double.infinity,
           height: 48,
           child: ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const VideoConsultationScreen(),
-                ),
-              );
-            },
+            onPressed: () => _startCall(context, isVideo: true),
             icon: const Icon(Icons.videocam_outlined, size: 20),
             label: const Text(
               'Start Video Consultation',
@@ -293,7 +308,7 @@ class PatientDetailsScreen extends StatelessWidget {
           width: double.infinity,
           height: 48,
           child: OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () => _startCall(context, isVideo: false),
             icon: const Icon(
               Icons.phone_outlined,
               size: 20,
@@ -324,7 +339,10 @@ class PatientDetailsScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CreatePrescriptionScreen(patientName: patient.name),
+                  builder: (context) => CreatePrescriptionScreen(
+                    patientName: patient.name,
+                    patientId: (patient.patientId ?? patient.userId)?.toString(),
+                  ),
                 ),
               );
             },

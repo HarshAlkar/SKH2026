@@ -36,13 +36,22 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
     try {
       final List<dynamic> data = await _api.get('/users/patients/');
       setState(() {
-        _allPatients = data.map((json) => PatientModel(
-          id: json['id'].toString(),
-          name: json['name'] ?? 'Unknown',
-          age: 0, // Age not in user record directly, maybe in patient profile
-          village: json['village'] ?? 'Unknown',
-          status: 'Active',
-        )).toList();
+        _allPatients = data.map((json) {
+          final details = json['profile_details'] is Map
+              ? Map<String, dynamic>.from(json['profile_details'] as Map)
+              : <String, dynamic>{};
+          return PatientModel(
+            id: json['id'].toString(),
+            userId: json['id'] is int ? json['id'] as int : int.tryParse(json['id']?.toString() ?? ''),
+            patientId: details['patient_id'] is int
+                ? details['patient_id'] as int
+                : int.tryParse(details['patient_id']?.toString() ?? ''),
+            name: json['name'] ?? 'Unknown',
+            age: int.tryParse(details['age']?.toString() ?? '') ?? 0,
+            village: json['village'] ?? 'Unknown',
+            status: 'Active',
+          );
+        }).toList();
         _filteredPatients = _allPatients;
         _isLoading = false;
       });

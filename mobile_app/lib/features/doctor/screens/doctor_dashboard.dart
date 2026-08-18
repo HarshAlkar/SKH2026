@@ -4,7 +4,6 @@ import 'consultation_history_screen.dart';
 import 'create_prescription_screen.dart';
 import 'doctor_notifications_screen.dart';
 import 'my_patients_screen.dart';
-import 'upcoming_consultations_screen.dart';
 import 'schedule_screen.dart';
 import 'doctor_profile_screen.dart';
 import '../../../providers/auth_provider.dart';
@@ -25,6 +24,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   int _patientCount = 0;
   int _ashaCount = 0;
   int _pendingAlerts = 0;
+  int _virtualCalls = 0;
   final ApiService _api = ApiService();
 
   @override
@@ -46,12 +46,14 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       final patients = await _api.get('/users/patients/');
       final ashas = await _api.get('/users/asha-workers/');
       final alerts = await _api.get('/alerts/notifications/');
+      final history = await _api.get('/consultations/history/');
       
       if (!mounted) return;
       setState(() {
         _patientCount = patients.length;
         _ashaCount = ashas.length;
         _pendingAlerts = alerts.length;
+        _virtualCalls = history is List ? history.length : 0;
         _isLoading = false;
       });
     } catch (e) {
@@ -71,13 +73,6 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     setState(() {
       _selectedIndex = index;
     });
-    if (index == 1) {
-      _navigateTo(const MyPatientsScreen());
-    } else if (index == 2) {
-      _navigateTo(const ScheduleScreen());
-    } else if (index == 3) {
-      _navigateTo(const DoctorProfileScreen());
-    }
   }
 
   void _navigateTo(Widget screen) {
@@ -89,8 +84,22 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       drawer: const DoctorNavigationDrawer(activeRoute: 'Dashboard'),
-      appBar: _buildAppBar(),
-      body: RefreshIndicator(
+      appBar: _selectedIndex == 0 ? _buildAppBar() : null,
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          _buildHomeBody(),
+          const MyPatientsScreen(embedded: true),
+          const ScheduleScreen(embedded: true),
+          const DoctorProfileScreen(embedded: true),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildHomeBody() {
+    return RefreshIndicator(
         onRefresh: _fetchStats,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -125,8 +134,6 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -295,7 +302,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                 iconColor: Colors.redAccent,
                 iconBgColor: Colors.white,
                 title: 'VIRTUAL CALLS',
-                value: '12',
+                value: '$_virtualCalls',
                 subtitle: 'Completed this month',
                 subtitleColor: Colors.redAccent,
               ),
@@ -420,7 +427,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           title: 'Start Consultation',
           isPrimary: true,
           onTap: () {
-            _navigateTo(const UpcomingConsultationsScreen());
+            setState(() => _selectedIndex = 1);
           },
         ),
         const SizedBox(height: 12),
@@ -428,7 +435,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           icon: Icons.person_search_outlined,
           title: 'View Patient List',
           onTap: () {
-            _navigateTo(const MyPatientsScreen());
+            setState(() => _selectedIndex = 1);
           },
         ),
         const SizedBox(height: 12),
