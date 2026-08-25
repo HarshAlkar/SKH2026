@@ -58,6 +58,7 @@ class UserSerializer(serializers.ModelSerializer):
             }
         if obj.role == "asha_worker" and hasattr(obj, "asha_profile"):
             return {
+                "asha_id": obj.asha_profile.id,
                 "assigned_village": obj.asha_profile.assigned_village,
                 "phc_center": obj.asha_profile.phc_center,
                 "worker_id": obj.asha_profile.worker_id,
@@ -88,6 +89,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     license_number = serializers.CharField(required=False, allow_blank=True)
     worker_id = serializers.CharField(required=False, allow_blank=True)
     district = serializers.CharField(required=False, allow_blank=True)
+    # Optional patient profile fields (used when role=user, e.g. ASHA registration)
+    age = serializers.IntegerField(required=False, min_value=0, max_value=150)
+    gender = serializers.CharField(required=False, allow_blank=True)
+    blood_group = serializers.CharField(required=False, allow_blank=True)
+    medical_history = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
@@ -107,6 +113,10 @@ class RegisterSerializer(serializers.ModelSerializer):
             "license_number",
             "worker_id",
             "district",
+            "age",
+            "gender",
+            "blood_group",
+            "medical_history",
         ]
 
     def validate_phone_number(self, value):
@@ -124,6 +134,24 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         role = attrs.get("role")
+        request = self.context.get("request")
+        # When an authenticated ASHA registers a patient, force village to their assignment
+        if (
+            role == "user"
+            and request is not None
+            and getattr(request, "user", None) is not None
+            and request.user.is_authenticated
+            and getattr(request.user, "role", None) == "asha_worker"
+        ):
+            asha = getattr(request.user, "asha_profile", None)
+            forced = ""
+            if asha is not None:
+                forced = (asha.assigned_village or request.user.village or "").strip()
+            else:
+                forced = (request.user.village or "").strip()
+            if forced:
+                attrs["village"] = forced
+
         village = attrs.get("village")
         if role == "user" and not village:
             raise serializers.ValidationError({"village": "Village cannot be empty."})
@@ -139,6 +167,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         license_number = validated_data.pop("license_number", None)
         worker_id = validated_data.pop("worker_id", None)
         district = validated_data.pop("district", None)
+        age = validated_data.pop("age", None)
+        gender = validated_data.pop("gender", None)
+        blood_group = validated_data.pop("blood_group", None)
+        medical_history = validated_data.pop("medical_history", None)
 
         if not validated_data.get("username"):
             validated_data["username"] = validated_data.get("phone_number")
@@ -165,11 +197,17 @@ class RegisterSerializer(serializers.ModelSerializer):
                 district=district or "",
             )
         elif user.role == "user":
+            bg = (blood_group or "").strip()
+            if bg.lower() in ("not known", "unknown", "n/a"):
+                bg = ""
+            bg = bg[:5]  # Patient.blood_group max_length=5
             Patient.objects.create(
                 user=user,
-                age=0,
-                gender="Not Set",
+                age=age if age is not None else 0,
+                gender=((gender or "").strip() or "Not Set")[:10],
+                blood_group=bg,
                 address=user.village or "Not Set",
+                medical_history=(medical_history or "").strip(),
             )
 
         return user
@@ -193,10 +231,17 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.filter(role="doctor")
         if self.action == "get_asha_workers":
             qs = User.objects.filter(role="asha_worker")
+            village = (self.request.query_params.get("village") or "").strip()
             if user.role == "user" and user.village:
                 qs = qs.filter(
                     Q(village__iexact=user.village)
                     | Q(asha_profile__assigned_village__iexact=user.village)
+                )
+            elif village:
+                qs = qs.filter(
+                    Q(village__iexact=village)
+                    | Q(asha_profile__assigned_village__iexact=village)
+                    | Q(asha_profile__district__iexact=village)
                 )
             return qs
         if self.action == "get_patients":
@@ -241,7 +286,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="register")
     def register(self, request):
-        serializer = RegisterSerializer(data=request.data)
+        serializer = RegisterSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             user = serializer.save()
             token, _created = Token.objects.get_or_create(user=user)

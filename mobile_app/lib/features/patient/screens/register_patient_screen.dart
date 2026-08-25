@@ -31,6 +31,18 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
   final Color lightBackground = const Color(0xFFF5F7FA);
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final asha = context.read<AuthProvider>().user;
+      final village = asha?.village.trim() ?? '';
+      if (village.isNotEmpty) {
+        _villageController.text = village;
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _ageController.dispose();
@@ -49,15 +61,20 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
       try {
         final asha = context.read<AuthProvider>().user;
         final phone = _phoneController.text.trim();
+        final village = _villageController.text.trim().isNotEmpty
+            ? _villageController.text.trim()
+            : (asha?.village ?? '');
         await ApiService().post('/users/register/', body: {
           'name': _nameController.text.trim(),
           'phone_number': phone,
           'username': phone,
           'password': phone.length >= 6 ? phone.substring(phone.length - 6) : '123456',
           'role': 'user',
-          'village': _villageController.text.trim().isNotEmpty
-              ? _villageController.text.trim()
-              : (asha?.village ?? ''),
+          'village': village,
+          'age': int.tryParse(_ageController.text.trim()) ?? 0,
+          'gender': _selectedGender ?? 'Not Set',
+          'blood_group': _selectedBloodGroup ?? '',
+          'medical_history': _diseaseController.text.trim(),
         });
         if (!mounted) return;
         setState(() => _isLoading = false);
@@ -71,7 +88,7 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       } catch (e) {
         if (!mounted) return;
         setState(() => _isLoading = false);
@@ -215,9 +232,10 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
                     children: [
                       CustomInputField(
                         label: "Village",
-                        hintText: "Village Name",
+                        hintText: "Assigned village",
                         prefixIcon: Icons.location_on,
                         controller: _villageController,
+                        readOnly: true,
                         validator: (value) =>
                             (value == null || value.trim().isEmpty)
                             ? 'Required'

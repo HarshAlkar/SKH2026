@@ -8,8 +8,7 @@ import '../widgets/user_sidebar.dart';
 
 import '../../../providers/consultation_provider.dart';
 import '../../../core/services/api_service.dart';
-import '../../../core/services/signaling_service.dart';
-import 'call_screen.dart';
+import 'asha_workers_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
   const UserDashboardScreen({super.key});
@@ -117,69 +116,54 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
     final phone = _assignedAsha?['phone_number']?.toString() ?? '';
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.lightBlue,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.health_and_safety, color: AppColors.primary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Your ASHA worker',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                  ),
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (phone.isNotEmpty)
-                    Text(phone, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                ],
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AshaWorkersScreen()),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.lightBlue,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              const CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Icon(Icons.health_and_safety, color: AppColors.primary),
               ),
-            ),
-            IconButton(
-              tooltip: 'Call ASHA',
-              onPressed: () async {
-                final userId = _assignedAsha?['id']?.toString();
-                if (userId == null) return;
-                final auth = context.read<AuthProvider>();
-                final roomId =
-                    'direct-${auth.user?.id}-$userId-${DateTime.now().millisecondsSinceEpoch}';
-                SignalingService().sendCallRequest(
-                  receiverId: userId,
-                  consultationId: roomId,
-                  callerName: auth.user?.name ?? 'Patient',
-                  callType: 'VIDEO',
-                );
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CallScreen(
-                      consultationId: roomId,
-                      doctorName: name,
-                      isVideo: true,
-                      isOfferer: true,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'ASHA workers in your village',
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.video_call, color: AppColors.primary),
-            ),
-          ],
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    if (phone.isNotEmpty)
+                      Text(
+                        phone,
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.primary),
+            ],
+          ),
         ),
       ),
     );
@@ -296,9 +280,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         _buildActionCard('Medicine Tracker', Icons.medication_outlined, AppRoutes.medicineTracker),
         _buildActionCard('Nearby Clinics', Icons.location_on_outlined, AppRoutes.nearbyClinics),
         _buildActionCard('Consult Doctor', Icons.video_camera_front_outlined, AppRoutes.consultDoctor),
+        _buildActionCard('ASHA Workers', Icons.health_and_safety_outlined, AppRoutes.ashaWorkers),
         _buildActionCard('My Prescriptions', Icons.description_outlined, AppRoutes.myPrescriptions),
         _buildActionCard('Health Tips', Icons.lightbulb_outline, AppRoutes.healthTips),
-        _buildActionCard('Settings', Icons.settings_outlined, AppRoutes.settings),
       ],
     );
   }

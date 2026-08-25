@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/health_record_model.dart';
 import '../widgets/health_record_card.dart';
-import '../../patient/screens/register_patient_screen.dart';
+import '../../asha_worker/screens/update_health_screen.dart';
+import '../../asha_worker/widgets/asha_sidebar.dart';
+import '../../../core/services/api_service.dart';
 
 class HealthRecordsScreen extends StatefulWidget {
   const HealthRecordsScreen({super.key});
@@ -12,51 +14,12 @@ class HealthRecordsScreen extends StatefulWidget {
 
 class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ApiService _api = ApiService();
 
-  final List<HealthRecordModel> _allRecords = [
-    HealthRecordModel(
-      patientName: 'Ramesh Patil',
-      village: 'Kaman',
-      temperature: '98.6',
-      bloodPressure: '120/80',
-      bloodSugar: '100',
-      weight: '65',
-      lastUpdated: 'Today',
-      riskLevel: RiskLevel.normal,
-    ),
-    HealthRecordModel(
-      patientName: 'Shanti Devi',
-      village: 'Kaman',
-      temperature: '101.2',
-      bloodPressure: '150/95',
-      bloodSugar: '140',
-      weight: '62',
-      lastUpdated: 'Yesterday',
-      riskLevel: RiskLevel.moderate,
-    ),
-    HealthRecordModel(
-      patientName: 'Amit Shinde',
-      village: 'Rampur',
-      temperature: '103.5',
-      bloodPressure: '160/100',
-      bloodSugar: '180',
-      weight: '70',
-      lastUpdated: '2 days ago',
-      riskLevel: RiskLevel.highRisk,
-    ),
-    HealthRecordModel(
-      patientName: 'Sita Devi',
-      village: 'Rampur',
-      temperature: '98.4',
-      bloodPressure: '115/75',
-      bloodSugar: '95',
-      weight: '58',
-      lastUpdated: '1 week ago',
-      riskLevel: RiskLevel.normal,
-    ),
-  ];
-
+  List<HealthRecordModel> _allRecords = [];
   List<HealthRecordModel> _filteredRecords = [];
+  bool _loading = true;
+  String? _error;
 
   final Color primaryColor = const Color(0xFF2F4DB6);
   final Color backgroundColor = const Color(0xFFF5F7FA);
@@ -64,7 +27,59 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
   @override
   void initState() {
     super.initState();
-    _filteredRecords = _allRecords;
+    _load();
+  }
+
+  RiskLevel _riskFrom(String raw) {
+    switch (raw) {
+      case 'highRisk':
+        return RiskLevel.highRisk;
+      case 'moderate':
+        return RiskLevel.moderate;
+      default:
+        return RiskLevel.normal;
+    }
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final response = await _api.get('/records/');
+      final rows = response is List ? response : <dynamic>[];
+      final records = <HealthRecordModel>[];
+      for (final row in rows) {
+        if (row is! Map) continue;
+        final map = Map<String, dynamic>.from(row);
+        records.add(
+          HealthRecordModel(
+            patientName: map['patientName']?.toString() ?? 'Patient',
+            village: map['village']?.toString() ?? '',
+            temperature: map['temperature']?.toString() ?? '--',
+            bloodPressure: map['bloodPressure']?.toString() ?? '--',
+            bloodSugar: map['bloodSugar']?.toString() ?? '--',
+            weight: map['weight']?.toString() ?? '--',
+            lastUpdated: map['lastUpdated']?.toString() ?? '',
+            riskLevel: _riskFrom(map['riskLevel']?.toString() ?? ''),
+          ),
+        );
+      }
+      if (!mounted) return;
+      setState(() {
+        _allRecords = records;
+        _filteredRecords = records;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = 'Could not load health records. Pull to retry.';
+        });
+      }
+    }
   }
 
   @override
@@ -95,6 +110,7 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
+      drawer: const AshaSidebar(),
       appBar: AppBar(
         title: const Text(
           "Health Records",
@@ -124,13 +140,12 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const RegisterPatientScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const UpdateHealthScreen()),
           );
+          _load();
         },
         backgroundColor: primaryColor,
         child: const Icon(Icons.add, color: Colors.white),
@@ -171,13 +186,45 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
             ),
             // Health Record List
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _filteredRecords.length,
-                itemBuilder: (context, index) {
-                  return HealthRecordCard(record: _filteredRecords[index]);
-                },
-              ),
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(_error!, textAlign: TextAlign.center),
+                                const SizedBox(height: 12),
+                                ElevatedButton(
+                                  onPressed: _load,
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _load,
+                          child: _filteredRecords.isEmpty
+                              ? ListView(
+                                  children: const [
+                                    SizedBox(height: 120),
+                                    Center(child: Text('No health records yet')),
+                                  ],
+                                )
+                              : ListView.builder(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 16),
+                                  itemCount: _filteredRecords.length,
+                                  itemBuilder: (context, index) {
+                                    return HealthRecordCard(
+                                      record: _filteredRecords[index],
+                                    );
+                                  },
+                                ),
+                        ),
             ),
           ],
         ),

@@ -33,13 +33,25 @@ class UserModel {
       id = int.tryParse(rawId.toString()) ?? 0;
     }
 
+    final role = json['role']?.toString() ?? 'user';
+    String village = json['village']?.toString() ?? '';
+
+    // Prefer ASHA assigned_village from profile_details when present
+    final details = json['profile_details'];
+    if (role == 'asha_worker' && details is Map) {
+      final assigned = details['assigned_village']?.toString().trim() ?? '';
+      if (assigned.isNotEmpty) {
+        village = assigned;
+      }
+    }
+
     return UserModel(
       id: id,
       name: json['name']?.toString() ?? '',
       email: json['email']?.toString() ?? '',
-      role: json['role']?.toString() ?? 'user',
+      role: role,
       phoneNumber: json['phone_number']?.toString() ?? '',
-      village: json['village']?.toString() ?? '',
+      village: village,
     );
   }
 }

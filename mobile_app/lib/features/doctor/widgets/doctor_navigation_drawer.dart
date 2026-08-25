@@ -8,6 +8,7 @@ import '../screens/consultation_history_screen.dart';
 import '../screens/health_reports_screen.dart';
 import '../screens/my_patients_screen.dart';
 import '../screens/doctor_settings_screen.dart';
+import '../screens/asha_workers_screen.dart';
 import '../../../providers/auth_provider.dart';
 
 
@@ -168,6 +169,21 @@ class DoctorNavigationDrawer extends StatelessWidget {
                             ),
                           );
                         }
+                      },
+                    ),
+                    _buildMenuItem(
+                      context: context,
+                      icon: Icons.health_and_safety_outlined,
+                      title: 'ASHA Workers',
+                      isActive: activeRoute == 'ASHA Workers',
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DoctorAshaWorkersScreen(),
+                          ),
+                        );
                       },
                     ),
                     _buildMenuItem(

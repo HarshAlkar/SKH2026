@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/api_service.dart';
+import '../../chat/widgets/contact_action_row.dart';
 import 'patient_details_screen.dart';
 
 class MyPatientsScreen extends StatefulWidget {
@@ -55,6 +56,7 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
       gender: details['gender']?.toString() ?? 'Not set',
       village: json['village']?.toString() ?? details['address']?.toString() ?? '—',
       bloodType: details['blood_group']?.toString() ?? 'Not set',
+      phoneNumber: json['phone_number']?.toString() ?? '',
       chronicConditions: 'See medical history on file.',
       pastSurgeries: 'Not recorded',
       allergies: 'Not recorded',
@@ -203,57 +205,65 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
+            child: Column(
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: const Color(0xFFE8F1FF),
-                  child: Text(
-                    initials.isEmpty ? 'P' : initials,
-                    style: const TextStyle(
-                      color: Color(0xFF2A7DE1),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        patient.name,
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: const Color(0xFFE8F1FF),
+                      child: Text(
+                        initials.isEmpty ? 'P' : initials,
                         style: const TextStyle(
-                          color: textPrimary,
-                          fontSize: 16,
+                          color: Color(0xFF2A7DE1),
                           fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Age: ${patient.age} · Village: ${patient.village}',
-                        style: const TextStyle(
-                          color: textSecondary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            patient.name,
+                            style: const TextStyle(
+                              color: textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Age: ${patient.age} · Village: ${patient.village}',
+                            style: const TextStyle(
+                              color: textSecondary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          if (patient.phoneNumber.isNotEmpty)
+                            Text(
+                              patient.phoneNumber,
+                              style: const TextStyle(
+                                color: textSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+                if (patient.userId != null) ...[
+                  const SizedBox(height: 12),
+                  ContactActionRow(
+                    peerName: patient.name,
+                    peerUserId: patient.userId!,
+                    patientId: patient.patientId ?? patient.userId,
                   ),
-                ),
-                IconButton(
-                  tooltip: 'Video call',
-                  icon: const Icon(Icons.videocam, color: Color(0xFF2A7DE1)),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PatientDetailsScreen(patient: patient),
-                      ),
-                    );
-                  },
-                ),
+                ],
               ],
             ),
           ),

@@ -9,6 +9,9 @@ import '../../../providers/auth_provider.dart';
 import '../../../core/services/api_service.dart';
 import '../../../providers/consultation_provider.dart';
 import '../../../routes/app_routes.dart';
+import '../../patient/screens/village_patients_screen.dart';
+import 'asha_call_screen.dart';
+import 'asha_settings_screen.dart';
 
 class AshaDashboard extends StatefulWidget {
   const AshaDashboard({super.key});
@@ -20,11 +23,13 @@ class AshaDashboard extends StatefulWidget {
 class _AshaDashboardState extends State<AshaDashboard> {
   final Color primaryColor = const Color(0xFF2A7DE1);
   final Color lightBackground = const Color(0xFFF5F7FA);
-  
+  int _selectedIndex = 0;
+
   bool _isLoading = true;
   int _totalPatients = 0;
   int _highRiskCount = 0;
   int _newAlerts = 0;
+  int _pendingVisits = 0;
   List<dynamic> _recentActivity = [];
 
   @override
@@ -43,22 +48,33 @@ class _AshaDashboardState extends State<AshaDashboard> {
     setState(() => _isLoading = true);
     final api = ApiService();
     try {
-      // Fetch patients count
-      final patients = await api.get('/users/patients/');
-      // Fetch alerts
-      final alerts = await api.get('/alerts/notifications/');
-      
+      final dash = await api.get('/asha/dashboard/');
+      final stats = dash is Map ? dash['stats'] : null;
       setState(() {
-        _totalPatients = patients.length;
-        _newAlerts = alerts.length;
-        _highRiskCount = alerts.where((a) => a['severity'] == 'High' || a['severity'] == 'Critical').length;
-        _recentActivity = alerts.take(3).toList();
+        _totalPatients = _asInt(stats is Map ? stats['total_patients'] : 0);
+        _highRiskCount = _asInt(stats is Map ? stats['high_risk_alerts'] : 0);
+        _pendingVisits = _asInt(stats is Map ? stats['pending_visits'] : 0);
+        _newAlerts = _asInt(stats is Map ? stats['new_alerts'] : 0);
+        _recentActivity = dash is Map && dash['recent_activity'] is List
+            ? List.from(dash['recent_activity'])
+            : [];
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error fetching asha dashboard data: $e');
       setState(() => _isLoading = false);
     }
+  }
+
+  int _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse('$value') ?? 0;
+  }
+
+  Future<void> _openAndRefresh(String route) async {
+    await Navigator.pushNamed(context, route);
+    if (mounted) await _fetchDashboardData();
   }
 
   @override
@@ -68,209 +84,297 @@ class _AshaDashboardState extends State<AshaDashboard> {
 
     return Scaffold(
       backgroundColor: lightBackground,
-      appBar: AppBar(
-        backgroundColor: lightBackground,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _fetchDashboardData,
-          ),
-          const SizedBox(width: 8)
+      drawer: const AshaSidebar(),
+      appBar: _selectedIndex == 0
+          ? AppBar(
+              backgroundColor: lightBackground,
+              elevation: 0,
+              iconTheme: const IconThemeData(color: Colors.black87),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: _fetchDashboardData,
+                ),
+                const SizedBox(width: 8),
+              ],
+            )
+          : null,
+      floatingActionButton: _selectedIndex == 0
+          ? EmergencyButton(
+              onTap: () => _openAndRefresh(AppRoutes.emergencyReferral),
+            )
+          : null,
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: [
+          _buildHomeBody(user),
+          const VillagePatientsScreen(embedded: true),
+          const AshaCallScreen(embedded: true),
+          const AshaSettingsScreen(embedded: true),
         ],
       ),
-      drawer: const AshaSidebar(),
-      floatingActionButton: EmergencyButton(
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Emergency Alert sent to PHC')),
-          );
-        },
-      ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _fetchDashboardData,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Greeting Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Welcome, ${user?.name.split(' ').first ?? 'ASHA'} 👋",
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildHomeBody(dynamic user) {
+    return SafeArea(
+      child: RefreshIndicator(
+        onRefresh: _fetchDashboardData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Welcome, ${user?.name.split(' ').first ?? 'ASHA'} 👋",
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Village: ${user?.village ?? 'Unknown'}",
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Village: ${user?.village ?? 'Unknown'}",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.notifications_outlined),
-                      onPressed: () {},
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined),
+                    onPressed: () => _openAndRefresh(AppRoutes.riskAlerts),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              if (_isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else
+                GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  childAspectRatio: 1.0,
+                  children: [
+                    StatsCard(
+                      icon: Icons.people_alt_outlined,
+                      number: "$_totalPatients",
+                      label: "PATIENTS",
+                      iconColor: primaryColor,
+                      iconBackgroundColor: primaryColor.withOpacity(0.1),
+                    ),
+                    StatsCard(
+                      icon: Icons.monitor_heart_outlined,
+                      number: "$_highRiskCount",
+                      label: "HIGH RISK",
+                      iconColor: Colors.redAccent,
+                      iconBackgroundColor: Colors.redAccent.withOpacity(0.1),
+                    ),
+                    StatsCard(
+                      icon: Icons.calendar_month_outlined,
+                      number: "$_pendingVisits",
+                      label: "PENDING VISITS",
+                      iconColor: Colors.orange,
+                      iconBackgroundColor: Colors.orange.withOpacity(0.1),
+                    ),
+                    StatsCard(
+                      icon: Icons.notifications_none_outlined,
+                      number: "$_newAlerts",
+                      label: "NEW ALERTS",
+                      iconColor: const Color(0xFF4A90E2),
+                      iconBackgroundColor: const Color(0xFF4A90E2).withOpacity(0.1),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
-
-                // Stats Cards Grid
-                if (_isLoading)
-                  const Center(child: Padding(
-                    padding: EdgeInsets.all(20.0),
-                    child: CircularProgressIndicator(),
-                  ))
-                else
-                  GridView.count(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    childAspectRatio: 1.0,
+              const SizedBox(height: 32),
+              const Text(
+                "QUICK ACTIONS",
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Column(
+                children: [
+                  Row(
                     children: [
-                      StatsCard(
-                        icon: Icons.people_alt_outlined,
-                        number: "$_totalPatients",
-                        label: "PATIENTS",
-                        iconColor: primaryColor,
-                        iconBackgroundColor: primaryColor.withOpacity(0.1),
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.person_add_outlined,
+                          label: "List Patients",
+                          onTap: () => setState(() => _selectedIndex = 1),
+                        ),
                       ),
-                      StatsCard(
-                        icon: Icons.monitor_heart_outlined,
-                        number: "$_highRiskCount",
-                        label: "HIGH RISK",
-                        iconColor: Colors.redAccent,
-                        iconBackgroundColor: Colors.redAccent.withOpacity(0.1),
-                      ),
-                      StatsCard(
-                        icon: Icons.calendar_month_outlined,
-                        number: "12",
-                        label: "PENDING VISITS",
-                        iconColor: Colors.orange,
-                        iconBackgroundColor: Colors.orange.withOpacity(0.1),
-                      ),
-                      StatsCard(
-                        icon: Icons.notifications_none_outlined,
-                        number: "$_newAlerts",
-                        label: "NEW ALERTS",
-                        iconColor: const Color(0xFF4A90E2),
-                        iconBackgroundColor: const Color(0xFF4A90E2).withOpacity(0.1),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.edit_document,
+                          label: "Update Health",
+                          onTap: () => _openAndRefresh(AppRoutes.updateHealth),
+                        ),
                       ),
                     ],
                   ),
-                const SizedBox(height: 32),
-
-                // Quick Actions
-                const Text(
-                  "QUICK ACTIONS",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                    color: Colors.grey,
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.warning_amber_rounded,
+                          label: "View Alerts",
+                          onTap: () => _openAndRefresh(AppRoutes.riskAlerts),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.call_outlined,
+                          label: "Call / Chat",
+                          onTap: () => setState(() => _selectedIndex = 2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "RECENT VISITS",
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => _openAndRefresh(AppRoutes.villageVisits),
+                    child: const Text("View All"),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (_recentActivity.isEmpty && !_isLoading)
+                const Center(child: Text("No recent visits in your village"))
+              else
+                ..._recentActivity.map(
+                  (item) => ActivityTile(
+                    icon: Icons.home_outlined,
+                    name: item['patient_name'] ?? "Unknown Patient",
+                    activity:
+                        "${item['disease'] ?? ''} • ${item['severity'] ?? ''}",
+                    iconBackgroundColor: item['severity'] == 'COMPLETED'
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.orange.withOpacity(0.1),
+                    iconColor: item['severity'] == 'COMPLETED'
+                        ? Colors.green
+                        : Colors.orange,
+                    onTap: () {},
                   ),
                 ),
-                const SizedBox(height: 16),
-                Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: QuickActionButton(
-                            icon: Icons.person_add_outlined,
-                            label: "List Patients",
-                            onTap: () => Navigator.pushNamed(context, AppRoutes.villagePatients),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: QuickActionButton(
-                            icon: Icons.edit_document,
-                            label: "Update Health",
-                            onTap: () => Navigator.pushNamed(context, AppRoutes.updateHealth),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: QuickActionButton(
-                            icon: Icons.warning_amber_rounded,
-                            label: "View Alerts",
-                            onTap: () => Navigator.pushNamed(context, AppRoutes.riskAlerts),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: QuickActionButton(
-                            icon: Icons.medical_services_outlined,
-                            label: "Consult Doctor",
-                            onTap: () => Navigator.pushNamed(context, AppRoutes.registeredDoctors),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-
-                // Recent Activity Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "RECENT ALERTS",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.0,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pushNamed(context, AppRoutes.riskAlerts),
-                      child: const Text("View All"),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                if (_recentActivity.isEmpty && !_isLoading)
-                   const Center(child: Text("No recent alerts in your village"))
-                else
-                  ..._recentActivity.map((alert) => ActivityTile(
-                    icon: Icons.warning_amber_rounded,
-                    name: alert['patient_name'] ?? "Unknown Patient",
-                    activity: "${alert['disease']} • ${alert['severity']}",
-                    iconBackgroundColor: alert['severity'] == 'High' ? Colors.red.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
-                    iconColor: alert['severity'] == 'High' ? Colors.red : Colors.orange,
-                    onTap: () {},
-                  )),
-                const SizedBox(height: 24),
-              ],
-            ),
+              const SizedBox(height: 24),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) => setState(() => _selectedIndex = index),
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: primaryColor,
+        unselectedItemColor: const Color(0xFF94A3B8),
+        selectedFontSize: 10,
+        unselectedFontSize: 10,
+        showUnselectedLabels: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Icon(Icons.home_outlined),
+            ),
+            activeIcon: Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Icon(Icons.home),
+            ),
+            label: 'HOME',
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Icon(Icons.people_outline),
+            ),
+            activeIcon: Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Icon(Icons.people),
+            ),
+            label: 'PATIENTS',
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Icon(Icons.call_outlined),
+            ),
+            activeIcon: Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Icon(Icons.call),
+            ),
+            label: 'CALL',
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Icon(Icons.person_outline),
+            ),
+            activeIcon: Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Icon(Icons.person),
+            ),
+            label: 'PROFILE',
+          ),
+        ],
       ),
     );
   }

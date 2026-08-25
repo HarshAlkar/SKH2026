@@ -110,12 +110,39 @@ class Doctor(models.Model):
 
 ---
 
-## 7. AI Symptom Analysis
-The system uses a **Random Forest / SVM** based classifier trained on labeled medical data:
-1.  **Input**: User selects symptoms (fever, cough, etc.).
-2.  **Processing**: Vectorized symptoms are passed to the `ai_engine`.
-3.  **Prediction**: System predicts the target disease with a confidence score.
-4.  **Action**: If the severity is **High**, the local ASHA worker is notified via WebSocket alert instantly.
+## 7. AI Symptom Analysis (actual ML)
+
+**Yes — real scikit-learn ML is used.** Not a dummy calculator, and not ChatGPT / LLM.
+
+| Piece | What it is |
+|---|---|
+| Algorithm | `sklearn.ensemble.RandomForestClassifier` (`n_estimators=120`) |
+| Dataset | `mobile_app/lib/dataset/disease/dataset.csv` (~4920 rows, ~131 symptoms, ~41 diseases) |
+| Artifact | `ai_engine/models/trained_model.pkl` (`model`, `features`, `LabelEncoder`, `accuracy`) |
+| Disease | ML: multi-hot symptom vector → `predict_proba` |
+| Severity | **Rules**, not ML (`SEVERITY_MAP` in `ai_engine/predict.py`) |
+| Fallback | If pickle fails: CSV symptom-overlap scoring |
+
+**Path:** Patient Symptom Checker → `POST /api/symptoms/analyze/` → Django `SymptomAnalysisView` (Hindi word map) → `ai_engine.predict.predict_symptoms`. High/Critical results create an `AlertNotification` for the village ASHA + a doctor.
+
+This is **screening, not diagnosis**. Doctor and ASHA symptom text fields do not call the model.
+
+---
+
+## 7b. Module workflows (live vs dummy)
+
+Village link: `User.village` == `ASHAWorker.assigned_village`.
+
+**Patient (live):** login/OTP, AI checker, medicines, doctor video/audio, prescriptions, village ASHA card, emergency Notify ASHA.  
+**Patient (placeholder):** health tips, some settings/profile routes, mock clinic ratings.
+
+**Doctor (live):** Home/Patients/Schedule/Profile tabs, patients API, outbound/inbound WebRTC, prescriptions, history.  
+**Doctor (placeholder):** calendar dummy slots, patient-request list, health-report charts.
+
+**ASHA (live):** village patients, register patient, visits API, health records, call doctor for a patient, risk alerts + village counts, emergency referrals.  
+**ASHA (partial):** settings (host/profile/logout); not full offline clinical sync.
+
+**Shared:** consultations = `POST /consultations/start/` + Node signaling `:5000` + shared WebRTC `CallScreen`. Admin = Django `/admin/` only (React dashboard is largely a placeholder).
 
 ---
 
@@ -127,18 +154,27 @@ Our Peer-to-Peer implementation ensures speed and security:
 
 ---
 
-## 9. Offline Support
-We handle poor connectivity using an **Offline-Resilient Architecture**:
-*   **Local Storage**: Uses **SQFlite** and **Hive** for ultra-fast local caching.
-*   **Background Sync**: When internet is restored, the `SyncService` pushes local data to the Django cloud.
-*   **Persistence**: Medicine alarms are scheduled at the **OS level (Hardware)**, ensuring they fire even without internet or if the app is closed.
+## 9. Offline Support (current scope — honest)
+*   **Medicine tracker**: Local SQLite cache + best-effort sync when online.
+*   **Offline login**: Cached credentials for limited offline sign-in.
+*   **OS medicine alarms**: Fire even if the app is closed (`android_alarm_manager_plus` / local notifications).
+*   **Not yet:** general encrypted outbox for patients/visits/vitals with conflict resolution (planned for VitalReach 2.0).
 
 ---
 
-## 10. Future Improvements
-*   **AI Outbreak Detection**: Predictive mapping of village-level infection spikes.
-*   **Health Analytics**: Historical trend visualization for chronic patients.
-*   **Govt Integration**: Direct synchronization with National Health ID systems.
+## 10. VitalReach 2.0 / SIH roadmap
+
+**Problem Statement:** [26133](docs/PS26133_TEAM_BRIEFING.md) — Accessibility and quality of public healthcare (Maharashtra).  
+**Team briefing (Have / Build / diagrams / talk script):** [`docs/PS26133_TEAM_BRIEFING.md`](docs/PS26133_TEAM_BRIEFING.md)  
+**Deep differentiator analysis:** [`docs/VITALREACH_2.0_SIH_2026_REPORT.md`](docs/VITALREACH_2.0_SIH_2026_REPORT.md)
+
+Priority differentiators:
+
+**Must:** Continuity-of-Care Graph · AI RED/YELLOW/GREEN + human escalation · Follow-up Failure Detection · Care Passport (consent QR)  
+**Should:** Smart Referral Router · Offline store→sync→conflict  
+**Later:** District capacity dashboard · full IVR / Marathi NLP · ABHA integration  
+
+Also planned: age/vitals as ML features; outbreak heatmap; live doctor schedule / pending consult requests.
 
 ---
-**Gramin Health Connect** — Healthcare for the last mile.
+**VitalReach** — Continuity of care for the last mile.

@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 from apps.patients.models import Patient
 from apps.doctors.models import Doctor
+from apps.asha_workers.models import ASHAWorker
 
 
 class Consultation(models.Model):
@@ -23,7 +24,20 @@ class Consultation(models.Model):
         null=True,
         blank=True,
     )
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='consultations')
+    doctor = models.ForeignKey(
+        Doctor,
+        on_delete=models.CASCADE,
+        related_name='consultations',
+        null=True,
+        blank=True,
+    )
+    asha_worker = models.ForeignKey(
+        ASHAWorker,
+        on_delete=models.SET_NULL,
+        related_name='consultations',
+        null=True,
+        blank=True,
+    )
     initiated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -37,6 +51,7 @@ class Consultation(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
     meeting_link = models.URLField(blank=True, null=True)
     notes = models.TextField(blank=True)
+    is_emergency = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"Consultation {self.id}: {self.patient} with {self.doctor} ({self.call_type})"
+        return f"Consultation {self.id} ({self.call_type})"

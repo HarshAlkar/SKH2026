@@ -113,7 +113,12 @@ def _match_features(tokens, features):
 def _csv_fallback(tokens):
     csv_path = dataset_path()
     if not os.path.exists(csv_path):
-        return {"disease": "Unknown (Dataset not found)", "severity": "Low", "confidence": 0.0}
+        return {
+            "disease": "Unknown (Dataset not found)",
+            "severity": "Low",
+            "confidence": 0.0,
+            "top_predictions": [],
+        }
 
     df = pd.read_csv(csv_path)
     disease_scores = {}
@@ -132,22 +137,42 @@ def _csv_fallback(tokens):
             disease_scores[disease] = max(disease_scores.get(disease, 0), matches)
 
     if not disease_scores:
-        return {"disease": "Undetermined", "severity": "Low", "confidence": 0.0}
+        return {
+            "disease": "Undetermined",
+            "severity": "Low",
+            "confidence": 0.0,
+            "top_predictions": [],
+        }
 
     prediction = max(disease_scores, key=disease_scores.get)
     max_score = disease_scores[prediction]
     confidence = round(min(1.0, max_score / max(len(tokens), 1)), 3)
+    ranked = sorted(disease_scores.items(), key=lambda item: item[1], reverse=True)[:3]
+    top_predictions = [
+        {
+            "disease": name,
+            "confidence": round(min(1.0, score / max(len(tokens), 1)), 3),
+            "severity": _severity_for(name),
+        }
+        for name, score in ranked
+    ]
     return {
         "disease": prediction,
         "severity": _severity_for(prediction),
         "confidence": confidence,
+        "top_predictions": top_predictions,
     }
 
 
 def predict_symptoms(symptoms_list):
     tokens = _normalize_inputs(symptoms_list)
     if not tokens:
-        return {"disease": "Undetermined", "severity": "Low", "confidence": 0.0}
+        return {
+            "disease": "Undetermined",
+            "severity": "Low",
+            "confidence": 0.0,
+            "top_predictions": [],
+        }
 
     bundle = _load_bundle()
     if bundle:
@@ -158,13 +183,21 @@ def predict_symptoms(symptoms_list):
             vector, matched = _match_features(tokens, features)
             if matched:
                 proba = model.predict_proba([vector])[0]
-                index = int(proba.argmax())
-                disease = str(encoder.inverse_transform([index])[0])
-                confidence = round(float(proba[index]), 3)
+                ranked = sorted(enumerate(proba), key=lambda item: item[1], reverse=True)[:3]
+                top_predictions = []
+                for index, score in ranked:
+                    name = str(encoder.inverse_transform([index])[0])
+                    top_predictions.append({
+                        "disease": name,
+                        "confidence": round(float(score), 3),
+                        "severity": _severity_for(name),
+                    })
+                best = top_predictions[0]
                 return {
-                    "disease": disease,
-                    "severity": _severity_for(disease),
-                    "confidence": confidence,
+                    "disease": best["disease"],
+                    "severity": best["severity"],
+                    "confidence": best["confidence"],
+                    "top_predictions": top_predictions,
                 }
         except Exception:
             pass

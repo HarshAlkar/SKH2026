@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/api_service.dart';
-import '../../../core/services/call_launcher.dart';
+import '../../chat/widgets/contact_action_row.dart';
+import '../widgets/asha_sidebar.dart';
 
 class RegisteredDoctorsScreen extends StatefulWidget {
   final int? forPatientId;
@@ -38,23 +39,11 @@ class _RegisteredDoctorsScreenState extends State<RegisteredDoctorsScreen> {
     }
   }
 
-  Future<void> _startCall(Map<String, dynamic> doctor, String type) async {
-    final doctorId = int.tryParse(doctor['id'].toString());
-    if (doctorId == null) return;
-    await CallLauncher.start(
-      context: context,
-      peerName: doctor['full_name']?.toString() ?? doctor['name']?.toString() ?? 'Doctor',
-      receiverUserId: doctor['user_id']?.toString() ?? doctor['id'].toString(),
-      isVideo: type == 'video',
-      doctorId: doctorId,
-      patientId: widget.forPatientId,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      drawer: const AshaSidebar(),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -73,9 +62,16 @@ class _RegisteredDoctorsScreenState extends State<RegisteredDoctorsScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _doctors.isEmpty
-              ? const Center(child: Text('No doctors registered yet'))
-              : ListView.builder(
+          : RefreshIndicator(
+              onRefresh: _fetchDoctors,
+              child: _doctors.isEmpty
+                  ? ListView(
+                      children: const [
+                        SizedBox(height: 120),
+                        Center(child: Text('No doctors registered yet')),
+                      ],
+                    )
+                  : ListView.builder(
                   padding: const EdgeInsets.all(20),
                   itemCount: _doctors.length,
                   itemBuilder: (context, index) {
@@ -126,6 +122,14 @@ class _RegisteredDoctorsScreenState extends State<RegisteredDoctorsScreen> {
                                         color: Colors.grey[600],
                                       ),
                                     ),
+                                    if ((doctor['phone_number'] ?? '').toString().isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Text(
+                                          doctor['phone_number'].toString(),
+                                          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -147,42 +151,18 @@ class _RegisteredDoctorsScreenState extends State<RegisteredDoctorsScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () => _startCall(doctor, 'video'),
-                                  icon: const Icon(Icons.videocam_outlined, size: 18),
-                                  label: const Text('Video Call', style: TextStyle(fontSize: 13)),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: primaryBlue,
-                                    side: BorderSide(color: primaryBlue),
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: () => _startCall(doctor, 'audio'),
-                                  icon: const Icon(Icons.phone_outlined, size: 18),
-                                  label: const Text('Audio Call', style: TextStyle(fontSize: 13)),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: primaryBlue,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                  ),
-                                ),
-                              ),
-                            ],
+                          ContactActionRow(
+                            peerName: doctor['full_name']?.toString() ?? doctor['name']?.toString() ?? 'Doctor',
+                            peerUserId: parseContactId(doctor['user_id']) ?? parseContactId(doctor['id']) ?? 0,
+                            doctorId: parseContactId(doctor['id']),
+                            patientId: widget.forPatientId,
                           ),
                         ],
                       ),
                     );
                   },
                 ),
+              ),
     );
   }
 }

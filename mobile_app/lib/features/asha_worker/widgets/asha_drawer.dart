@@ -7,8 +7,8 @@ import '../../health_records/screens/health_records_screen.dart';
 import '../../alerts/screens/risk_alert_screen.dart';
 import '../../doctor/screens/consult_doctor_screen.dart';
 import '../../reports/screens/village_health_report_screen.dart';
-// import '../../referral/screens/emergency_referral_screen.dart'; // Missing
-// import '../../settings/screens/settings_screen.dart'; // Missing
+import '../../referral/screens/emergency_referral_screen.dart';
+import '../../referral/screens/referral_history_screen.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../routes/app_routes.dart';
 
@@ -104,9 +104,15 @@ class AshaDrawer extends StatelessWidget {
             title: const Text('Emergency Referral'),
             onTap: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Emergency Referral feature coming soon')),
-              );
+              _navigateTo(context, const EmergencyReferralScreen());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.history),
+            title: const Text('Referral History'),
+            onTap: () {
+              Navigator.pop(context);
+              _navigateTo(context, const ReferralHistoryScreen());
             },
           ),
           ListTile(

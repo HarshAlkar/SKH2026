@@ -48,6 +48,8 @@ class UserSidebar extends StatelessWidget {
                     _buildNavItem(context, 'Medicine Tracker', Icons.medication_outlined, AppRoutes.medicineTracker),
                     _buildNavItem(context, 'Nearby Clinics', Icons.location_on_outlined, AppRoutes.nearbyClinics),
                     _buildNavItem(context, 'Consult Doctor', Icons.video_call_outlined, AppRoutes.consultDoctor),
+                    _buildNavItem(context, 'ASHA Workers', Icons.health_and_safety_outlined, AppRoutes.ashaWorkers),
+                    _buildNavItem(context, 'Messages', Icons.chat_outlined, AppRoutes.chatInbox),
                     _buildNavItem(context, 'My Prescriptions', Icons.description_outlined, AppRoutes.myPrescriptions),
                     _buildNavItem(context, 'Health Tips', Icons.favorite_border_outlined, AppRoutes.healthTips),
                     _buildNavItem(context, 'Emergency Help', Icons.emergency_outlined, AppRoutes.emergencyHelp, isEmergency: true),

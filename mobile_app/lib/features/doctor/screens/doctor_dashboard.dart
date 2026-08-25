@@ -6,6 +6,7 @@ import 'doctor_notifications_screen.dart';
 import 'my_patients_screen.dart';
 import 'schedule_screen.dart';
 import 'doctor_profile_screen.dart';
+import 'asha_workers_screen.dart';
 import '../../../providers/auth_provider.dart';
 import '../widgets/doctor_navigation_drawer.dart';
 import '../../../providers/consultation_provider.dart';
@@ -90,6 +91,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         children: [
           _buildHomeBody(),
           const MyPatientsScreen(embedded: true),
+          const DoctorAshaWorkersScreen(embedded: true),
           const ScheduleScreen(embedded: true),
           const DoctorProfileScreen(embedded: true),
         ],
@@ -440,6 +442,14 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         ),
         const SizedBox(height: 12),
         _buildActionCard(
+          icon: Icons.health_and_safety_outlined,
+          title: 'ASHA Workers',
+          onTap: () {
+            setState(() => _selectedIndex = 2);
+          },
+        ),
+        const SizedBox(height: 12),
+        _buildActionCard(
           icon: Icons.assignment,
           title: 'Create Prescription',
           onTap: () {
@@ -691,6 +701,17 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
               child: Icon(Icons.people),
             ),
             label: 'PATIENTS',
+          ),
+          BottomNavigationBarItem(
+            icon: Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Icon(Icons.health_and_safety_outlined),
+            ),
+            activeIcon: Padding(
+              padding: EdgeInsets.only(bottom: 4.0),
+              child: Icon(Icons.health_and_safety),
+            ),
+            label: 'ASHA',
           ),
           BottomNavigationBarItem(
             icon: Padding(

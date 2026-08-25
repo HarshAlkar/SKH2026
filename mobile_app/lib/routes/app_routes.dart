@@ -43,5 +43,8 @@ class AppRoutes {
   static const String ashaSettings = '/asha/settings';
   static const String editPatient = '/asha/edit-patient';
   static const String registeredDoctors = '/asha/registered-doctors';
+  static const String ashaCall = '/asha/call';
+  static const String ashaWorkers = '/user/asha-workers';
+  static const String chatInbox = '/chat/inbox';
 }
 

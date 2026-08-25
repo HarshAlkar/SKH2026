@@ -3,9 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
-import '../../../providers/alert_provider.dart';
 import '../../../providers/symptom_provider.dart';
-import '../../../models/alert_model.dart';
+import '../../../core/services/api_service.dart';
 import '../widgets/user_sidebar.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
@@ -31,6 +30,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
   final List<String> _selectedSymptoms = [];
   bool _isAnalyzing = false;
   bool _showResult = false;
+  bool _notifying = false;
 
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
@@ -54,6 +54,8 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       'result_title': 'ANALYSIS RESULT',
       'consult': 'Consult Doctor',
       'notify': 'Notify ASHA',
+      'notified': 'ASHA notified',
+      'disclaimer': 'This is a screening suggestion, not a medical diagnosis.',
       'error_init': 'Speech recognition not available',
       'symptoms': {
         'Fever': 'Fever',
@@ -77,6 +79,8 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       'result_title': 'विश्लेषण परिणाम',
       'consult': 'डॉक्टर से सलाह लें',
       'notify': 'ASHA को सूचित करें',
+      'notified': 'ASHA को सूचित किया गया',
+      'disclaimer': 'यह स्क्रीनिंग सुझाव है, चिकित्सा निदान नहीं।',
       'error_init': 'वाक् पहचान उपलब्ध नहीं है',
       'symptoms': {
         'Fever': 'बुखार',
@@ -219,6 +223,33 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
           SnackBar(content: Text('Analysis failed: $e')),
         );
       }
+    }
+  }
+
+  Future<void> _notifyAsha() async {
+    final analysis = Provider.of<SymptomProvider>(context, listen: false).lastAnalysis;
+    if (analysis == null) return;
+    setState(() => _notifying = true);
+    try {
+      await ApiService().post('/alerts/notifications/', body: {
+        'disease': analysis['disease'] ?? 'Symptom alert',
+        'severity': analysis['severity'] ?? 'Moderate',
+      });
+      if (!mounted) return;
+      analysis['alert_sent'] = true;
+      setState(() => _notifying = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_getTxt('notified')),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _notifying = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not notify ASHA: $e')),
+      );
     }
   }
 
@@ -418,26 +449,18 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: () {
-                          final alertProvider = Provider.of<AlertProvider>(context, listen: false);
-                          alertProvider.addAlert(
-                            AlertModel(
-                              id: DateTime.now().toString(),
-                              title: 'Symptom Alert: Viral Fever',
-                              message: 'Patient Ramesh reported symptoms and AI suggested Viral Fever (Moderate).',
-                              severity: 'Warning',
-                              timestamp: DateTime.now(),
-                            ),
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Alert sent to ASHA worker'),
-                              backgroundColor: AppColors.primary,
-                            ),
-                          );
+                          final already = Provider.of<SymptomProvider>(context, listen: false)
+                                  .lastAnalysis?['alert_sent'] ==
+                              true;
+                          if (already || _notifying) return;
+                          _notifyAsha();
                         },
-
                         icon: const Icon(Icons.notification_important_outlined),
-                        label: Text(_getTxt('notify')),
+                        label: Text(
+                          Provider.of<SymptomProvider>(context).lastAnalysis?['alert_sent'] == true
+                              ? _getTxt('notified')
+                              : _getTxt('notify'),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -561,6 +584,12 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     final String disease = analysis['disease'] ?? 'Unknown';
     final String severity = analysis['severity'] ?? 'Moderate';
     final bool alertSent = analysis['alert_sent'] ?? false;
+    final num confidence = analysis['confidence'] is num
+        ? analysis['confidence'] as num
+        : 0;
+    final List top = analysis['top_predictions'] is List
+        ? analysis['top_predictions'] as List
+        : const [];
 
     return Container(
       width: double.infinity,
@@ -633,6 +662,34 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
               color: AppColors.textPrimary,
             ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Confidence ${(confidence * 100).clamp(0, 100).toStringAsFixed(0)}%',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (top.length > 1) ...[
+            const SizedBox(height: 12),
+            ...top.take(3).map((row) {
+              final map = row is Map ? Map<String, dynamic>.from(row) : <String, dynamic>{};
+              final name = map['disease']?.toString() ?? '';
+              final score = map['confidence'] is num ? map['confidence'] as num : 0;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(name, style: const TextStyle(fontSize: 13))),
+                    Text(
+                      '${(score * 100).clamp(0, 100).toStringAsFixed(0)}%',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
           const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,7 +698,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  alertSent 
+                  alertSent
                       ? 'Potentially serious condition detected. ASHA worker and doctor have been notified.'
                       : 'Maintain hydration and rest. Monitor symptoms carefully.',
                   style: TextStyle(
@@ -652,6 +709,15 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _getTxt('disclaimer'),
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+            ),
           ),
         ],
       ),

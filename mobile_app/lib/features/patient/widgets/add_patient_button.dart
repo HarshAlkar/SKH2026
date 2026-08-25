@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../screens/register_patient_screen.dart';
 
 class AddPatientButton extends StatelessWidget {
-  const AddPatientButton({super.key});
+  final VoidCallback? onPatientAdded;
+
+  const AddPatientButton({super.key, this.onPatientAdded});
 
   @override
   Widget build(BuildContext context) {
@@ -10,8 +12,8 @@ class AddPatientButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          final result = await Navigator.push<bool>(
             context,
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) =>
@@ -22,6 +24,9 @@ class AddPatientButton extends StatelessWidget {
                   },
             ),
           );
+          if (result == true) {
+            onPatientAdded?.call();
+          }
         },
         child: Container(
           decoration: BoxDecoration(

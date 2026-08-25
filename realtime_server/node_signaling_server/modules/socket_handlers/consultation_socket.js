@@ -89,4 +89,18 @@ module.exports = (io, socket) => {
       senderId: socket.id
     });
   });
+
+  socket.on('chat-message', (data) => {
+    const payload = data || {};
+    const receiverId = payload.receiverId;
+    if (!receiverId) return;
+    socket.to(`user-${receiverId}`).emit('chat-message', {
+      threadId: payload.threadId,
+      text: payload.text,
+      senderId: payload.senderId || socket.id,
+      senderName: payload.senderName || '',
+      messageId: payload.messageId,
+      timestamp: payload.timestamp || new Date().toISOString()
+    });
+  });
 };

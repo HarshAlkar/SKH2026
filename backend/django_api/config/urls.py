@@ -31,7 +31,10 @@ def api_root_view(request):
             "/api/consultations/",
             "/api/prescriptions/",
             "/api/alerts/",
-            "/api/records/"
+            "/api/records/",
+            "/api/patients/",
+            "/api/asha/",
+            "/api/chat/",
         ]
     })
 
@@ -47,5 +50,8 @@ urlpatterns = [
     path('api/prescriptions/', include('apps.prescriptions.urls')),
     path('api/alerts/', include('apps.alerts.urls')),
     path('api/records/', include('apps.health_records.urls')),
+    path('api/patients/', include('apps.patients.urls')),
+    path('api/asha/', include('apps.asha_workers.urls')),
+    path('api/chat/', include('apps.chat.urls')),
 ]
 

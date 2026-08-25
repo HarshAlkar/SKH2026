@@ -21,6 +21,7 @@ class SignalingService {
   SignalingCallback? _onRejected;
   SignalingCallback? _onNewMessage;
   SignalingCallback? _onFallbackToChat;
+  final List<SignalingCallback> _chatListeners = [];
   void Function()? _onDisconnected;
   void Function()? _onReconnected;
 
@@ -96,6 +97,12 @@ class SignalingService {
     socket.on('fallback-to-chat', (data) {
       _onFallbackToChat?.call(Map<String, dynamic>.from(data as Map));
     });
+    socket.on('chat-message', (data) {
+      final payload = Map<String, dynamic>.from(data as Map);
+      for (final listener in List<SignalingCallback>.from(_chatListeners)) {
+        listener(payload);
+      }
+    });
   }
 
   void joinRoom(String roomId) {
@@ -153,6 +160,35 @@ class SignalingService {
       'text': text,
       'senderId': senderId,
     });
+  }
+
+  void sendPersistentChat({
+    required String receiverId,
+    required int threadId,
+    required String text,
+    required String senderId,
+    String senderName = '',
+    int? messageId,
+  }) {
+    _socket?.emit('chat-message', {
+      'receiverId': receiverId,
+      'threadId': threadId,
+      'text': text,
+      'senderId': senderId,
+      'senderName': senderName,
+      'messageId': messageId,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
+  void addChatListener(SignalingCallback callback) {
+    if (!_chatListeners.contains(callback)) {
+      _chatListeners.add(callback);
+    }
+  }
+
+  void removeChatListener(SignalingCallback callback) {
+    _chatListeners.remove(callback);
   }
 
   void onIncomingCall(SignalingCallback callback) => _onIncomingCall = callback;

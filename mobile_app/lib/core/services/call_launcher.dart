@@ -13,6 +13,8 @@ class CallLauncher {
     required bool isVideo,
     int? doctorId,
     int? patientId,
+    int? ashaId,
+    bool isEmergency = false,
   }) async {
     showDialog(
       context: context,
@@ -24,7 +26,9 @@ class CallLauncher {
       final consultation = await DoctorService().startConsultation(
         doctorId: doctorId,
         patientId: patientId,
+        ashaId: ashaId,
         callType: isVideo ? 'VIDEO' : 'AUDIO',
+        isEmergency: isEmergency,
       );
 
       if (!context.mounted) return;

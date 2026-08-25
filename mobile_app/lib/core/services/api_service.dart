@@ -92,6 +92,33 @@ class ApiService {
     }
   }
 
+  Future<dynamic> patch(
+    String endpoint, {
+    Map<String, String>? headers,
+    dynamic body,
+  }) async {
+    try {
+      final combinedHeaders = await _getHeaders({
+        'Content-Type': 'application/json',
+        ...?headers,
+      });
+      final response = await _client
+          .patch(
+            _uri(endpoint),
+            headers: combinedHeaders,
+            body: jsonEncode(body),
+          )
+          .timeout(_timeout);
+      return _processResponse(response);
+    } on TimeoutException {
+      throw Exception(friendlyNetworkError('timeout'));
+    } on SocketException catch (e) {
+      throw Exception(friendlyNetworkError(e));
+    } catch (e) {
+      throw Exception(friendlyNetworkError(e));
+    }
+  }
+
   Future<dynamic> delete(String endpoint, {Map<String, String>? headers}) async {
     try {
       final combinedHeaders = await _getHeaders(headers);

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/user_sidebar.dart';
 import '../services/doctor_service.dart';
-import '../../../core/services/call_launcher.dart';
+import '../../chat/widgets/contact_action_row.dart';
 
 class DoctorConsultScreen extends StatefulWidget {
   const DoctorConsultScreen({super.key});
@@ -23,6 +23,12 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
     _fetchDoctors();
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchDoctors() async {
     setState(() => _isLoading = true);
     try {
@@ -39,18 +45,6 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
       }
       setState(() => _isLoading = false);
     }
-  }
-
-  Future<void> _startCall(Map<String, dynamic> doctor, String type) async {
-    final doctorId = int.tryParse(doctor['id'].toString());
-    if (doctorId == null) return;
-    await CallLauncher.start(
-      context: context,
-      peerName: doctor['full_name']?.toString() ?? 'Doctor',
-      receiverUserId: doctor['user_id']?.toString() ?? doctor['id'].toString(),
-      isVideo: type == 'video',
-      doctorId: doctorId,
-    );
   }
 
   @override
@@ -281,42 +275,24 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
                         ),
                       ],
                     ),
+                    if ((doctor['phone_number'] ?? '').toString().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          doctor['phone_number'].toString(),
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                      ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _startCall(doctor, 'video'),
-                  icon: const Icon(Icons.videocam_outlined),
-                  label: const Text('Video Call'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _startCall(doctor, 'audio'),
-                  icon: const Icon(Icons.phone_outlined),
-                  label: const Text('Audio Call'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
-              ),
-            ],
+          ContactActionRow(
+            peerName: 'Dr. ${doctor['full_name'] ?? 'Doctor'}',
+            peerUserId: parseContactId(doctor['user_id']) ?? parseContactId(doctor['id']) ?? 0,
+            doctorId: parseContactId(doctor['id']),
           ),
         ],
       ),

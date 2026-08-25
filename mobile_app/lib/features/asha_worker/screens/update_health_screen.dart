@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../patient/widgets/custom_input_field.dart';
+import '../../../core/services/api_service.dart';
+import '../widgets/asha_sidebar.dart';
 
 class UpdateHealthScreen extends StatefulWidget {
-  const UpdateHealthScreen({super.key});
+  final int? initialPatientId;
+
+  const UpdateHealthScreen({super.key, this.initialPatientId});
 
   @override
   State<UpdateHealthScreen> createState() => _UpdateHealthScreenState();
@@ -19,6 +23,35 @@ class _UpdateHealthScreenState extends State<UpdateHealthScreen> {
 
   bool _notifyDoctor = false;
   bool _isLoading = false;
+  List<Map<String, dynamic>> _patients = [];
+  int? _selectedPatientId;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedPatientId = widget.initialPatientId;
+    _loadPatients();
+  }
+
+  Future<void> _loadPatients() async {
+    try {
+      final response = await ApiService().get('/patients/');
+      final rows = response is List ? response : <dynamic>[];
+      final patients = <Map<String, dynamic>>[];
+      for (final row in rows) {
+        if (row is! Map) continue;
+        final map = Map<String, dynamic>.from(row);
+        final id = int.tryParse(map['id']?.toString() ?? '');
+        if (id == null) continue;
+        patients.add({'id': id, 'name': map['name'] ?? 'Patient $id'});
+      }
+      if (!mounted) return;
+      setState(() {
+        _patients = patients;
+        _selectedPatientId ??= patients.isNotEmpty ? patients.first['id'] as int : null;
+      });
+    } catch (_) {}
+  }
 
   final Color primaryColor = const Color(0xFF2F4DB6);
   final Color backgroundColor = const Color(0xFFF5F7FA);
@@ -34,32 +67,39 @@ class _UpdateHealthScreenState extends State<UpdateHealthScreen> {
   }
 
   void _handleUpdateRecord() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedPatientId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select a patient first')),
+      );
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await ApiService().post('/records/', body: {
+        'patient_id': _selectedPatientId,
+        'temperature': _tempController.text.trim(),
+        'blood_pressure': _bpController.text.trim(),
+        'blood_sugar': _sugarController.text.trim(),
+        'weight': _weightController.text.trim(),
+        'symptoms': _symptomsController.text.trim(),
+        'notify_doctor': _notifyDoctor,
       });
-
-      // Simulate API call / local DB operation
-      await Future.delayed(const Duration(seconds: 2));
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Health record updated successfully",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-
-        Navigator.pop(context);
-      }
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Health record saved'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not save: $e')),
+      );
     }
   }
 
@@ -67,6 +107,7 @@ class _UpdateHealthScreenState extends State<UpdateHealthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
+      drawer: const AshaSidebar(),
       // APP BAR
       appBar: AppBar(
         title: const Text(
@@ -110,6 +151,21 @@ class _UpdateHealthScreenState extends State<UpdateHealthScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (_patients.isNotEmpty)
+                    DropdownButtonFormField<int>(
+                      initialValue: _selectedPatientId,
+                      items: _patients
+                          .map(
+                            (p) => DropdownMenuItem<int>(
+                              value: p['id'] as int,
+                              child: Text(p['name'].toString()),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) => setState(() => _selectedPatientId = value),
+                      decoration: const InputDecoration(labelText: 'Patient'),
+                    ),
+                  const SizedBox(height: 16),
                   // FIELD 1
                   CustomInputField(
                     label: "Temperature (°F)",

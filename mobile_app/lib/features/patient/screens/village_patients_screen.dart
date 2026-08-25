@@ -8,7 +8,8 @@ import '../../../core/services/api_service.dart';
 import '../../../providers/auth_provider.dart';
 
 class VillagePatientsScreen extends StatefulWidget {
-  const VillagePatientsScreen({super.key});
+  final bool embedded;
+  const VillagePatientsScreen({super.key, this.embedded = false});
 
   @override
   State<VillagePatientsScreen> createState() => _VillagePatientsScreenState();
@@ -17,10 +18,11 @@ class VillagePatientsScreen extends StatefulWidget {
 class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ApiService _api = ApiService();
-  
+
   List<PatientModel> _allPatients = [];
   List<PatientModel> _filteredPatients = [];
   bool _isLoading = true;
+  String? _error;
 
   final Color primaryColor = const Color(0xFF2A7DE1);
   final Color darkBlue = const Color(0xFF005BBC);
@@ -32,9 +34,13 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
   }
 
   Future<void> _fetchPatients() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final List<dynamic> data = await _api.get('/users/patients/');
+      if (!mounted) return;
       setState(() {
         _allPatients = data.map((json) {
           final details = json['profile_details'] is Map
@@ -42,7 +48,9 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
               : <String, dynamic>{};
           return PatientModel(
             id: json['id'].toString(),
-            userId: json['id'] is int ? json['id'] as int : int.tryParse(json['id']?.toString() ?? ''),
+            userId: json['id'] is int
+                ? json['id'] as int
+                : int.tryParse(json['id']?.toString() ?? ''),
             patientId: details['patient_id'] is int
                 ? details['patient_id'] as int
                 : int.tryParse(details['patient_id']?.toString() ?? ''),
@@ -50,14 +58,25 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
             age: int.tryParse(details['age']?.toString() ?? '') ?? 0,
             village: json['village'] ?? 'Unknown',
             status: 'Active',
+            gender: details['gender']?.toString() ?? '',
+            bloodGroup: details['blood_group']?.toString() ?? '',
+            address: details['address']?.toString() ?? '',
+            phoneNumber: json['phone_number']?.toString() ?? '',
           );
         }).toList();
         _filteredPatients = _allPatients;
         _isLoading = false;
+        _error = null;
       });
+      _filterPatients(_searchController.text);
     } catch (e) {
       debugPrint('Error fetching patients: $e');
-      setState(() => _isLoading = false);
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error =
+            'Could not load patients. Check your connection and try again.';
+      });
     }
   }
 
@@ -83,6 +102,49 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
     });
   }
 
+  Widget _buildListBody() {
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.cloud_off_outlined, size: 48, color: Colors.grey[400]),
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _fetchPatients,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_filteredPatients.isEmpty) {
+      return const Center(child: Text('No patients found'));
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchPatients,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _filteredPatients.length,
+        itemBuilder: (context, index) {
+          return PatientCard(patient: _filteredPatients[index]);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
@@ -90,7 +152,7 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
-      drawer: isAsha ? const AshaSidebar() : null,
+      drawer: isAsha && !widget.embedded ? const AshaSidebar() : null,
       appBar: AppBar(
         title: Text(
           'Village Patients',
@@ -99,14 +161,15 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
         backgroundColor: Colors.white,
         elevation: 0.5,
         iconTheme: IconThemeData(color: darkBlue),
-        // Remove back arrow if ASHA
-        automaticallyImplyLeading: !isAsha,
-        leading: isAsha ? Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ) : null,
+        automaticallyImplyLeading: !widget.embedded,
+        leading: isAsha && !widget.embedded
+            ? Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
+                ),
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -116,60 +179,52 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : Column(
-            children: [
-              // Search Bar Section
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: _filterPatients,
-                        decoration: InputDecoration(
-                          hintText: 'Search patient...',
-                          hintStyle: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 14,
-                          ),
-                          prefixIcon: Icon(Icons.search, color: Colors.grey[400]),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: primaryColor, width: 1.5),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: _filterPatients,
+                          decoration: InputDecoration(
+                            hintText: 'Search patient...',
+                            hintStyle: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 14,
+                            ),
+                            prefixIcon:
+                                Icon(Icons.search, color: Colors.grey[400]),
+                            filled: true,
+                            fillColor: Colors.grey[50],
+                            contentPadding:
+                                const EdgeInsets.symmetric(vertical: 14),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade300),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide:
+                                  BorderSide(color: primaryColor, width: 1.5),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    const AddPatientButton(),
-                  ],
+                      const SizedBox(width: 12),
+                      AddPatientButton(onPatientAdded: _fetchPatients),
+                    ],
+                  ),
                 ),
-              ),
-              // Patient List Section
-              Expanded(
-                child: _filteredPatients.isEmpty 
-                  ? const Center(child: Text("No patients found"))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _filteredPatients.length,
-                      itemBuilder: (context, index) {
-                        return PatientCard(patient: _filteredPatients[index]);
-                      },
-                    ),
-              ),
-            ],
-          ),
+                Expanded(child: _buildListBody()),
+              ],
+            ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'patient_details_screen.dart';
+import 'asha_workers_screen.dart';
 
 class DoctorNotificationsScreen extends StatefulWidget {
   const DoctorNotificationsScreen({super.key});
@@ -277,7 +278,12 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> w
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         minimumSize: const Size(0, 36),
       ),
-      onPressed: () {},
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const DoctorAshaWorkersScreen()),
+        );
+      },
       icon: const Icon(Icons.phone, size: 16),
       label: const Text('Call ASHA Worker', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
     );

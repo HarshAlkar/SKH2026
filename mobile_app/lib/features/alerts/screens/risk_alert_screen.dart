@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/services/api_service.dart';
+import '../../asha_worker/widgets/asha_sidebar.dart';
 import '../models/alert_model.dart';
 import '../widgets/alert_card.dart';
 import 'create_alert_screen.dart';
@@ -12,35 +14,12 @@ class RiskAlertScreen extends StatefulWidget {
 
 class _RiskAlertScreenState extends State<RiskAlertScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ApiService _api = ApiService();
 
-  final List<AlertModel> _allAlerts = [
-    AlertModel(
-      patientName: 'Ramesh Patil',
-      alertType: 'High Fever',
-      description:
-          'Temperature recorded at 103.5°F. Immediate intervention required as per protocol.',
-      timestamp: '10 mins ago',
-      severityLevel: AlertSeverity.urgent,
-    ),
-    AlertModel(
-      patientName: 'Shanti Devi',
-      alertType: 'Blood Pressure Alert',
-      description:
-          'BP reading 150/95 mmHg. Patient advised to rest and re-measure in 1 hour.',
-      timestamp: '2 hours ago',
-      severityLevel: AlertSeverity.moderate,
-    ),
-    AlertModel(
-      patientName: 'Arjun Kumar',
-      alertType: 'Follow-up',
-      description:
-          'Post-surgery recovery stable. All vitals within normal range.',
-      timestamp: '5 hours ago',
-      severityLevel: AlertSeverity.normal,
-    ),
-  ];
-
+  List<AlertModel> _allAlerts = [];
   List<AlertModel> _filteredAlerts = [];
+  bool _loading = true;
+  String? _error;
 
   final Color primaryColor = const Color(0xFF2F4DB6);
   final Color backgroundColor = const Color(0xFFF5F7FA);
@@ -48,7 +27,7 @@ class _RiskAlertScreenState extends State<RiskAlertScreen> {
   @override
   void initState() {
     super.initState();
-    _filteredAlerts = _allAlerts;
+    _loadAlerts();
   }
 
   @override
@@ -57,15 +36,44 @@ class _RiskAlertScreenState extends State<RiskAlertScreen> {
     super.dispose();
   }
 
+  Future<void> _loadAlerts() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final response = await _api.get('/alerts/notifications/');
+      final rows = response is List ? response : <dynamic>[];
+      final alerts = rows
+          .whereType<Map>()
+          .map((row) => AlertModel.fromNotification(Map<String, dynamic>.from(row)))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _allAlerts = alerts;
+        _loading = false;
+      });
+      _filterAlerts(_searchController.text);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Could not load alerts';
+        _loading = false;
+      });
+    }
+  }
+
   void _filterAlerts(String query) {
     setState(() {
       if (query.isEmpty) {
         _filteredAlerts = _allAlerts;
       } else {
+        final q = query.toLowerCase();
         _filteredAlerts = _allAlerts
             .where(
               (alert) =>
-                  alert.patientName.toLowerCase().contains(query.toLowerCase()),
+                  alert.patientName.toLowerCase().contains(q) ||
+                  alert.alertType.toLowerCase().contains(q),
             )
             .toList();
       }
@@ -76,6 +84,7 @@ class _RiskAlertScreenState extends State<RiskAlertScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
+      drawer: const AshaSidebar(),
       appBar: AppBar(
         title: const Text(
           "Health Risk Alerts",
@@ -98,29 +107,19 @@ class _RiskAlertScreenState extends State<RiskAlertScreen> {
         ),
         actions: [
           IconButton(
-            icon: const CircleAvatar(
-              backgroundColor: Colors.white24,
-              radius: 16,
-              child: Icon(Icons.person, color: Colors.white, size: 20),
-            ),
-            onPressed: () {},
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _loadAlerts,
           ),
           const SizedBox(width: 8),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final created = await Navigator.push<bool>(
             context,
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  const CreateAlertScreen(),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
-            ),
+            MaterialPageRoute(builder: (_) => const CreateAlertScreen()),
           );
+          if (created == true) _loadAlerts();
         },
         backgroundColor: primaryColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
@@ -129,7 +128,6 @@ class _RiskAlertScreenState extends State<RiskAlertScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Search Bar
             Container(
               padding: const EdgeInsets.all(16),
               color: backgroundColor,
@@ -154,22 +152,46 @@ class _RiskAlertScreenState extends State<RiskAlertScreen> {
                 ),
               ),
             ),
-
-            // Alert List
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
-                itemCount: _filteredAlerts.length,
-                itemBuilder: (context, index) {
-                  return AlertCard(alert: _filteredAlerts[index]);
-                },
-              ),
-            ),
+            Expanded(child: _buildBody()),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_error!, style: TextStyle(color: Colors.grey[600])),
+            const SizedBox(height: 12),
+            TextButton(onPressed: _loadAlerts, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+    if (_filteredAlerts.isEmpty) {
+      return Center(
+        child: Text(
+          'No risk alerts yet.\nHigh/Critical symptom checks appear here.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.grey[600], height: 1.5),
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadAlerts,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        itemCount: _filteredAlerts.length,
+        itemBuilder: (context, index) {
+          return AlertCard(alert: _filteredAlerts[index]);
+        },
       ),
     );
   }

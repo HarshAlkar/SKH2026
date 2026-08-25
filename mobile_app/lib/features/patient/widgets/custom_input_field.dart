@@ -8,6 +8,8 @@ class CustomInputField extends StatelessWidget {
   final TextInputType keyboardType;
   final int maxLines;
   final String? Function(String?)? validator;
+  final bool readOnly;
+  final bool enabled;
 
   const CustomInputField({
     super.key,
@@ -18,6 +20,8 @@ class CustomInputField extends StatelessWidget {
     this.keyboardType = TextInputType.text,
     this.maxLines = 1,
     this.validator,
+    this.readOnly = false,
+    this.enabled = true,
   });
 
   @override
@@ -39,12 +43,14 @@ class CustomInputField extends StatelessWidget {
           keyboardType: keyboardType,
           maxLines: maxLines,
           validator: validator,
+          readOnly: readOnly,
+          enabled: enabled,
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
             prefixIcon: Icon(prefixIcon, color: const Color(0xFF2F4DB6)),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: (readOnly || !enabled) ? Colors.grey[100] : Colors.white,
             contentPadding: EdgeInsets.symmetric(
               vertical: maxLines > 1 ? 16.0 : 0.0,
               horizontal: 16.0,

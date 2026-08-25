@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import '../models/patient_model.dart';
 import 'status_badge.dart';
 import '../screens/patient_details_screen.dart';
+import '../screens/edit_patient_screen.dart';
 import '../../asha_worker/screens/update_health_screen.dart';
 import '../../asha_worker/screens/registered_doctors_screen.dart';
 import '../../doctor/screens/create_prescription_screen.dart';
+import '../../chat/widgets/contact_action_row.dart';
 import '../../../providers/auth_provider.dart';
 
 class PatientCard extends StatefulWidget {
@@ -87,25 +89,33 @@ class _PatientCardState extends State<PatientCard> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Text(
-                              "Age: ${widget.patient.age}",
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
+                          Row(
+                            children: [
+                              Text(
+                                "Age: ${widget.patient.age}",
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Text(
+                                "Village: ${widget.patient.village}",
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (widget.patient.phoneNumber.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                widget.patient.phoneNumber,
+                                style: TextStyle(color: Colors.grey[700], fontSize: 12),
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Text(
-                              "Village: ${widget.patient.village}",
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),
@@ -117,8 +127,10 @@ class _PatientCardState extends State<PatientCard> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () =>
-                          _navigateTo(context, const PatientDetailsScreen()),
+                      onPressed: () => _navigateTo(
+                        context,
+                        PatientDetailsScreen(patient: widget.patient),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF005BBC), // Dark blue
                         foregroundColor: Colors.white,
@@ -146,7 +158,12 @@ class _PatientCardState extends State<PatientCard> {
                                 patientName: widget.patient.name,
                                 patientId: widget.patient.id,
                               ))
-                            : _navigateTo(context, const UpdateHealthScreen()),
+                            : _navigateTo(
+                                context,
+                                UpdateHealthScreen(
+                                  initialPatientId: widget.patient.patientId,
+                                ),
+                              ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE8F1FF), // Light blue
                         foregroundColor: const Color(0xFF005BBC),
@@ -168,6 +185,15 @@ class _PatientCardState extends State<PatientCard> {
                   const SizedBox(width: 12),
                   if (!isDoctor)
                     IconButton(
+                      tooltip: 'Edit patient',
+                      onPressed: () => _navigateTo(
+                        context,
+                        EditPatientScreen(patient: widget.patient),
+                      ),
+                      icon: const Icon(Icons.edit_outlined, color: Color(0xFF2A7DE1)),
+                    ),
+                  if (!isDoctor)
+                    IconButton(
                       tooltip: 'Call doctor for this patient',
                       onPressed: () => _navigateTo(
                         context,
@@ -177,6 +203,14 @@ class _PatientCardState extends State<PatientCard> {
                     ),
                 ],
               ),
+              if (widget.patient.userId != null) ...[
+                const SizedBox(height: 12),
+                ContactActionRow(
+                  peerName: widget.patient.name,
+                  peerUserId: widget.patient.userId!,
+                  patientId: widget.patient.patientId ?? widget.patient.userId,
+                ),
+              ],
             ],
           ),
         ),

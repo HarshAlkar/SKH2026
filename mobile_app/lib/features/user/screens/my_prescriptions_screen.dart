@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/user_sidebar.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/pdf_service.dart';
 import 'package:intl/intl.dart';
 
 class MyPrescriptionsScreen extends StatefulWidget {
@@ -273,7 +274,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => PdfService.generatePrescriptionPdf(Map<String, dynamic>.from(data)),
                   icon: const Icon(Icons.download, size: 18),
                   label: const Text('Download'),
                   style: ElevatedButton.styleFrom(

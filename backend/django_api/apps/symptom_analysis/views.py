@@ -3,12 +3,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from .models import VoiceSymptomInput, SymptomAnalysis
-from apps.alerts.models import AlertNotification
-from apps.doctors.models import Doctor
-from apps.asha_workers.models import ASHAWorker
+from apps.alerts.notify import notify_village_care_team
 from django.conf import settings
 import sys
-import os
 
 class SymptomAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
@@ -76,6 +73,9 @@ class SymptomAnalysisView(APIView):
         predicted_disease = analysis_result.get('disease', 'Unknown')
         severity = analysis_result.get('severity', 'Low')
         confidence = analysis_result.get('confidence', 0)
+        top_predictions = analysis_result.get('top_predictions') or [
+            {'disease': predicted_disease, 'confidence': confidence, 'severity': severity}
+        ]
 
         # 4. Store Analysis Result
         analysis = SymptomAnalysis.objects.create(
@@ -85,27 +85,17 @@ class SymptomAnalysisView(APIView):
             severity_level=severity
         )
 
-        # 5. Alert system for Doctors & ASHA
+        # 5. Alert village ASHA + doctor for High/Critical screening results
         alert_sent = False
         if severity in ['High', 'Critical']:
-            asha = None
-            if user.village:
-                asha = ASHAWorker.objects.filter(assigned_village__iexact=user.village).first()
-            doctor = Doctor.objects.filter(is_available=True).first() or Doctor.objects.first()
-
-            AlertNotification.objects.create(
-                patient=user,
-                doctor=doctor,
-                asha_worker=asha,
-                disease=predicted_disease,
-                severity=severity
-            )
-            alert_sent = True
+            _, alert_sent = notify_village_care_team(user, predicted_disease, severity)
 
         return Response({
             "analysis_id": analysis.id,
             "disease": predicted_disease,
             "severity": severity,
             "confidence": confidence,
-            "alert_sent": alert_sent
+            "top_predictions": top_predictions,
+            "alert_sent": alert_sent,
+            "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
         }, status=status.HTTP_200_OK)

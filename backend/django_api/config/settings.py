@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'apps.medicine_tracker',
     'apps.health_records',
     'apps.asha_workers',
+    'apps.chat',
     'rest_framework.authtoken',
 ]
 

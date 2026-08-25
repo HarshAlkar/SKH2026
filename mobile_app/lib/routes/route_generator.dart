@@ -34,6 +34,14 @@ import '../features/health_records/screens/health_records_screen.dart';
 import '../features/visits/screens/village_visits_screen.dart';
 import '../features/visits/screens/schedule_visit_screen.dart';
 import '../features/asha_worker/screens/registered_doctors_screen.dart';
+import '../features/referral/screens/emergency_referral_screen.dart';
+import '../features/referral/screens/referral_history_screen.dart';
+import '../features/patient/screens/edit_patient_screen.dart';
+import '../features/patient/models/patient_model.dart';
+import '../features/asha_worker/screens/asha_settings_screen.dart';
+import '../features/asha_worker/screens/asha_call_screen.dart';
+import '../features/user/screens/asha_workers_screen.dart';
+import '../features/chat/screens/chat_inbox_screen.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -108,6 +116,10 @@ class RouteGenerator {
       case AppRoutes.registerPatient:
         return _fadeRoute(const RegisterPatientScreen());
       case AppRoutes.editPatient:
+        final patient = settings.arguments;
+        if (patient is PatientModel) {
+          return _fadeRoute(EditPatientScreen(patient: patient));
+        }
         return _fadeRoute(const _PlaceholderScreen(title: 'Edit Patient'));
       case AppRoutes.updateHealth:
         return _fadeRoute(const UpdateHealthScreen());
@@ -124,13 +136,17 @@ class RouteGenerator {
       case AppRoutes.registeredDoctors:
         return _fadeRoute(const RegisteredDoctorsScreen());
       case AppRoutes.emergencyReferral:
-        return _fadeRoute(
-          const _PlaceholderScreen(title: 'Emergency Referral'),
-        );
+        return _fadeRoute(const EmergencyReferralScreen());
       case AppRoutes.referralHistory:
-        return _fadeRoute(const _PlaceholderScreen(title: 'Referral History'));
+        return _fadeRoute(const ReferralHistoryScreen());
       case AppRoutes.ashaSettings:
-        return _fadeRoute(const _PlaceholderScreen(title: 'Settings'));
+        return _fadeRoute(const AshaSettingsScreen());
+      case AppRoutes.ashaCall:
+        return _fadeRoute(const AshaCallScreen());
+      case AppRoutes.ashaWorkers:
+        return _fadeRoute(const AshaWorkersScreen());
+      case AppRoutes.chatInbox:
+        return _fadeRoute(const ChatInboxScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

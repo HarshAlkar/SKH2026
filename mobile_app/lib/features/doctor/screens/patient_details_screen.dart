@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/call_launcher.dart';
+import '../../chat/screens/chat_screen.dart';
 import 'create_prescription_screen.dart';
 
 
@@ -9,6 +10,7 @@ class PatientData {
   final String gender;
   final String village;
   final String bloodType;
+  final String phoneNumber;
   final String chronicConditions;
   final String pastSurgeries;
   final String allergies;
@@ -23,6 +25,7 @@ class PatientData {
     required this.gender,
     required this.village,
     required this.bloodType,
+    this.phoneNumber = '',
     required this.chronicConditions,
     required this.pastSurgeries,
     required this.allergies,
@@ -334,6 +337,39 @@ class PatientDetailsScreen extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           height: 48,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              final userId = patient.userId;
+              if (userId == null) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChatScreen(
+                    peerUserId: userId,
+                    peerName: patient.name,
+                    peerPhone: patient.phoneNumber,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.chat_bubble_outline, size: 20),
+            label: const Text(
+              'Chat with Patient',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF0F766E),
+              side: const BorderSide(color: Color(0xFF0F766E), width: 1.5),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
           child: ElevatedButton.icon(
             onPressed: () {
               Navigator.push(
@@ -376,6 +412,10 @@ class PatientDetailsScreen extends StatelessWidget {
           _buildInfoRow('Age', patient.age),
           const Divider(height: 24, color: Color(0xFFF1F5F9)),
           _buildInfoRow('Location', patient.village),
+          if (patient.phoneNumber.isNotEmpty) ...[
+            const Divider(height: 24, color: Color(0xFFF1F5F9)),
+            _buildInfoRow('Phone', patient.phoneNumber),
+          ],
           const Divider(height: 24, color: Color(0xFFF1F5F9)),
           _buildInfoRow('Blood Type', patient.bloodType),
         ],
