@@ -9,10 +9,17 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Services
   await StorageService.init();
-  await AlarmService.init();
-  await NotificationService().init();
+  try {
+    await AlarmService.init();
+  } catch (e, st) {
+    debugPrint('AlarmService.init failed: $e\n$st');
+  }
+  try {
+    await NotificationService().init();
+  } catch (e, st) {
+    debugPrint('NotificationService.init failed: $e\n$st');
+  }
 
   runApp(const VitalReachApp());
 }
