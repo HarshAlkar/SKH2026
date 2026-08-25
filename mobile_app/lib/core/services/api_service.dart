@@ -42,6 +42,7 @@ class ApiService {
     String endpoint, {
     Map<String, String>? headers,
     dynamic body,
+    Duration? timeout,
   }) async {
     try {
       final combinedHeaders = await _getHeaders({
@@ -54,7 +55,7 @@ class ApiService {
             headers: combinedHeaders,
             body: jsonEncode(body),
           )
-          .timeout(_timeout);
+          .timeout(timeout ?? _timeout);
       return _processResponse(response);
     } on TimeoutException {
       throw Exception(friendlyNetworkError('timeout'));

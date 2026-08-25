@@ -33,6 +33,7 @@ class SymptomProvider extends ChangeNotifier {
           'symptoms': symptomsText ?? recognizedText ?? '',
           if (recognizedText != null) 'recognized_text': recognizedText,
         },
+        timeout: const Duration(seconds: 60),
       );
       _lastAnalysis = response;
       _isLoading = false;

@@ -11,7 +11,7 @@ String friendlyNetworkError(Object error) {
     return 'This device blocked HTTP. Rebuild the app after the latest network update.';
   }
   if (lower.contains('timed out') || lower.contains('timeout')) {
-    return 'Cannot reach the server at ${AppConfig.host}:${AppConfig.apiPort}. Check the Server host and that Django is running.';
+    return 'The AI took too long to respond. Keep Django running and tap Analyze again.';
   }
   if (lower.contains('connection refused') ||
       lower.contains('socketexception') ||
