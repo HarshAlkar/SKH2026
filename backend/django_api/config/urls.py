@@ -18,6 +18,10 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
 
+def health_view(request):
+    return JsonResponse({"status": "ok"})
+
+
 def api_root_view(request):
     return JsonResponse({
         "status": "online",
@@ -27,6 +31,7 @@ def api_root_view(request):
             "/api/auth/",
             "/api/users/",
             "/api/symptoms/",
+            "/api/symptoms/analyze-skin/",
             "/api/medicines/",
             "/api/consultations/",
             "/api/prescriptions/",
@@ -40,6 +45,7 @@ def api_root_view(request):
 
 urlpatterns = [
     path('', api_root_view, name='api_root'),
+    path('health/', health_view, name='health'),
     path('admin/', admin.site.urls),
     path('api/auth/', include('apps.users.urls')), # login/register are actions in UserViewSet
     path('api/users/', include('apps.users.urls')),

@@ -19,7 +19,7 @@ String friendlyNetworkError(Object error) {
       lower.contains('network is unreachable') ||
       lower.contains('connection failed') ||
       lower.contains('connection reset')) {
-    return 'Cannot connect to ${AppConfig.host}:${AppConfig.apiPort}. For the emulator use 10.0.2.2. For a phone, use this PC\'s Wi-Fi IP and run Django with 0.0.0.0:8000.';
+    return 'Cannot connect to ${AppConfig.displayHost}. Use 10.0.2.2 for the emulator, your PC Wi-Fi IP for a phone, or the HTTPS cloud URL.';
   }
   return message;
 }

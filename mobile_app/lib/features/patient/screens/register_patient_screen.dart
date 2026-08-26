@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../widgets/custom_input_field.dart';
 import '../widgets/custom_dropdown_field.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/sync/offline_api.dart';
 import '../../../providers/auth_provider.dart';
 
 class RegisterPatientScreen extends StatefulWidget {
@@ -64,7 +64,7 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
         final village = _villageController.text.trim().isNotEmpty
             ? _villageController.text.trim()
             : (asha?.village ?? '');
-        await ApiService().post('/users/register/', body: {
+        final result = await OfflineApi.instance.post('/users/register/', body: {
           'name': _nameController.text.trim(),
           'phone_number': phone,
           'username': phone,
@@ -79,12 +79,12 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
         if (!mounted) return;
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              "Patient registered successfully",
-              style: TextStyle(fontWeight: FontWeight.bold),
+              result.message,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            backgroundColor: Colors.green,
+            backgroundColor: result.synced ? Colors.green : Colors.orange,
             behavior: SnackBarBehavior.floating,
           ),
         );

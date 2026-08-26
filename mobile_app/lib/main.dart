@@ -3,6 +3,7 @@ import 'app.dart';
 import 'core/services/storage_service.dart';
 import 'core/services/alarm_service.dart';
 import 'core/services/notification_service.dart';
+import 'core/sync/sync_service.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -19,6 +20,11 @@ void main() async {
     await NotificationService().init();
   } catch (e, st) {
     debugPrint('NotificationService.init failed: $e\n$st');
+  }
+  try {
+    await SyncService.instance.start();
+  } catch (e, st) {
+    debugPrint('SyncService.start failed: $e\n$st');
   }
 
   runApp(const VitalReachApp());

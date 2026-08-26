@@ -1,0 +1,4 @@
+data/
+models/*.keras
+models/*.tflite
+__pycache__/

@@ -6,7 +6,8 @@ import '../widgets/activity_tile.dart';
 import '../widgets/emergency_button.dart';
 import '../widgets/asha_sidebar.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/sync/offline_api.dart';
+import '../../../core/widgets/sync_status_banner.dart';
 import '../../../providers/consultation_provider.dart';
 import '../../../routes/app_routes.dart';
 import '../../patient/screens/village_patients_screen.dart';
@@ -46,7 +47,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
 
   Future<void> _fetchDashboardData() async {
     setState(() => _isLoading = true);
-    final api = ApiService();
+    final api = OfflineApi.instance;
     try {
       final dash = await api.get('/asha/dashboard/');
       final stats = dash is Map ? dash['stats'] : null;
@@ -104,13 +105,20 @@ class _AshaDashboardState extends State<AshaDashboard> {
               onTap: () => _openAndRefresh(AppRoutes.emergencyReferral),
             )
           : null,
-      body: IndexedStack(
-        index: _selectedIndex,
+      body: Column(
         children: [
-          _buildHomeBody(user),
-          const VillagePatientsScreen(embedded: true),
-          const AshaCallScreen(embedded: true),
-          const AshaSettingsScreen(embedded: true),
+          const SyncStatusBanner(),
+          Expanded(
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: [
+                _buildHomeBody(user),
+                const VillagePatientsScreen(embedded: true),
+                const AshaCallScreen(embedded: true),
+                const AshaSettingsScreen(embedded: true),
+              ],
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),

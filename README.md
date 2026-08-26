@@ -125,6 +125,8 @@ class Doctor(models.Model):
 
 **Path:** Patient Symptom Checker → `POST /api/symptoms/analyze/` → Django `SymptomAnalysisView` (Hindi word map) → `ai_engine.predict.predict_symptoms`. High/Critical results create an `AlertNotification` for the village ASHA + a doctor.
 
+**Skin CNN (optional second mode):** Keras MobileNetV2 trained on HAM10000-style folders (`python -m ai_engine.skin.train --data-dir ai_engine/data/ham10000`) exports `skin_cnn.tflite`. Online: `POST /api/symptoms/analyze-skin/` (multipart image). Offline: on-device TFLite. This is **screening, not diagnosis**, and the dataset is biased toward lighter skin tones.
+
 This is **screening, not diagnosis**. Doctor and ASHA symptom text fields do not call the model.
 
 ---
@@ -154,11 +156,13 @@ Our Peer-to-Peer implementation ensures speed and security:
 
 ---
 
-## 9. Offline Support (current scope — honest)
-*   **Medicine tracker**: Local SQLite cache + best-effort sync when online.
-*   **Offline login**: Cached credentials for limited offline sign-in.
-*   **OS medicine alarms**: Fire even if the app is closed (`android_alarm_manager_plus` / local notifications).
-*   **Not yet:** general encrypted outbox for patients/visits/vitals with conflict resolution (planned for VitalReach 2.0).
+## 9. Cloud + offline sync
+
+**Cloud (Django + Postgres):** deploy the repo with `render.yaml` / `Dockerfile`. Render creates Postgres (`DATABASE_URL`) and runs `migrate` + gunicorn. In the app, paste the HTTPS URL (example `https://vitalreach-api.onrender.com`) on the role-selection / ASHA settings screen — no `:8000` needed.
+
+**Phone (offline-first):** ASHA patient register, visits, health records, and medicines save to on-device SQLite (`vitalreach.db` outbox + cache). If the network is down or weak, the UI still saves. When connectivity returns, `SyncService` uploads the queue automatically (tap the blue banner to retry). Lists show the last cached copy while offline.
+
+**Not offline:** live video/audio calls and live chat still need the Node signaling server and a working network.
 
 ---
 

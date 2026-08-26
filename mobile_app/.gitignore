@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# On-device skin CNN (copied after training)
+assets/models/*.tflite

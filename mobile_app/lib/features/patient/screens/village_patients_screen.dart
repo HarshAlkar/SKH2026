@@ -4,7 +4,7 @@ import '../models/patient_model.dart';
 import '../widgets/patient_card.dart';
 import '../widgets/add_patient_button.dart';
 import '../../asha_worker/widgets/asha_sidebar.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/sync/offline_api.dart';
 import '../../../providers/auth_provider.dart';
 
 class VillagePatientsScreen extends StatefulWidget {
@@ -17,7 +17,7 @@ class VillagePatientsScreen extends StatefulWidget {
 
 class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final ApiService _api = ApiService();
+  final OfflineApi _api = OfflineApi.instance;
 
   List<PatientModel> _allPatients = [];
   List<PatientModel> _filteredPatients = [];
@@ -39,7 +39,8 @@ class _VillagePatientsScreenState extends State<VillagePatientsScreen> {
       _error = null;
     });
     try {
-      final List<dynamic> data = await _api.get('/users/patients/');
+      final raw = await _api.get('/users/patients/');
+      final List<dynamic> data = raw is List ? raw : <dynamic>[];
       if (!mounted) return;
       setState(() {
         _allPatients = data.map((json) {

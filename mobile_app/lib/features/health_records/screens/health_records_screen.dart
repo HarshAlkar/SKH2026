@@ -3,7 +3,7 @@ import '../models/health_record_model.dart';
 import '../widgets/health_record_card.dart';
 import '../../asha_worker/screens/update_health_screen.dart';
 import '../../asha_worker/widgets/asha_sidebar.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/sync/offline_api.dart';
 
 class HealthRecordsScreen extends StatefulWidget {
   const HealthRecordsScreen({super.key});
@@ -14,7 +14,7 @@ class HealthRecordsScreen extends StatefulWidget {
 
 class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final ApiService _api = ApiService();
+  final OfflineApi _api = OfflineApi.instance;
 
   List<HealthRecordModel> _allRecords = [];
   List<HealthRecordModel> _filteredRecords = [];

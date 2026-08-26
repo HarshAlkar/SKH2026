@@ -16,6 +16,18 @@ def model_path():
     return os.path.join(engine_dir(), "models", "trained_model.pkl")
 
 
+def skin_tflite_path():
+    return os.path.join(engine_dir(), "models", "skin_cnn.tflite")
+
+
+def skin_keras_path():
+    return os.path.join(engine_dir(), "models", "skin_cnn.keras")
+
+
+def skin_labels_path():
+    return os.path.join(engine_dir(), "models", "skin_labels.json")
+
+
 def normalize_symptom(value):
     text = str(value).lower().strip()
     text = text.replace(" ", "_")

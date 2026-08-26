@@ -8,6 +8,7 @@ class AppConfig {
   static const int apiPort = 8000;
   static const int signalingPort = 5000;
   static const String hostKey = 'server_host';
+  static const String signalingKey = 'signaling_url';
 
   static const String turnUrl = String.fromEnvironment('TURN_URL');
   static const String turnUser = String.fromEnvironment('TURN_USER');
@@ -25,9 +26,40 @@ class AppConfig {
     await StorageService.saveStringSync(hostKey, value.trim());
   }
 
-  static String get baseUrl => 'http://$host:$apiPort/api';
+  static Future<void> setSignalingUrl(String value) async {
+    await StorageService.saveStringSync(signalingKey, value.trim());
+  }
 
-  static String get signalingServerUrl => 'http://$host:$signalingPort';
+  static bool get _isAbsolute {
+    final value = host.toLowerCase();
+    return value.startsWith('http://') || value.startsWith('https://');
+  }
+
+  static String get origin {
+    final raw = host.replaceAll(RegExp(r'/$'), '');
+    if (_isAbsolute) return raw;
+    return 'http://$raw:$apiPort';
+  }
+
+  static String get baseUrl => '$origin/api';
+
+  static String get displayHost {
+    if (_isAbsolute) return origin;
+    return '$host:$apiPort';
+  }
+
+  static String get signalingServerUrl {
+    final saved = StorageService.getStringSync(signalingKey);
+    if (saved != null && saved.trim().isNotEmpty) {
+      return saved.trim().replaceAll(RegExp(r'/$'), '');
+    }
+    if (_isAbsolute) {
+      final uri = Uri.parse(origin);
+      final scheme = uri.scheme == 'https' ? 'https' : 'http';
+      return '$scheme://${uri.host}:$signalingPort';
+    }
+    return 'http://$host:$signalingPort';
+  }
 
   static List<Map<String, dynamic>> get iceServers {
     final servers = <Map<String, dynamic>>[

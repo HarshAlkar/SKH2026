@@ -1,0 +1,3 @@
+# Training-only extras for the skin CNN. Do not install on the Django runtime
+# unless you want full TensorFlow on the server.
+tensorflow>=2.16.0

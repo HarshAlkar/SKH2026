@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/sync/offline_api.dart';
 
 class ScheduleVisitScreen extends StatefulWidget {
   const ScheduleVisitScreen({super.key});
@@ -10,7 +10,7 @@ class ScheduleVisitScreen extends StatefulWidget {
 }
 
 class _ScheduleVisitScreenState extends State<ScheduleVisitScreen> {
-  final ApiService _api = ApiService();
+  final OfflineApi _api = OfflineApi.instance;
   final _notes = TextEditingController();
   DateTime _date = DateTime.now().add(const Duration(days: 1));
   TimeOfDay _time = const TimeOfDay(hour: 10, minute: 30);

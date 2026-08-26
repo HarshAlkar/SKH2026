@@ -9,7 +9,7 @@ import 'storage_service.dart';
 class ApiService {
   final http.Client _client = http.Client();
   final StorageService _storageService = StorageService();
-  static const Duration _timeout = Duration(seconds: 15);
+  static const Duration _timeout = Duration(seconds: 25);
 
   Future<Map<String, String>> _getHeaders(Map<String, String>? extra) async {
     final token = _storageService.getString('token');
@@ -22,12 +22,16 @@ class ApiService {
 
   Uri _uri(String endpoint) => Uri.parse('${ApiConstants.baseUrl}$endpoint');
 
-  Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
+  Future<dynamic> get(
+    String endpoint, {
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) async {
     try {
       final combinedHeaders = await _getHeaders(headers);
       final response = await _client
           .get(_uri(endpoint), headers: combinedHeaders)
-          .timeout(_timeout);
+          .timeout(timeout ?? _timeout);
       return _processResponse(response);
     } on TimeoutException {
       throw Exception(friendlyNetworkError('timeout'));
@@ -70,6 +74,7 @@ class ApiService {
     String endpoint, {
     Map<String, String>? headers,
     dynamic body,
+    Duration? timeout,
   }) async {
     try {
       final combinedHeaders = await _getHeaders({
@@ -82,7 +87,7 @@ class ApiService {
             headers: combinedHeaders,
             body: jsonEncode(body),
           )
-          .timeout(_timeout);
+          .timeout(timeout ?? _timeout);
       return _processResponse(response);
     } on TimeoutException {
       throw Exception(friendlyNetworkError('timeout'));
@@ -97,6 +102,7 @@ class ApiService {
     String endpoint, {
     Map<String, String>? headers,
     dynamic body,
+    Duration? timeout,
   }) async {
     try {
       final combinedHeaders = await _getHeaders({
@@ -109,7 +115,7 @@ class ApiService {
             headers: combinedHeaders,
             body: jsonEncode(body),
           )
-          .timeout(_timeout);
+          .timeout(timeout ?? _timeout);
       return _processResponse(response);
     } on TimeoutException {
       throw Exception(friendlyNetworkError('timeout'));
@@ -126,6 +132,32 @@ class ApiService {
       final response = await _client
           .delete(_uri(endpoint), headers: combinedHeaders)
           .timeout(_timeout);
+      return _processResponse(response);
+    } on TimeoutException {
+      throw Exception(friendlyNetworkError('timeout'));
+    } on SocketException catch (e) {
+      throw Exception(friendlyNetworkError(e));
+    } catch (e) {
+      throw Exception(friendlyNetworkError(e));
+    }
+  }
+
+  Future<dynamic> postMultipart(
+    String endpoint, {
+    required File file,
+    String field = 'image',
+    Map<String, String>? fields,
+    Duration? timeout,
+  }) async {
+    try {
+      final request = http.MultipartRequest('POST', _uri(endpoint));
+      request.headers.addAll(await _getHeaders(null));
+      request.files.add(await http.MultipartFile.fromPath(field, file.path));
+      if (fields != null) {
+        request.fields.addAll(fields);
+      }
+      final streamed = await _client.send(request).timeout(timeout ?? _timeout);
+      final response = await http.Response.fromStream(streamed);
       return _processResponse(response);
     } on TimeoutException {
       throw Exception(friendlyNetworkError('timeout'));

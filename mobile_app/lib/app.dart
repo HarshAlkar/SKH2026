@@ -9,6 +9,7 @@ import 'providers/symptom_provider.dart';
 import 'providers/consultation_provider.dart';
 import 'providers/medicine_provider.dart';
 import 'providers/alert_provider.dart';
+import 'core/sync/sync_status.dart';
 import 'main.dart';
 
 class VitalReachApp extends StatelessWidget {
@@ -24,6 +25,7 @@ class VitalReachApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ConsultationProvider()),
         ChangeNotifierProvider(create: (_) => MedicineProvider()),
         ChangeNotifierProvider(create: (_) => AlertProvider()),
+        ChangeNotifierProvider.value(value: SyncStatus.instance),
       ],
       child: MaterialApp(
         title: 'VitalReach',

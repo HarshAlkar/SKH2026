@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/sync/offline_api.dart';
 import '../../asha_worker/widgets/asha_sidebar.dart';
 import '../models/visit_model.dart';
 import '../widgets/visit_card.dart';
@@ -14,7 +14,7 @@ class VillageVisitsScreen extends StatefulWidget {
 
 class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final ApiService _api = ApiService();
+  final OfflineApi _api = OfflineApi.instance;
   final Color primaryColor = const Color(0xFF2F4DB6);
   final Color backgroundColor = const Color(0xFFF5F7FA);
 
@@ -94,6 +94,13 @@ class _VillageVisitsScreenState extends State<VillageVisitsScreen> {
   }
 
   Future<void> _markComplete(VisitModel visit) async {
+    if (visit.id.startsWith('local_')) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This visit is still uploading. Try again after sync.')),
+      );
+      return;
+    }
     try {
       await _api.patch('/asha/visits/${visit.id}/', body: {'status': 'COMPLETED'});
       await _load();

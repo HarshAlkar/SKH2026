@@ -17,3 +17,8 @@ class SymptomAnalysisConfig(AppConfig):
             _load_bundle()
         except Exception:
             pass
+        try:
+            from ai_engine.skin.predict import _load_interpreter
+            _load_interpreter()
+        except Exception:
+            pass

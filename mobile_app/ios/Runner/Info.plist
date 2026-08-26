@@ -55,7 +55,7 @@
 			<true/>
 		</dict>
 		<key>NSCameraUsageDescription</key>
-		<string>VitalReach uses the camera for video consultations with doctors and ASHA workers.</string>
+		<string>VitalReach uses the camera for video consultations and skin screening photos.</string>
 		<key>NSMicrophoneUsageDescription</key>
 		<string>VitalReach uses the microphone for audio/video calls and voice symptom input.</string>
 		<key>NSSpeechRecognitionUsageDescription</key>
@@ -65,7 +65,9 @@
 		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 		<string>VitalReach uses your location to show nearby clinics and healthcare centers.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>VitalReach may access photos when sharing or printing health records.</string>
+		<string>VitalReach uses your photos so you can choose a skin image for AI screening.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>VitalReach may save a cropped skin screening photo on this device.</string>
 		<key>UIBackgroundModes</key>
 		<array>
 			<string>audio</string>

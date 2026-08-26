@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/medicine_model.dart';
 import '../core/services/medicine_db_service.dart';
-import '../core/services/api_service.dart';
 import '../core/services/alarm_service.dart';
+import '../core/sync/offline_api.dart';
 import 'package:intl/intl.dart';
 
 class MedicineProvider extends ChangeNotifier {
-  final ApiService _apiService = ApiService();
+  final OfflineApi _apiService = OfflineApi.instance;
   final MedicineDbService _dbService = MedicineDbService.instance;
 
   List<MedicineModel> _medicines = [];
@@ -77,11 +77,11 @@ class MedicineProvider extends ChangeNotifier {
     
     notifyListeners();
 
-    // 3. Sync to Backend
+    // 3. Queue to cloud (syncs when internet is available)
     try {
       await _apiService.post('/medicines/add/', body: newMed.toJson());
     } catch (e) {
-      debugPrint('Sync failed, will retry later: $e');
+      debugPrint('Medicine queued for later sync: $e');
     }
   }
 
@@ -183,7 +183,8 @@ class MedicineProvider extends ChangeNotifier {
 
   Future<void> syncWithBackend() async {
     try {
-      final List<dynamic> response = await _apiService.get('/medicines/user/');
+      final raw = await _apiService.get('/medicines/user/');
+      final List<dynamic> response = raw is List ? raw : <dynamic>[];
       final remoteMeds = response.map((json) => MedicineModel.fromMap(json)).toList();
 
       bool hasChanges = false;

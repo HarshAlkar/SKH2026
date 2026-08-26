@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -31,6 +34,9 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
   bool _isAnalyzing = false;
   bool _showResult = false;
   bool _notifying = false;
+  String _checkerMode = 'symptoms';
+  File? _skinImage;
+  final ImagePicker _picker = ImagePicker();
 
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
@@ -51,6 +57,14 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       'listening': 'Listening... Please speak now',
       'analyze': 'Analyze Symptoms',
       'analyzing': 'Analyzing...',
+      'tab_symptoms': 'Symptoms',
+      'tab_skin': 'Skin photo',
+      'skin_desc': 'Take or choose a clear photo of the affected skin',
+      'take_photo': 'Camera',
+      'pick_gallery': 'Gallery',
+      'analyze_skin': 'Analyze Skin Photo',
+      'skin_disclaimer':
+          'Screening only, not a diagnosis. This model is trained on HAM10000-style data and is biased toward lighter skin tones.',
       'result_title': 'ANALYSIS RESULT',
       'consult': 'Consult Doctor',
       'notify': 'Notify ASHA',
@@ -76,6 +90,14 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       'listening': 'सुन रहा हूँ... कृपया अभी बोलें',
       'analyze': 'लक्षणों का विश्लेषण करें',
       'analyzing': 'विश्लेषण कर रहा है...',
+      'tab_symptoms': 'लक्षण',
+      'tab_skin': 'त्वचा फोटो',
+      'skin_desc': 'प्रभावित त्वचा की साफ तस्वीर लें या चुनें',
+      'take_photo': 'कैमरा',
+      'pick_gallery': 'गैलरी',
+      'analyze_skin': 'त्वचा फोटो का विश्लेषण करें',
+      'skin_disclaimer':
+          'यह केवल स्क्रीनिंग है, निदान नहीं। यह मॉडल HAM10000-शैली डेटा पर है और हल्की त्वचा पर अधिक सटीक हो सकता है।',
       'result_title': 'विश्लेषण परिणाम',
       'consult': 'डॉक्टर से सलाह लें',
       'notify': 'ASHA को सूचित करें',
@@ -226,6 +248,55 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     }
   }
 
+  Future<void> _pickSkinImage(ImageSource source) async {
+    try {
+      final picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+      setState(() {
+        _skinImage = File(picked.path);
+        _showResult = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open image: $e')),
+      );
+    }
+  }
+
+  Future<void> _analyzeSkin() async {
+    if (_skinImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Take or choose a skin photo first')),
+      );
+      return;
+    }
+    setState(() {
+      _isAnalyzing = true;
+      _showResult = false;
+    });
+    try {
+      await Provider.of<SymptomProvider>(context, listen: false)
+          .analyzeSkin(_skinImage!);
+      if (!mounted) return;
+      setState(() {
+        _isAnalyzing = false;
+        _showResult = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isAnalyzing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Analysis failed: $e')),
+      );
+    }
+  }
+
   Future<void> _notifyAsha() async {
     final analysis = Provider.of<SymptomProvider>(context, listen: false).lastAnalysis;
     if (analysis == null) return;
@@ -342,7 +413,10 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
+              _buildModeToggle(),
+              const SizedBox(height: 24),
+              if (_checkerMode == 'symptoms') ...[
               Text(
                 _getTxt('common'),
                 style: const TextStyle(
@@ -422,6 +496,9 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                         ),
                 ),
               ),
+              ] else ...[
+                _buildSkinSection(),
+              ],
               if (_showResult) ...[
                 const SizedBox(height: 32),
                 _buildResultCard(),
@@ -480,6 +557,144 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildModeToggle() {
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<String>(
+        showSelectedIcon: false,
+        segments: [
+        ButtonSegment(
+          value: 'symptoms',
+          label: Text(_getTxt('tab_symptoms')),
+          icon: const Icon(Icons.sick_outlined),
+        ),
+        ButtonSegment(
+          value: 'skin',
+          label: Text(_getTxt('tab_skin')),
+          icon: const Icon(Icons.photo_camera_outlined),
+        ),
+      ],
+      selected: {_checkerMode},
+      onSelectionChanged: (value) {
+        setState(() {
+          _checkerMode = value.first;
+          _showResult = false;
+        });
+      },
+      style: ButtonStyle(
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return Colors.white;
+          }
+          return AppColors.primary;
+        }),
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return AppColors.primary;
+          }
+          return Colors.white;
+        }),
+      ),
+      ),
+    );
+  }
+
+  Widget _buildSkinSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _getTxt('skin_desc'),
+          style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          height: 220,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF5F7FA),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: _skinImage == null
+              ? const Center(
+                  child: Icon(Icons.image_outlined, size: 56, color: Colors.grey),
+                )
+              : Image.file(_skinImage!, fit: BoxFit.cover),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _pickSkinImage(ImageSource.camera),
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: Text(_getTxt('take_photo')),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _pickSkinImage(ImageSource.gallery),
+                icon: const Icon(Icons.photo_library_outlined),
+                label: Text(_getTxt('pick_gallery')),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          _getTxt('skin_disclaimer'),
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 12,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        const SizedBox(height: 24),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: _isAnalyzing ? null : _analyzeSkin,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 0,
+            ),
+            child: _isAnalyzing
+                ? const SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.analytics_outlined),
+                      const SizedBox(width: 12),
+                      Text(
+                        _getTxt('analyze_skin'),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -712,7 +927,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            _getTxt('disclaimer'),
+            analysis['disclaimer']?.toString() ?? _getTxt('disclaimer'),
             style: TextStyle(
               color: Colors.grey.shade500,
               fontSize: 12,

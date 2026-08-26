@@ -140,8 +140,8 @@ class _AshaSettingsScreenState extends State<AshaSettingsScreen> {
                   TextField(
                     controller: _hostController,
                     decoration: InputDecoration(
-                      labelText: 'Server host',
-                      hintText: '10.0.2.2 or PC Wi-Fi IP',
+                      labelText: 'Cloud / server URL',
+                      hintText: 'https://your-api.onrender.com',
                       prefixIcon: const Icon(Icons.dns_outlined),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -150,8 +150,9 @@ class _AshaSettingsScreenState extends State<AshaSettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Emulator: 10.0.2.2 · Physical device: your PC LAN IP. '
-                    'Django must listen on 0.0.0.0:8000.',
+                    'Cloud: paste the HTTPS URL from Render. '
+                    'Local: 10.0.2.2 (emulator) or your PC Wi-Fi IP. '
+                    'Offline data stays on the phone and uploads when the network returns.',
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 12),

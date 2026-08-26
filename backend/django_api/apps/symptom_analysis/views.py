@@ -2,10 +2,20 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import VoiceSymptomInput, SymptomAnalysis
 from apps.alerts.notify import notify_village_care_team
 from django.conf import settings
 import sys
+
+MAX_SKIN_IMAGE_BYTES = 3 * 1024 * 1024
+
+
+def _ensure_project_root():
+    project_root = str(settings.BASE_DIR.parent.parent)
+    if project_root not in sys.path:
+        sys.path.append(project_root)
+    return project_root
 
 class SymptomAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
@@ -59,11 +69,7 @@ class SymptomAnalysisView(APIView):
                 symptoms_list.append(word)
         
         # 3. AI Prediction
-        # Add project root (hs053) to sys.path
-        project_root = str(settings.BASE_DIR.parent.parent)
-        if project_root not in sys.path:
-            sys.path.append(project_root)
-            
+        _ensure_project_root() 
         try:
             from ai_engine.predict import predict_symptoms
             analysis_result = predict_symptoms(symptoms_list)
@@ -99,3 +105,78 @@ class SymptomAnalysisView(APIView):
             "alert_sent": alert_sent,
             "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
         }, status=status.HTTP_200_OK)
+
+
+class SkinAnalysisView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
+    def post(self, request):
+        uploaded = request.FILES.get("image") or request.FILES.get("file")
+        if uploaded is None:
+            return Response(
+                {"error": "Upload a skin photo as form field 'image'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if uploaded.size and uploaded.size > MAX_SKIN_IMAGE_BYTES:
+            return Response(
+                {"error": "Image is too large. Maximum size is 3 MB."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        content_type = (uploaded.content_type or "").lower()
+        if content_type and not content_type.startswith("image/"):
+            return Response(
+                {"error": "File must be an image (jpeg, png, or webp)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        _ensure_project_root()
+        try:
+            from ai_engine.skin.predict import SkinModelNotTrained, predict_skin
+
+            uploaded.seek(0)
+            analysis_result = predict_skin(uploaded)
+        except SkinModelNotTrained as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except Exception as exc:
+            return Response(
+                {"error": f"Skin CNN error: {exc}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        predicted_disease = analysis_result.get("disease", "Unknown")
+        severity = analysis_result.get("severity", "Low")
+        confidence = analysis_result.get("confidence", 0)
+        top_predictions = analysis_result.get("top_predictions") or []
+        disclaimer = analysis_result.get(
+            "disclaimer",
+            "This is a screening suggestion, not a medical diagnosis.",
+        )
+
+        analysis = SymptomAnalysis.objects.create(
+            user=request.user,
+            symptoms_text="skin_image",
+            predicted_disease=predicted_disease,
+            severity_level=severity,
+        )
+
+        alert_sent = False
+        if severity in ["High", "Critical"]:
+            _, alert_sent = notify_village_care_team(
+                request.user, predicted_disease, severity
+            )
+
+        return Response(
+            {
+                "analysis_id": analysis.id,
+                "disease": predicted_disease,
+                "code": analysis_result.get("code"),
+                "severity": severity,
+                "confidence": confidence,
+                "top_predictions": top_predictions,
+                "alert_sent": alert_sent,
+                "source": "skin_cnn",
+                "disclaimer": disclaimer,
+            },
+            status=status.HTTP_200_OK,
+        )

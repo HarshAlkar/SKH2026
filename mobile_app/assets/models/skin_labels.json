@@ -1,0 +1,24 @@
+{
+  "classes": ["akiec", "bcc", "bkl", "df", "nv", "mel", "vasc"],
+  "display_names": {
+    "akiec": "Actinic keratoses",
+    "bcc": "Basal cell carcinoma",
+    "bkl": "Benign keratosis",
+    "df": "Dermatofibroma",
+    "nv": "Melanocytic nevus",
+    "mel": "Melanoma",
+    "vasc": "Vascular lesion"
+  },
+  "severity": {
+    "akiec": "High",
+    "bcc": "High",
+    "bkl": "Low",
+    "df": "Low",
+    "nv": "Low",
+    "mel": "Critical",
+    "vasc": "Moderate"
+  },
+  "input_size": 224,
+  "normalize": "mobilenet_v2",
+  "disclaimer": "Screening suggestion only, not a medical diagnosis. HAM10000-style models are biased toward lighter skin tones."
+}

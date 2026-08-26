@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../patient/widgets/custom_input_field.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/sync/offline_api.dart';
 import '../widgets/asha_sidebar.dart';
 
 class UpdateHealthScreen extends StatefulWidget {
@@ -35,7 +35,7 @@ class _UpdateHealthScreenState extends State<UpdateHealthScreen> {
 
   Future<void> _loadPatients() async {
     try {
-      final response = await ApiService().get('/patients/');
+      final response = await OfflineApi.instance.get('/patients/');
       final rows = response is List ? response : <dynamic>[];
       final patients = <Map<String, dynamic>>[];
       for (final row in rows) {
@@ -76,7 +76,7 @@ class _UpdateHealthScreenState extends State<UpdateHealthScreen> {
     }
     setState(() => _isLoading = true);
     try {
-      await ApiService().post('/records/', body: {
+      final result = await OfflineApi.instance.post('/records/', body: {
         'patient_id': _selectedPatientId,
         'temperature': _tempController.text.trim(),
         'blood_pressure': _bpController.text.trim(),
@@ -88,9 +88,9 @@ class _UpdateHealthScreenState extends State<UpdateHealthScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Health record saved'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: Text(result.message),
+          backgroundColor: result.synced ? Colors.green : Colors.orange,
         ),
       );
       Navigator.pop(context);
@@ -327,7 +327,7 @@ class _UpdateHealthScreenState extends State<UpdateHealthScreen> {
                   // SYNC MESSAGE
                   Center(
                     child: Text(
-                      "Data will be synced with Health Cloud",
+                      "Saved on phone first, then synced to the cloud",
                       style: TextStyle(fontSize: 12, color: Colors.grey[500]),
                     ),
                   ),

@@ -286,6 +286,22 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="register")
     def register(self, request):
+        phone = normalize_identifier(request.data.get("phone_number"))
+        role = request.data.get("role")
+        if phone and role:
+            existing = User.objects.filter(role=role).filter(
+                Q(phone_number=phone) | Q(username=phone)
+            ).first()
+            if existing:
+                token, _created = Token.objects.get_or_create(user=existing)
+                return Response(
+                    {
+                        "token": token.key,
+                        "user": UserSerializer(existing).data,
+                        "already_exists": True,
+                    },
+                    status=status.HTTP_200_OK,
+                )
         serializer = RegisterSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             user = serializer.save()

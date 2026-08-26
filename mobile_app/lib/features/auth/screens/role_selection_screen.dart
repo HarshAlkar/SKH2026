@@ -53,7 +53,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Server host',
+            'Server (cloud or PC)',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: Color(0xFF1E293B),
@@ -61,7 +61,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Emulator: 10.0.2.2  ·  Phone: this PC\'s Wi-Fi IPv4',
+            'Cloud: https://your-api.onrender.com  ·  Emulator: 10.0.2.2  ·  Phone: PC Wi-Fi IP',
             style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
@@ -71,7 +71,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 child: TextField(
                   controller: _hostController,
                   decoration: InputDecoration(
-                    hintText: '10.0.2.2',
+                    hintText: '10.0.2.2 or https://…',
                     isDense: true,
                     filled: true,
                     fillColor: Colors.white,

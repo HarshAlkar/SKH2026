@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/sync/offline_api.dart';
 import '../../asha_worker/widgets/asha_sidebar.dart';
 
 class EmergencyReferralScreen extends StatefulWidget {
@@ -11,7 +11,7 @@ class EmergencyReferralScreen extends StatefulWidget {
 }
 
 class _EmergencyReferralScreenState extends State<EmergencyReferralScreen> {
-  final ApiService _api = ApiService();
+  final OfflineApi _api = OfflineApi.instance;
   final _symptoms = TextEditingController();
   final _notes = TextEditingController();
   List<Map<String, dynamic>> _patients = [];
@@ -71,7 +71,7 @@ class _EmergencyReferralScreenState extends State<EmergencyReferralScreen> {
     if (_patientId == null) return;
     setState(() => _saving = true);
     try {
-      await _api.post('/alerts/referrals/', body: {
+      final result = await _api.post('/alerts/referrals/', body: {
         'patient': _patientId,
         'symptoms': _symptoms.text.trim(),
         'severity': _severity,
@@ -79,9 +79,9 @@ class _EmergencyReferralScreenState extends State<EmergencyReferralScreen> {
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Referral sent to care team'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: Text(result.message),
+          backgroundColor: result.synced ? Colors.green : Colors.orange,
         ),
       );
       Navigator.pop(context, true);
