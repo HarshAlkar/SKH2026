@@ -1,21 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../core/services/call_launcher.dart';
+import '../services/doctor_appointment_service.dart';
 import 'patient_details_screen.dart';
-import 'my_patients_screen.dart';
 import 'dart:async';
-
-class Consultation {
-  final String patientName;
-  final String type;
-  final String time;
-  final int initialSeconds;
-
-  Consultation({
-    required this.patientName,
-    required this.type,
-    required this.time,
-    required this.initialSeconds,
-  });
-}
 
 class UpcomingConsultationsScreen extends StatefulWidget {
   const UpcomingConsultationsScreen({super.key});
@@ -25,34 +12,62 @@ class UpcomingConsultationsScreen extends StatefulWidget {
 }
 
 class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScreen> {
+  final DoctorAppointmentService _appointmentService = DoctorAppointmentService();
   final Color primaryBlue = const Color(0xFF2A7DE1);
   final Color lightBg = const Color(0xFFF3F4F6);
   final Color cardBg = const Color(0xFFFFFFFF);
   final Color videoColor = const Color(0xFF2563EB);
   final Color audioColor = const Color(0xFF10B981);
+  final Color offlineColor = const Color(0xFFF59E0B);
   final Color textPrimary = const Color(0xFF1F2937);
   final Color textSecondary = const Color(0xFF6B7280);
 
-  final List<Consultation> _consultations = [
-    Consultation(
-      patientName: 'Sarah Jenkins',
-      type: 'Video Consultation',
-      time: 'Today · 10:30 AM',
-      initialSeconds: 522, // 08:42
-    ),
-    Consultation(
-      patientName: 'Ramesh Patil',
-      type: 'Audio Consultation',
-      time: 'Today · 11:00 AM',
-      initialSeconds: 1090, // 18:10
-    ),
-    Consultation(
-      patientName: 'Sunita Deshmukh',
-      type: 'Video Consultation',
-      time: 'Today · 12:15 PM',
-      initialSeconds: 2525, // 42:05
-    ),
-  ];
+  List<DoctorAppointment> _appointments = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppointments();
+  }
+
+  Future<void> _loadAppointments() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final list = await _appointmentService.getUpcomingAppointments();
+      if (!mounted) return;
+      setState(() {
+        _appointments = list;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Unable to load upcoming consultations.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  int _calculateRemainingSeconds(DoctorAppointment appointment) {
+    try {
+      final now = DateTime.now();
+      final dateStr = appointment.rawDate;
+      final timeStr = appointment.rawTime;
+      if (dateStr.isNotEmpty && timeStr.isNotEmpty) {
+        final parsed = DateTime.parse('${dateStr}T$timeStr');
+        final diff = parsed.difference(now).inSeconds;
+        return diff > 0 ? diff : 0;
+      }
+    } catch (_) {}
+    return 0;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,25 +91,84 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.calendar_today_outlined, color: textPrimary, size: 20),
-            onPressed: () {},
+            icon: Icon(Icons.refresh, color: textPrimary, size: 20),
+            onPressed: _loadAppointments,
           ),
         ],
       ),
-      body: ListView.builder(
+      body: _buildContent(),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2A7DE1)),
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+            const SizedBox(height: 16),
+            Text(_errorMessage!, style: TextStyle(color: textSecondary)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadAppointments,
+              style: ElevatedButton.styleFrom(backgroundColor: primaryBlue, foregroundColor: Colors.white),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_appointments.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.video_call_outlined, size: 56, color: Color(0xFF9CA3AF)),
+            const SizedBox(height: 16),
+            Text(
+              'No upcoming consultations scheduled.',
+              style: TextStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Scheduled appointments will appear here.',
+              style: TextStyle(color: textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadAppointments,
+      child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _consultations.length,
+        itemCount: _appointments.length,
         itemBuilder: (context, index) {
-          return _buildConsultationCard(_consultations[index]);
+          return _buildConsultationCard(_appointments[index]);
         },
       ),
     );
   }
 
-  Widget _buildConsultationCard(Consultation consultation) {
-    bool isVideo = consultation.type.contains('Video');
-    Color typeColor = isVideo ? videoColor : audioColor;
-    IconData typeIcon = isVideo ? Icons.videocam : Icons.phone;
+  Widget _buildConsultationCard(DoctorAppointment appointment) {
+    bool isVideo = appointment.type == DoctorConsultationType.video;
+    bool isAudio = appointment.type == DoctorConsultationType.audio;
+    Color typeColor = isVideo ? videoColor : (isAudio ? audioColor : offlineColor);
+    IconData typeIcon = isVideo ? Icons.videocam : (isAudio ? Icons.phone : Icons.local_hospital);
+    String typeLabel = isVideo ? 'Video Consultation' : (isAudio ? 'Audio Consultation' : 'Offline Visit');
+
+    final remainingSeconds = _calculateRemainingSeconds(appointment);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -122,7 +196,9 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                       radius: 28,
                       backgroundColor: typeColor.withOpacity(0.1),
                       child: Text(
-                        consultation.patientName.split(' ').map((e) => e[0]).take(2).join(''),
+                        appointment.patientName.isNotEmpty
+                            ? appointment.patientName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join('')
+                            : 'P',
                         style: TextStyle(
                           color: typeColor,
                           fontWeight: FontWeight.bold,
@@ -136,7 +212,7 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            consultation.patientName,
+                            appointment.patientName,
                             style: TextStyle(
                               color: textPrimary,
                               fontSize: 16,
@@ -149,7 +225,7 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                               Icon(typeIcon, size: 14, color: typeColor),
                               const SizedBox(width: 4),
                               Text(
-                                consultation.type,
+                                typeLabel,
                                 style: TextStyle(
                                   color: typeColor,
                                   fontSize: 13,
@@ -160,7 +236,7 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            consultation.time,
+                            '${appointment.rawDate} · ${appointment.formattedTime}',
                             style: TextStyle(
                               color: textSecondary,
                               fontSize: 12,
@@ -169,7 +245,24 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                         ],
                       ),
                     ),
-                    _CountdownBadge(initialSeconds: consultation.initialSeconds),
+                    if (remainingSeconds > 0)
+                      _CountdownBadge(initialSeconds: remainingSeconds)
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8FDF0),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Ready',
+                          style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -178,23 +271,15 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () {
-                          PatientData patientData;
-                          if (consultation.patientName.contains('Ramesh')) {
-                            patientData = PatientData.getDummyRamesh();
-                          } else if (consultation.patientName.contains('Sunita')) {
-                            patientData = PatientData.getDummySunita();
-                          } else {
-                            patientData = PatientData.getDummySarah();
-                          }
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => PatientDetailsScreen(patient: patientData),
+                              builder: (context) => PatientDetailsScreen(patient: appointment.toPatientData()),
                             ),
                           );
                         },
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: Color(0xFFE5E7EB)),
+                          side: const BorderSide(color: Color(0xFFE5E7EB)),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -214,10 +299,24 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const MyPatientsScreen()),
-                          );
+                          if (appointment.type == DoctorConsultationType.offline) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PatientDetailsScreen(patient: appointment.toPatientData()),
+                              ),
+                            );
+                          } else {
+                            final targetUserId = appointment.patientUserId?.toString() ?? appointment.patientId.toString();
+                            CallLauncher.start(
+                              context: context,
+                              peerName: appointment.patientName,
+                              receiverUserId: targetUserId,
+                              isVideo: appointment.type == DoctorConsultationType.video,
+                              doctorId: appointment.doctorId,
+                              patientId: appointment.patientId,
+                            );
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: typeColor,
@@ -229,7 +328,9 @@ class _UpcomingConsultationsScreenState extends State<UpcomingConsultationsScree
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                         child: Text(
-                          isVideo ? 'Start Video Call' : 'Start Audio Call',
+                          appointment.type == DoctorConsultationType.offline
+                              ? 'Offline Details'
+                              : (isVideo ? 'Start Video Call' : 'Start Audio Call'),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -288,8 +389,12 @@ class _CountdownBadgeState extends State<_CountdownBadge> {
   }
 
   String _formatDuration(int totalSeconds) {
-    int minutes = totalSeconds ~/ 60;
+    int hours = totalSeconds ~/ 3600;
+    int minutes = (totalSeconds % 3600) ~/ 60;
     int seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    }
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
