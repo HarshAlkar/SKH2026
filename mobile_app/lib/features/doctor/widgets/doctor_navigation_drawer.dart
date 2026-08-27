@@ -4,12 +4,12 @@ import '../screens/doctor_dashboard.dart';
 import '../../../routes/app_routes.dart';
 import '../screens/patient_requests_screen.dart';
 import '../screens/create_prescription_screen.dart';
-import '../screens/consultation_history_screen.dart';
 import '../screens/health_reports_screen.dart';
 import '../screens/my_patients_screen.dart';
-import '../screens/doctor_settings_screen.dart';
 import '../screens/asha_workers_screen.dart';
 import '../../../providers/auth_provider.dart';
+import '../../profile/widgets/profile_avatar.dart';
+import '../../../core/emergency_comms/widgets/offline_emergency_status.dart';
 
 
 
@@ -25,10 +25,11 @@ class DoctorNavigationDrawer extends StatelessWidget {
     const textGrey = Color(0xFF94A3B8);
     const dividerColor = Color(0xFFF1F5F9);
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        final user = authProvider.user;
 
-    return Drawer(
+        return Drawer(
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
@@ -43,67 +44,65 @@ class DoctorNavigationDrawer extends StatelessWidget {
             // PROFILE HEADER
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-              child: Row(
-                children: [
-                  Stack(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        clipBehavior: Clip.hardEdge,
-                        child: Icon(
-                          Icons.person,
-                          size: 36,
-                          color: primaryBlue.withOpacity(0.5),
-                        ),
-                      ),
-                      Positioned(
-                        right: -2,
-                        bottom: -2,
-                        child: Container(
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF10B981,
-                            ), // Green online indicator
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              child: InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, AppRoutes.profile);
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Row(
+                  children: [
+                    Stack(
                       children: [
-                        Text(
-                          user?.name ?? 'Dr. Sharma',
-                          style: const TextStyle(
-                            color: textDark,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        ProfileAvatar(
+                          user: user,
+                          radius: 28,
+                          backgroundColor: Colors.blue.shade50,
+                          iconColor: primaryBlue.withOpacity(0.5),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Doctor Profile',
-                          style: TextStyle(
-                            color: textGrey,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.name ?? 'Doctor',
+                            style: const TextStyle(
+                              color: textDark,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'View profile',
+                            style: TextStyle(
+                              color: textGrey,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: textGrey),
+                  ],
+                ),
               ),
             ),
 
@@ -188,16 +187,37 @@ class DoctorNavigationDrawer extends StatelessWidget {
                     ),
                     _buildMenuItem(
                       context: context,
+                      icon: Icons.local_pharmacy_outlined,
+                      title: 'Medicine Stock',
+                      isActive: activeRoute == 'Medicine Stock',
+                      onTap: () {
+                        Navigator.pop(context);
+                        if (activeRoute != 'Medicine Stock') {
+                          Navigator.pushNamed(context, AppRoutes.medicineStock);
+                        }
+                      },
+                    ),
+                    _buildMenuItem(
+                      context: context,
+                      icon: Icons.chat_outlined,
+                      title: 'Messages',
+                      isActive: activeRoute == 'Messages',
+                      onTap: () {
+                        Navigator.pop(context);
+                        if (activeRoute != 'Messages') {
+                          Navigator.pushNamed(context, AppRoutes.chatInbox);
+                        }
+                      },
+                    ),
+                    _buildMenuItem(
+                      context: context,
                       icon: Icons.medical_services_outlined,
                       title: 'Consultations',
                       isActive: activeRoute == 'Consultations',
                       onTap: () {
                         Navigator.pop(context);
                         if (activeRoute != 'Consultations') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ConsultationHistoryScreen()),
-                          );
+                          Navigator.pushNamed(context, AppRoutes.callHistory);
                         }
                       },
                     ),
@@ -245,12 +265,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                       onTap: () {
                         Navigator.pop(context);
                         if (activeRoute != 'Settings') {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const DoctorSettingsScreen(),
-                            ),
-                          );
+                          Navigator.pushNamed(context, AppRoutes.doctorSettings);
                         }
                       },
                     ),
@@ -259,6 +274,8 @@ class DoctorNavigationDrawer extends StatelessWidget {
               ),
             ),
 
+            const Divider(color: dividerColor, height: 1),
+            const OfflineEmergencyStatusTile(),
             const Divider(color: dividerColor, height: 1),
 
             // FOOTER - LOGOUT
@@ -303,6 +320,8 @@ class DoctorNavigationDrawer extends StatelessWidget {
           ],
         ),
       ),
+    );
+      },
     );
   }
 

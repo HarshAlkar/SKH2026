@@ -11,6 +11,8 @@ import '../../referral/screens/emergency_referral_screen.dart';
 import '../../referral/screens/referral_history_screen.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../routes/app_routes.dart';
+import '../../profile/widgets/profile_avatar.dart';
+import '../../../core/emergency_comms/widgets/offline_emergency_status.dart';
 
 class AshaDrawer extends StatelessWidget {
   const AshaDrawer({super.key});
@@ -29,11 +31,12 @@ class AshaDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.user;
-    const Color primaryColor = Color(0xFF2A7DE1);
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, _) {
+        final user = authProvider.user;
+        const Color primaryColor = Color(0xFF2A7DE1);
 
-    return Drawer(
+        return Drawer(
       child: Column(
         children: [
           UserAccountsDrawerHeader(
@@ -43,9 +46,17 @@ class AshaDrawer extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
             ),
             accountEmail: Text("Phone: ${user?.phoneNumber ?? 'N/A'}"),
-            currentAccountPicture: const CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.person, size: 40, color: Colors.blue),
+            currentAccountPicture: GestureDetector(
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.profile);
+              },
+              child: ProfileAvatar(
+                user: user,
+                radius: 32,
+                backgroundColor: Colors.white,
+                iconColor: Colors.blue,
+              ),
             ),
           ),
           ListTile(
@@ -78,6 +89,14 @@ class AshaDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pop(context);
               _navigateTo(context, const VillageVisitsScreen());
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.inventory_2_outlined),
+            title: const Text('Update Stock'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, AppRoutes.updateStock);
             },
           ),
           ListTile(
@@ -128,15 +147,22 @@ class AshaDrawer extends StatelessWidget {
           ),
           const Divider(),
           ListTile(
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Profile'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, AppRoutes.profile);
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.settings_outlined),
             title: const Text('Settings'),
             onTap: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings feature coming soon')),
-              );
+              Navigator.pushNamed(context, AppRoutes.ashaSettings);
             },
           ),
+          const OfflineEmergencyStatusTile(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.redAccent),
             title: const Text(
@@ -156,6 +182,8 @@ class AshaDrawer extends StatelessWidget {
           ),
         ],
       ),
+    );
+      },
     );
   }
 }

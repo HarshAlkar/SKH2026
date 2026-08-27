@@ -1,14 +1,24 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+@theme {
+  --color-primary: #2A7DE1;
+  --color-primary-dark: #1d64b8;
+  --color-secondary: #3CB371;
+  --color-accent: #FFA000;
+  --color-ink: #1E293B;
+  --color-muted: #64748B;
+  --color-page: #F8FAFC;
+  --color-light: #E8F1FF;
+  --font-sans: Inter, system-ui, Segoe UI, sans-serif;
+}
+
+html, body, #root {
+  min-height: 100%;
 }
 
 body {
   margin: 0;
-  display: flex;
-  min-width: 320px;
-  min-height: 100vh;
+  background: var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
 }

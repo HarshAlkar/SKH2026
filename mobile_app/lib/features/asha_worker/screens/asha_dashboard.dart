@@ -6,13 +6,16 @@ import '../widgets/activity_tile.dart';
 import '../widgets/emergency_button.dart';
 import '../widgets/asha_sidebar.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../models/user_model.dart';
 import '../../../core/sync/offline_api.dart';
 import '../../../core/widgets/sync_status_banner.dart';
 import '../../../providers/consultation_provider.dart';
+import '../../../core/services/permission_dialog_service.dart';
 import '../../../routes/app_routes.dart';
 import '../../patient/screens/village_patients_screen.dart';
 import 'asha_call_screen.dart';
-import 'asha_settings_screen.dart';
+import '../../profile/screens/profile_screen.dart';
+import '../../profile/widgets/profile_avatar.dart';
 
 class AshaDashboard extends StatefulWidget {
   const AshaDashboard({super.key});
@@ -42,6 +45,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
       if (user != null) {
         context.read<ConsultationProvider>().initSignaling(user.id.toString());
       }
+      PermissionDialogService.ensureNotifications(context);
     });
   }
 
@@ -115,7 +119,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                 _buildHomeBody(user),
                 const VillagePatientsScreen(embedded: true),
                 const AshaCallScreen(embedded: true),
-                const AshaSettingsScreen(embedded: true),
+                const ProfileScreen(embedded: true),
               ],
             ),
           ),
@@ -125,7 +129,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
     );
   }
 
-  Widget _buildHomeBody(dynamic user) {
+  Widget _buildHomeBody(UserModel? user) {
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: _fetchDashboardData,
@@ -143,7 +147,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Welcome, ${user?.name.split(' ').first ?? 'ASHA'} 👋",
+                          "Welcome, ${user == null || user.name.trim().isEmpty ? 'ASHA' : user.name.split(' ').first} 👋",
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -161,6 +165,16 @@ class _AshaDashboardState extends State<AshaDashboard> {
                       ],
                     ),
                   ),
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedIndex = 3),
+                    child: ProfileAvatar(
+                      user: user,
+                      radius: 24,
+                      backgroundColor: Colors.white,
+                      iconColor: primaryColor,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
                   IconButton(
                     icon: const Icon(Icons.notifications_outlined),
                     onPressed: () => _openAndRefresh(AppRoutes.riskAlerts),

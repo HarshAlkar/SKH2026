@@ -6,7 +6,7 @@ from .models import User, OTPVerification
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
     fieldsets = DjangoUserAdmin.fieldsets + (
-        ("VitalReach", {"fields": ("role", "phone_number", "village", "name")}),
+        ("VitalReach", {"fields": ("role", "phone_number", "village", "name", "photo")}),
     )
     list_display = ("username", "name", "phone_number", "role", "is_active")
     list_filter = ("role", "is_active")

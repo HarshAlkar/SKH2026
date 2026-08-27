@@ -13,6 +13,8 @@ from .sms import send_otp_sms
 from apps.doctors.models import Doctor
 from apps.asha_workers.models import ASHAWorker
 from apps.patients.models import Patient
+from apps.inventory.models import MedicalStaffProfile, HealthcareFacility
+import json
 import random
 import datetime
 import re
@@ -32,6 +34,7 @@ def normalize_identifier(value):
 
 class UserSerializer(serializers.ModelSerializer):
     profile_details = serializers.SerializerMethodField()
+    photo_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -44,8 +47,17 @@ class UserSerializer(serializers.ModelSerializer):
             "village",
             "name",
             "created_at",
+            "photo_url",
             "profile_details",
         ]
+
+    def get_photo_url(self, obj):
+        if not obj.photo:
+            return None
+        try:
+            return obj.photo.url
+        except ValueError:
+            return None
 
     def get_profile_details(self, obj):
         if obj.role == "doctor" and hasattr(obj, "doctor_profile"):
@@ -54,6 +66,8 @@ class UserSerializer(serializers.ModelSerializer):
                 "experience_years": obj.doctor_profile.experience_years,
                 "hospital_name": obj.doctor_profile.hospital_name,
                 "qualification": obj.doctor_profile.qualification,
+                "license_number": obj.doctor_profile.license_number,
+                "bio": obj.doctor_profile.bio,
                 "is_available": obj.doctor_profile.is_available,
             }
         if obj.role == "asha_worker" and hasattr(obj, "asha_profile"):
@@ -72,6 +86,16 @@ class UserSerializer(serializers.ModelSerializer):
                 "gender": obj.patient_profile.gender,
                 "address": obj.patient_profile.address,
                 "blood_group": obj.patient_profile.blood_group,
+                "medical_history": obj.patient_profile.medical_history,
+            }
+        if obj.role == "medical_staff" and hasattr(obj, "medical_staff_profile"):
+            profile = obj.medical_staff_profile
+            facility = profile.facility
+            return {
+                "designation": profile.designation,
+                "facility_id": facility.id if facility else None,
+                "facility_name": facility.name if facility else None,
+                "facility_village": facility.village if facility else None,
             }
         return None
 
@@ -94,6 +118,8 @@ class RegisterSerializer(serializers.ModelSerializer):
     gender = serializers.CharField(required=False, allow_blank=True)
     blood_group = serializers.CharField(required=False, allow_blank=True)
     medical_history = serializers.CharField(required=False, allow_blank=True)
+    facility_id = serializers.IntegerField(required=False, allow_null=True)
+    designation = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
@@ -117,6 +143,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             "gender",
             "blood_group",
             "medical_history",
+            "facility_id",
+            "designation",
         ]
 
     def validate_phone_number(self, value):
@@ -171,6 +199,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         gender = validated_data.pop("gender", None)
         blood_group = validated_data.pop("blood_group", None)
         medical_history = validated_data.pop("medical_history", None)
+        facility_id = validated_data.pop("facility_id", None)
+        designation = validated_data.pop("designation", None)
 
         if not validated_data.get("username"):
             validated_data["username"] = validated_data.get("phone_number")
@@ -196,6 +226,15 @@ class RegisterSerializer(serializers.ModelSerializer):
                 worker_id=worker_id or "",
                 district=district or "",
             )
+        elif user.role == "medical_staff":
+            facility = None
+            if facility_id:
+                facility = HealthcareFacility.objects.filter(pk=facility_id).first()
+            MedicalStaffProfile.objects.create(
+                user=user,
+                facility=facility,
+                designation=(designation or "Pharmacist")[:100],
+            )
         elif user.role == "user":
             bg = (blood_group or "").strip()
             if bg.lower() in ("not known", "unknown", "n/a"):
@@ -211,6 +250,100 @@ class RegisterSerializer(serializers.ModelSerializer):
             )
 
         return user
+
+
+def _parse_profile_details(raw):
+    if raw is None:
+        return None
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str) and raw.strip():
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else None
+        except json.JSONDecodeError:
+            return None
+    return None
+
+
+def _apply_role_profile(user, details):
+    if user.role == "user":
+        patient, _ = Patient.objects.get_or_create(
+            user=user,
+            defaults={
+                "age": 0,
+                "gender": "Not Set",
+                "blood_group": "",
+                "address": user.village or "Not Set",
+                "medical_history": "",
+            },
+        )
+        if "age" in details and details["age"] not in (None, ""):
+            try:
+                patient.age = int(details["age"])
+            except (TypeError, ValueError):
+                pass
+        if "gender" in details and details["gender"] is not None:
+            patient.gender = str(details["gender"])[:10] or patient.gender
+        if "blood_group" in details and details["blood_group"] is not None:
+            patient.blood_group = str(details["blood_group"])[:5]
+        if "address" in details and details["address"] is not None:
+            patient.address = str(details["address"])
+        if "medical_history" in details and details["medical_history"] is not None:
+            patient.medical_history = str(details["medical_history"])
+        patient.save()
+    elif user.role == "doctor":
+        doctor, _ = Doctor.objects.get_or_create(
+            user=user,
+            defaults={
+                "specialization": "General",
+                "experience_years": 0,
+                "hospital_name": "General Hospital",
+            },
+        )
+        for field in ("specialization", "hospital_name", "qualification", "license_number", "bio"):
+            if field in details and details[field] is not None:
+                setattr(doctor, field, details[field])
+        if "experience_years" in details and details["experience_years"] not in (None, ""):
+            try:
+                doctor.experience_years = int(details["experience_years"])
+            except (TypeError, ValueError):
+                pass
+        if "is_available" in details:
+            value = details["is_available"]
+            if isinstance(value, str):
+                doctor.is_available = value.lower() in ("1", "true", "yes")
+            else:
+                doctor.is_available = bool(value)
+        doctor.save()
+    elif user.role == "asha_worker":
+        asha, _ = ASHAWorker.objects.get_or_create(
+            user=user,
+            defaults={
+                "assigned_village": user.village or "",
+                "phc_center": "Local PHC",
+            },
+        )
+        for field in ("assigned_village", "phc_center", "worker_id", "district"):
+            if field in details and details[field] is not None:
+                setattr(asha, field, details[field])
+        asha.save()
+        if asha.assigned_village:
+            user.village = asha.assigned_village
+            user.save(update_fields=["village"])
+    elif user.role == "medical_staff":
+        profile, _ = MedicalStaffProfile.objects.get_or_create(
+            user=user,
+            defaults={"designation": "Pharmacist"},
+        )
+        if "designation" in details and details["designation"] is not None:
+            profile.designation = str(details["designation"])[:100]
+        if "facility_id" in details and details["facility_id"] not in (None, ""):
+            try:
+                profile.facility = HealthcareFacility.objects.get(pk=int(details["facility_id"]))
+            except (TypeError, ValueError, HealthcareFacility.DoesNotExist):
+                pass
+        profile.save()
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -232,17 +365,21 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.action == "get_asha_workers":
             qs = User.objects.filter(role="asha_worker")
             village = (self.request.query_params.get("village") or "").strip()
-            if user.role == "user" and user.village:
-                qs = qs.filter(
-                    Q(village__iexact=user.village)
-                    | Q(asha_profile__assigned_village__iexact=user.village)
-                )
-            elif village:
-                qs = qs.filter(
+            if user.role == "user":
+                village = (user.village or village or "").strip()
+            if village:
+                exact = qs.filter(
                     Q(village__iexact=village)
                     | Q(asha_profile__assigned_village__iexact=village)
-                    | Q(asha_profile__district__iexact=village)
                 )
+                if exact.exists():
+                    return exact
+                fuzzy = qs.filter(
+                    Q(village__icontains=village)
+                    | Q(asha_profile__assigned_village__icontains=village)
+                    | Q(asha_profile__district__icontains=village)
+                )
+                return fuzzy
             return qs
         if self.action == "get_patients":
             qs = User.objects.filter(role="user")
@@ -278,11 +415,65 @@ class UserViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         if instance.pk != request.user.pk:
             return Response({"error": "You can only update your own profile."}, status=status.HTTP_403_FORBIDDEN)
-        allowed = {k: request.data.get(k) for k in ("name", "village", "email") if k in request.data}
-        for key, value in allowed.items():
-            setattr(instance, key, value)
-        instance.save()
-        return Response(UserSerializer(instance).data)
+        return self._save_profile(instance, request)
+
+    def _save_profile(self, user, request):
+        data = request.data
+        if "phone_number" in data and data.get("phone_number") not in (None, ""):
+            phone = normalize_identifier(data.get("phone_number"))
+            taken = User.objects.exclude(pk=user.pk).filter(
+                Q(phone_number=phone) | Q(username=phone)
+            ).exists()
+            if taken:
+                return Response(
+                    {"error": "This phone number is already registered."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user.phone_number = phone
+        for key in ("name", "village", "email"):
+            if key in data and data.get(key) is not None:
+                setattr(user, key, data.get(key))
+        user.save()
+        details = _parse_profile_details(data.get("profile_details"))
+        if details:
+            _apply_role_profile(user, details)
+        user.refresh_from_db()
+        return Response(UserSerializer(user, context={"request": request}).data)
+
+    @action(detail=False, methods=["get", "patch"], url_path="me")
+    def me(self, request):
+        if request.method.lower() == "get":
+            return Response(UserSerializer(request.user, context={"request": request}).data)
+        return self._save_profile(request.user, request)
+
+    @action(detail=False, methods=["post"], url_path="me/photo")
+    def upload_photo(self, request):
+        photo = request.FILES.get("photo") or request.FILES.get("image")
+        if not photo:
+            return Response({"error": "photo is required"}, status=status.HTTP_400_BAD_REQUEST)
+        request.user.photo = photo
+        request.user.save(update_fields=["photo"])
+        return Response(UserSerializer(request.user, context={"request": request}).data)
+
+    @action(detail=False, methods=["post"], url_path="change-password")
+    def change_password(self, request):
+        current_password = request.data.get("current_password") or ""
+        new_password = request.data.get("new_password") or ""
+        if not current_password or not new_password:
+            return Response(
+                {"error": "Current password and new password are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(new_password) < 6:
+            return Response(
+                {"error": "Password must be at least 6 characters"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not request.user.check_password(current_password):
+            return Response({"error": "Current password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+        request.user.set_password(new_password)
+        request.user.save()
+        return Response({"message": "Password changed successfully"})
 
     @action(detail=False, methods=["post"], url_path="register")
     def register(self, request):
@@ -297,7 +488,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response(
                     {
                         "token": token.key,
-                        "user": UserSerializer(existing).data,
+                        "user": UserSerializer(existing, context={"request": request}).data,
                         "already_exists": True,
                     },
                     status=status.HTTP_200_OK,
@@ -307,7 +498,7 @@ class UserViewSet(viewsets.ModelViewSet):
             user = serializer.save()
             token, _created = Token.objects.get_or_create(user=user)
             return Response(
-                {"token": token.key, "user": UserSerializer(user).data},
+                {"token": token.key, "user": UserSerializer(user, context={"request": request}).data},
                 status=status.HTTP_201_CREATED,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -347,7 +538,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = authenticate(username=user_obj.username, password=password)
         if user:
             token, _created = Token.objects.get_or_create(user=user)
-            return Response({"token": token.key, "user": UserSerializer(user).data})
+            return Response({"token": token.key, "user": UserSerializer(user, context={"request": request}).data})
         return Response({"error": "Invalid password"}, status=status.HTTP_401_UNAUTHORIZED)
 
     @action(detail=False, methods=["post"], url_path="logout")
@@ -438,7 +629,7 @@ class UserViewSet(viewsets.ModelViewSet):
             {
                 "message": "OTP verified successfully",
                 "token": token.key,
-                "user": UserSerializer(user).data,
+                "user": UserSerializer(user, context={"request": request}).data,
             },
             status=status.HTTP_200_OK,
         )

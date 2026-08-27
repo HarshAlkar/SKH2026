@@ -20,12 +20,13 @@ module.exports = (io, socket) => {
   });
 
   socket.on('call-request', (data) => {
-    const { receiverId, consultationId, callerName, callType } = data;
+    const { receiverId, consultationId, callerName, callType, callerUserId } = data;
     console.log(`Call request from ${callerName} to ${receiverId} for consultation ${consultationId}`);
     socket.to(`user-${receiverId}`).emit('incoming-call', {
       consultationId,
       callerName,
       callType,
+      callerUserId: callerUserId || null,
       senderId: socket.id
     });
   });

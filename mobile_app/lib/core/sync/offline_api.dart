@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import '../services/api_service.dart';
 import 'local_store.dart';
 import 'sync_service.dart';
@@ -61,15 +59,43 @@ class OfflineApi {
     return _enqueue('DELETE', path, null);
   }
 
+  Future<OfflineWriteResult> postMultipart(
+    String path, {
+    required String filePath,
+    String field = 'photo',
+    Map<String, String>? fields,
+    Map<String, dynamic>? body,
+  }) {
+    return _enqueue(
+      'POST',
+      path,
+      body,
+      filePath: filePath,
+      fileField: field,
+      fields: fields,
+    );
+  }
+
   Future<OfflineWriteResult> _enqueue(
     String method,
     String path,
-    dynamic body,
-  ) async {
-    await _store.enqueue(method: method, path: path, body: body);
+    dynamic body, {
+    String? filePath,
+    String? fileField,
+    Map<String, String>? fields,
+  }) async {
+    await _store.enqueue(
+      method: method,
+      path: path,
+      body: body,
+      filePath: filePath,
+      fileField: fileField,
+      fields: fields,
+    );
     await _optimisticCache(method, path, body);
     await _sync.refreshPending();
-    unawaited(_sync.flush());
+    // Await flush so callers get accurate "Saved to cloud" vs "on this phone".
+    await _sync.flush();
     final pending = await _store.pendingCount();
     return OfflineWriteResult(savedLocally: true, synced: pending == 0);
   }
@@ -117,6 +143,32 @@ class OfflineApi {
         'status': 'PENDING',
         'notes': map['notes'] ?? '',
       });
+    } else if (path.contains('/stock/adjust')) {
+      // Optimistic touch so list refresh feels immediate after offline adjust.
+      final cached = await _store.getCache('/stock/batches/');
+      if (cached is List && map['batch_id'] != null) {
+        final batchId = map['batch_id'];
+        final action = '${map['action'] ?? 'add'}';
+        final qty = int.tryParse('${map['quantity'] ?? 0}') ?? 0;
+        final updated = cached.map((row) {
+          if (row is! Map) return row;
+          if ('${row['id']}' != '$batchId') return row;
+          final copy = Map<String, dynamic>.from(row);
+          final current = int.tryParse('${copy['quantity'] ?? 0}') ?? 0;
+          int next = current;
+          if (action == 'add') {
+            next = current + qty;
+          } else if (action == 'adjust') {
+            next = qty;
+          } else {
+            next = (current - qty).clamp(0, 1 << 30);
+          }
+          copy['quantity'] = next;
+          copy['pending_sync'] = true;
+          return copy;
+        }).toList();
+        await _store.putCache('/stock/batches/', updated);
+      }
     }
   }
 }

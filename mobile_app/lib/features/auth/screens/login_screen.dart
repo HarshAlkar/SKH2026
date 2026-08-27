@@ -35,6 +35,11 @@ class _LoginScreenState extends State<LoginScreen>
       curve: Curves.easeIn,
     );
     _animationController.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+      }
+    });
   }
 
   @override

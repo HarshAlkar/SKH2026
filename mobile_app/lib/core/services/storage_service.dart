@@ -29,6 +29,14 @@ class StorageService {
     await _prefs.remove(key);
   }
 
+  static bool getBoolSync(String key, {bool defaultValue = false}) {
+    return _prefs.getBool(key) ?? defaultValue;
+  }
+
+  static Future<void> saveBoolSync(String key, bool value) async {
+    await _prefs.setBool(key, value);
+  }
+
   // Hive Box for Offline Cache
   Future<Box> openBox(String boxName) async {
     return await Hive.openBox(boxName);

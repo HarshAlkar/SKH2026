@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.db.models import Q
 from django.utils import timezone
 from apps.users.models import User
-from .models import ChatThread, ChatMessage
+from .models import ChatThread, ChatMessage, ChatThreadHide
 from .serializers import ChatThreadSerializer, ChatMessageSerializer
 
 ALLOWED_PEERS = {
@@ -21,10 +21,19 @@ def _ordered_ids(id1, id2):
 class ChatThreadViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
+    def _get_thread(self, request, pk):
+        return ChatThread.objects.get(
+            Q(pk=pk) & (Q(user_a=request.user) | Q(user_b=request.user))
+        )
+
     def list(self, request):
         user = request.user
+        hidden_ids = ChatThreadHide.objects.filter(user=user).values_list(
+            'thread_id', flat=True
+        )
         threads = (
             ChatThread.objects.filter(Q(user_a=user) | Q(user_b=user))
+            .exclude(id__in=hidden_ids)
             .select_related('user_a', 'user_b')
             .order_by('-updated_at')
         )
@@ -59,6 +68,7 @@ class ChatThreadViewSet(viewsets.ViewSet):
 
         a_id, b_id = _ordered_ids(user.id, peer.id)
         thread, _ = ChatThread.objects.get_or_create(user_a_id=a_id, user_b_id=b_id)
+        ChatThreadHide.objects.filter(thread=thread, user=user).delete()
         serializer = ChatThreadSerializer(thread, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -87,3 +97,21 @@ class ChatThreadViewSet(viewsets.ViewSet):
         thread.save(update_fields=['updated_at'])
         serializer = ChatMessageSerializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='hide')
+    def hide(self, request, pk=None):
+        try:
+            thread = self._get_thread(request, pk)
+        except ChatThread.DoesNotExist:
+            return Response({'error': 'Thread not found'}, status=status.HTTP_404_NOT_FOUND)
+        ChatThreadHide.objects.get_or_create(thread=thread, user=request.user)
+        return Response({'status': 'hidden'})
+
+    @action(detail=True, methods=['post'], url_path='unhide')
+    def unhide(self, request, pk=None):
+        try:
+            self._get_thread(request, pk)
+        except ChatThread.DoesNotExist:
+            return Response({'error': 'Thread not found'}, status=status.HTTP_404_NOT_FOUND)
+        ChatThreadHide.objects.filter(thread_id=pk, user=request.user).delete()
+        return Response({'status': 'visible'})

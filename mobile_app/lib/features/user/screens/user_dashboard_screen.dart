@@ -4,10 +4,13 @@ import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../../providers/auth_provider.dart';
 import '../widgets/user_sidebar.dart';
+import '../../profile/widgets/profile_avatar.dart';
 
 
 import '../../../providers/consultation_provider.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/sync/offline_api.dart';
+import '../../../core/widgets/sync_status_banner.dart';
+import '../../../core/services/permission_dialog_service.dart';
 import 'asha_workers_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
@@ -29,13 +32,14 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
       if (user != null) {
         context.read<ConsultationProvider>().initSignaling(user.id.toString());
       }
+      PermissionDialogService.ensureNotifications(context);
       _loadAssignedAsha();
     });
   }
 
   Future<void> _loadAssignedAsha() async {
     try {
-      final data = await ApiService().get('/users/asha-workers/');
+      final data = await OfflineApi.instance.get('/users/asha-workers/');
       if (!mounted) return;
       if (data is List && data.isNotEmpty) {
         setState(() => _assignedAsha = Map<String, dynamic>.from(data.first as Map));
@@ -65,47 +69,70 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none_outlined, color: AppColors.primary),
-            onPressed: () {},
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.patientAlerts),
+          ),
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: GestureDetector(
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.profile),
+                  child: ProfileAvatar(
+                    user: auth.user,
+                    radius: 18,
+                    backgroundColor: AppColors.lightBlue,
+                    iconColor: AppColors.primary,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
       drawer: const UserSidebar(),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildWelcomeSection(),
-            if (_assignedAsha != null) _buildAssignedAshaCard(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+      body: Column(
+        children: [
+          const SyncStatusBanner(),
+          Expanded(
+            child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSymptomCheckerCard(),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Quick Actions',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                  _buildWelcomeSection(),
+                  if (_assignedAsha != null) _buildAssignedAshaCard(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSymptomCheckerCard(),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Quick Actions',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildQuickActionsGrid(),
+                        const SizedBox(height: 24),
+                        if (_showReminder) _buildMedicineReminder(),
+                        const SizedBox(height: 24),
+                        const Text(
+                          "Today's Health Tips",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildHealthTipsList(),
+                        const SizedBox(height: 24),
+                        _buildEmergencyCard(),
+                        const SizedBox(height: 40),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildQuickActionsGrid(),
-                  const SizedBox(height: 24),
-                  if (_showReminder) _buildMedicineReminder(),
-                  const SizedBox(height: 24),
-                  const Text(
-                    "Today's Health Tips",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildHealthTipsList(),
-                  const SizedBox(height: 24),
-                  _buildEmergencyCard(),
-                  const SizedBox(height: 40),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

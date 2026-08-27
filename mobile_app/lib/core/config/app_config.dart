@@ -3,7 +3,7 @@ import '../services/storage_service.dart';
 class AppConfig {
   static const String defaultHost = String.fromEnvironment(
     'API_HOST',
-    defaultValue: '10.0.2.2',
+    defaultValue: 'https://skh2026.onrender.com',
   );
   static const int apiPort = 8000;
   static const int signalingPort = 5000;

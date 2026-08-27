@@ -204,57 +204,85 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
   }
 
   Widget _buildDateSelector() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: _weekDates.map((date) {
-            bool isSelected = DateFormat('yyyy-MM-dd').format(date) == DateFormat('yyyy-MM-dd').format(_selectedDate);
-            bool isToday = DateFormat('yyyy-MM-dd').format(date) == DateFormat('yyyy-MM-dd').format(DateTime.now());
-            
-            return GestureDetector(
-              onTap: () => setState(() => _selectedDate = date),
-              child: Container(
-                width: 50,
-                margin: const EdgeInsets.symmetric(horizontal: 6),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: isToday && !isSelected ? Border.all(color: AppColors.primary.withOpacity(0.3)) : null,
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      DateFormat('E').format(date).toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.white : Colors.grey.shade400,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('dd').format(date),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: isSelected ? Colors.white : const Color(0xFF1E293B),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
+    return Row(
+      children: [
+        IconButton(
+          tooltip: 'Previous week',
+          onPressed: () {
+            final previous = _selectedDate.subtract(const Duration(days: 7));
+            setState(() {
+              _selectedDate = previous;
+              _weekDates = _generateWeekDisplayDates(previous);
+            });
+          },
+          icon: const Icon(Icons.chevron_left),
         ),
-      ),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey.shade100),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _weekDates.map((date) {
+                  bool isSelected = DateFormat('yyyy-MM-dd').format(date) == DateFormat('yyyy-MM-dd').format(_selectedDate);
+                  bool isToday = DateFormat('yyyy-MM-dd').format(date) == DateFormat('yyyy-MM-dd').format(DateTime.now());
+            
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedDate = date),
+                    child: Container(
+                      width: 50,
+                      margin: const EdgeInsets.symmetric(horizontal: 6),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: isSelected ? AppColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
+                        border: isToday && !isSelected ? Border.all(color: AppColors.primary.withOpacity(0.3)) : null,
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            DateFormat('E').format(date).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white : Colors.grey.shade400,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            DateFormat('dd').format(date),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ),
+        IconButton(
+          tooltip: 'Next week',
+          onPressed: () {
+            final next = _selectedDate.add(const Duration(days: 7));
+            setState(() {
+              _selectedDate = next;
+              _weekDates = _generateWeekDisplayDates(next);
+            });
+          },
+          icon: const Icon(Icons.chevron_right),
+        ),
+      ],
     );
   }
 
@@ -335,10 +363,10 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
               ),
               IconButton(
                 icon: Icon(
-                  med.isTaken ? Icons.check_circle : Icons.radio_button_unchecked,
-                  color: med.isTaken ? AppColors.primary : Colors.grey.shade300,
+                  provider.isTakenOn(med.id!, _selectedDate) ? Icons.check_circle : Icons.radio_button_unchecked,
+                  color: provider.isTakenOn(med.id!, _selectedDate) ? AppColors.primary : Colors.grey.shade300,
                 ),
-                onPressed: () => provider.toggleStatus(med.id!),
+                onPressed: () => provider.toggleTakenOn(med.id!, _selectedDate),
               ),
             ],
           ),

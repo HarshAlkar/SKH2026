@@ -5,10 +5,15 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../../core/services/api_service.dart';
+import '../../../core/services/permission_dialog_service.dart';
+import '../../../core/services/settings_store.dart';
 import '../../../routes/app_routes.dart';
 import '../../../providers/symptom_provider.dart';
-import '../../../core/services/api_service.dart';
+import '../../ai_symptom_checker/services/symptom_dataset_service.dart';
 import '../widgets/user_sidebar.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 
@@ -21,16 +26,12 @@ class SymptomCheckerScreen extends StatefulWidget {
 }
 
 class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
-  final List<String> _allSymptoms = [
-    'Fever',
-    'Cough',
-    'Headache',
-    'Vomiting',
-    'Chest Pain',
-    'Fatigue',
-  ];
+  List<SymptomOption> _symptomOptions = [];
+  List<SymptomOption> _skinSymptomOptions = [];
+  bool _datasetLoading = true;
 
   final List<String> _selectedSymptoms = [];
+  final List<String> _selectedSkinSymptoms = [];
   bool _isAnalyzing = false;
   bool _showResult = false;
   bool _notifying = false;
@@ -63,22 +64,23 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       'take_photo': 'Camera',
       'pick_gallery': 'Gallery',
       'analyze_skin': 'Analyze Skin Photo',
+      'skin_symptoms': 'Or select skin symptoms from dataset',
       'skin_disclaimer':
-          'Screening only, not a diagnosis. This model is trained on HAM10000-style data and is biased toward lighter skin tones.',
+          'Screening only, not a diagnosis. Photo analysis uses CNN when available; symptom chips use the disease dataset (e.g. fungal infection, acne, psoriasis).',
       'result_title': 'ANALYSIS RESULT',
       'consult': 'Consult Doctor',
       'notify': 'Notify ASHA',
       'notified': 'ASHA notified',
       'disclaimer': 'This is a screening suggestion, not a medical diagnosis.',
+      'confidence': 'Confidence',
+      'select_first': 'Please select symptoms or use voice input',
+      'analysis_failed': 'Analysis failed',
+      'speech_denied': 'Speech recognition not available or permission denied',
+      'skin_first': 'Take a skin photo or select skin symptoms',
+      'low': 'Low',
+      'moderate': 'Moderate',
+      'high': 'High',
       'error_init': 'Speech recognition not available',
-      'symptoms': {
-        'Fever': 'Fever',
-        'Cough': 'Cough',
-        'Headache': 'Headache',
-        'Vomiting': 'Vomiting',
-        'Chest Pain': 'Chest Pain',
-        'Fatigue': 'Fatigue',
-      }
     },
     'Hindi': {
       'title': 'AI लक्षण जाँचकर्ता',
@@ -96,33 +98,72 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       'take_photo': 'कैमरा',
       'pick_gallery': 'गैलरी',
       'analyze_skin': 'त्वचा फोटो का विश्लेषण करें',
+      'skin_symptoms': 'या त्वचा के लक्षण चुनें',
       'skin_disclaimer':
-          'यह केवल स्क्रीनिंग है, निदान नहीं। यह मॉडल HAM10000-शैली डेटा पर है और हल्की त्वचा पर अधिक सटीक हो सकता है।',
+          'यह केवल स्क्रीनिंग है, निदान नहीं। फोटो CNN से और लक्षण डेटासेट से विश्लेषित होते हैं (जैसे फंगल संक्रमण, मुँहासे)।',
       'result_title': 'विश्लेषण परिणाम',
       'consult': 'डॉक्टर से सलाह लें',
       'notify': 'ASHA को सूचित करें',
       'notified': 'ASHA को सूचित किया गया',
       'disclaimer': 'यह स्क्रीनिंग सुझाव है, चिकित्सा निदान नहीं।',
+      'confidence': 'विश्वास',
+      'select_first': 'कृपया लक्षण चुनें या आवाज़ का उपयोग करें',
+      'analysis_failed': 'विश्लेषण असफल रहा',
+      'speech_denied': 'वाक् पहचान उपलब्ध नहीं है या अनुमति नहीं मिली',
+      'skin_first': 'त्वचा की तस्वीर लें या त्वचा के लक्षण चुनें',
+      'low': 'कम',
+      'moderate': 'मध्यम',
+      'high': 'उच्च',
       'error_init': 'वाक् पहचान उपलब्ध नहीं है',
-      'symptoms': {
-        'Fever': 'बुखार',
-        'Cough': 'खांसी',
-        'Headache': 'सिरदर्द',
-        'Vomiting': 'उल्टी',
-        'Chest Pain': 'सीने में दर्द',
-        'Fatigue': 'थकान',
-      }
     },
   };
 
   String _getTxt(String key) => _translations[_selectedLanguage]?[key] ?? key;
-  String _getSymptomTxt(String symptom) => 
-      (_translations[_selectedLanguage]?['symptoms'] as Map? ?? {})[symptom] ?? symptom;
+  String _symptomLabel(SymptomOption option) =>
+      option.labelFor(_selectedLanguage == 'Hindi' ? 'hi' : 'en');
 
   @override
   void initState() {
     super.initState();
+    _applyStoredLanguage();
     _initSpeech();
+    _loadDataset();
+  }
+
+  Future<void> _loadDataset() async {
+    try {
+      final common = await SymptomDatasetService.instance.commonSymptoms();
+      final skin = await SymptomDatasetService.instance.skinSymptoms();
+      if (!mounted) return;
+      setState(() {
+        _symptomOptions = common;
+        _skinSymptomOptions = skin;
+        _datasetLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _datasetLoading = false);
+    }
+  }
+
+  void _applyStoredLanguage() {
+    final hindi = SettingsStore.instance.isHindi;
+    _selectedLanguage = hindi ? 'Hindi' : 'English';
+    _localeId = hindi ? 'hi-IN' : 'en-IN';
+  }
+
+  Future<void> _setLanguage(String lang) async {
+    setState(() {
+      _selectedLanguage = lang;
+      if (lang == 'Hindi') {
+        final hiLocale = _availableLocales.where((l) => l.localeId.contains('hi'));
+        _localeId = hiLocale.isNotEmpty ? hiLocale.first.localeId : 'hi-IN';
+      } else {
+        final enLocale = _availableLocales.where((l) => l.localeId.contains('en'));
+        _localeId = enLocale.isNotEmpty ? enLocale.first.localeId : 'en-IN';
+      }
+    });
+    await SettingsStore.instance.setLanguage(lang == 'Hindi' ? 'hi' : 'en');
   }
 
   void _initSpeech() async {
@@ -187,7 +228,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Speech recognition not available or permission denied')),
+        SnackBar(content: Text(_getTxt('speech_denied'))),
         );
       }
     } else {
@@ -196,20 +237,39 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     }
   }
 
-  void _toggleSymptom(String symptom) {
+  void _toggleSymptom(String token) {
     setState(() {
-      if (_selectedSymptoms.contains(symptom)) {
-        _selectedSymptoms.remove(symptom);
+      if (_selectedSymptoms.contains(token)) {
+        _selectedSymptoms.remove(token);
       } else {
-        _selectedSymptoms.add(symptom);
+        _selectedSymptoms.add(token);
       }
     });
+  }
+
+  void _toggleSkinSymptom(String token) {
+    setState(() {
+      if (_selectedSkinSymptoms.contains(token)) {
+        _selectedSkinSymptoms.remove(token);
+      } else {
+        _selectedSkinSymptoms.add(token);
+      }
+    });
+  }
+
+  String _selectedSymptomLabels(List<String> tokens) {
+    final options = [..._symptomOptions, ..._skinSymptomOptions];
+    return tokens.map((token) {
+      final match = options.where((o) => o.token == token);
+      if (match.isNotEmpty) return _symptomLabel(match.first);
+      return token.replaceAll('_', ' ');
+    }).join(', ');
   }
 
   Future<void> _analyzeSymptoms() async {
     if (_selectedSymptoms.isEmpty && _voiceText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select symptoms or use voice input')),
+        SnackBar(content: Text(_getTxt('select_first'))),
       );
       return;
     }
@@ -222,12 +282,14 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     try {
       final symptomProvider = Provider.of<SymptomProvider>(context, listen: false);
       
-      final String input = _selectedSymptoms.join(', ') + 
+      final String input = _selectedSymptomLabels(_selectedSymptoms) +
                           (_voiceText.isNotEmpty ? ', $_voiceText' : '');
       
       await symptomProvider.analyzeSymptoms(
         symptomsText: input,
         recognizedText: _voiceText,
+        language: _selectedLanguage == 'Hindi' ? 'hi' : 'en',
+        selectedTokens: List<String>.from(_selectedSymptoms),
       );
 
       if (mounted) {
@@ -242,13 +304,24 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
           _isAnalyzing = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Analysis failed: $e')),
+          SnackBar(content: Text('${_getTxt('analysis_failed')}: $e')),
         );
       }
     }
   }
 
   Future<void> _pickSkinImage(ImageSource source) async {
+    if (source == ImageSource.camera) {
+      final allowed = await PermissionDialogService.ensure(
+        context,
+        permission: Permission.camera,
+        title: _selectedLanguage == 'Hindi' ? 'कैमरा अनुमति' : 'Allow camera',
+        message: _selectedLanguage == 'Hindi'
+            ? 'त्वचा फोटो लेने के लिए कैमरा अनुमति दें।'
+            : 'Allow camera so VitalReach can take a skin photo.',
+      );
+      if (!allowed || !mounted) return;
+    }
     try {
       final picked = await _picker.pickImage(
         source: source,
@@ -264,15 +337,15 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open image: $e')),
+        SnackBar(content: Text('${_getTxt('analysis_failed')}: $e')),
       );
     }
   }
 
   Future<void> _analyzeSkin() async {
-    if (_skinImage == null) {
+    if (_skinImage == null && _selectedSkinSymptoms.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Take or choose a skin photo first')),
+        SnackBar(content: Text(_getTxt('skin_first'))),
       );
       return;
     }
@@ -281,8 +354,11 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       _showResult = false;
     });
     try {
-      await Provider.of<SymptomProvider>(context, listen: false)
-          .analyzeSkin(_skinImage!);
+      await Provider.of<SymptomProvider>(context, listen: false).analyzeSkin(
+        _skinImage,
+        language: _selectedLanguage == 'Hindi' ? 'hi' : 'en',
+        skinSymptomTokens: List<String>.from(_selectedSkinSymptoms),
+      );
       if (!mounted) return;
       setState(() {
         _isAnalyzing = false;
@@ -292,7 +368,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       if (!mounted) return;
       setState(() => _isAnalyzing = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Analysis failed: $e')),
+        SnackBar(content: Text('${_getTxt('analysis_failed')}: $e')),
       );
     }
   }
@@ -350,7 +426,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
               ),
             ),
             Text(
-              'Gramin Health Connect',
+              AppConstants.appName,
               style: TextStyle(
                 color: Colors.grey.shade500,
                 fontSize: 12,
@@ -363,25 +439,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.language, color: AppColors.primary),
-            onSelected: (String lang) {
-              setState(() {
-                _selectedLanguage = lang;
-                if (lang == 'Hindi') {
-                  // Try to find a precise Hindi locale if available
-                  var hiLocale = _availableLocales.firstWhere(
-                    (l) => l.localeId.contains('hi'),
-                    orElse: () => stt.LocaleName('hi-IN', 'Hindi'),
-                  );
-                  _localeId = hiLocale.localeId;
-                } else {
-                  var enLocale = _availableLocales.firstWhere(
-                    (l) => l.localeId.contains('en'),
-                    orElse: () => stt.LocaleName('en-IN', 'English'),
-                  );
-                  _localeId = enLocale.localeId;
-                }
-              });
-            },
+            onSelected: _setLanguage,
             itemBuilder: (BuildContext context) => [
               const PopupMenuItem(value: 'English', child: Text('English')),
               const PopupMenuItem(value: 'Hindi', child: Text('हिंदी (Hindi)')),
@@ -427,15 +485,26 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                 ),
               ),
               const SizedBox(height: 16),
+              if (_datasetLoading)
+                const Center(child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
+                ))
+              else if (_symptomOptions.isEmpty)
+                Text(
+                  _getTxt('select_first'),
+                  style: const TextStyle(color: AppColors.textSecondary),
+                )
+              else
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
-                children: _allSymptoms.map((symptom) {
-                  final isSelected = _selectedSymptoms.contains(symptom);
+                children: _symptomOptions.map((option) {
+                  final isSelected = _selectedSymptoms.contains(option.token);
                   return FilterChip(
-                    label: Text(_getSymptomTxt(symptom)),
+                    label: Text(_symptomLabel(option)),
                     selected: isSelected,
-                    onSelected: (_) => _toggleSymptom(symptom),
+                    onSelected: (_) => _toggleSymptom(option.token),
                     selectedColor: AppColors.primary,
                     checkmarkColor: Colors.white,
                     labelStyle: TextStyle(
@@ -648,6 +717,39 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
         ),
         const SizedBox(height: 16),
         Text(
+          _getTxt('skin_symptoms'),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textSecondary,
+            letterSpacing: 1.0,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: _skinSymptomOptions.map((option) {
+            final isSelected = _selectedSkinSymptoms.contains(option.token);
+            return FilterChip(
+              label: Text(_symptomLabel(option)),
+              selected: isSelected,
+              onSelected: (_) => _toggleSkinSymptom(option.token),
+              selectedColor: AppColors.primary,
+              checkmarkColor: Colors.white,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : AppColors.textPrimary,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+              backgroundColor: Colors.white,
+              side: BorderSide(
+                color: isSelected ? AppColors.primary : const Color(0xFF2A7DE1).withOpacity(0.5),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+        Text(
           _getTxt('skin_disclaimer'),
           style: TextStyle(
             color: Colors.grey.shade600,
@@ -796,8 +898,12 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     final analysis = Provider.of<SymptomProvider>(context).lastAnalysis;
     if (analysis == null) return const SizedBox.shrink();
 
-    final String disease = analysis['disease'] ?? 'Unknown';
-    final String severity = analysis['severity'] ?? 'Moderate';
+    final String disease = analysis['disease_display']?.toString() ??
+        analysis['disease']?.toString() ??
+        'Unknown';
+    final String severity = analysis['severity_display']?.toString() ??
+        analysis['severity']?.toString() ??
+        'Moderate';
     final bool alertSent = analysis['alert_sent'] ?? false;
     final num confidence = analysis['confidence'] is num
         ? analysis['confidence'] as num
@@ -805,6 +911,14 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     final List top = analysis['top_predictions'] is List
         ? analysis['top_predictions'] as List
         : const [];
+    final advice = analysis['advice']?.toString() ??
+        (alertSent
+            ? (_selectedLanguage == 'Hindi'
+                ? 'संभावित गंभीर स्थिति। आशा कार्यकर्ता और डॉक्टर को सूचित किया गया है।'
+                : 'Potentially serious condition detected. ASHA worker and doctor have been notified.')
+            : (_selectedLanguage == 'Hindi'
+                ? 'पर्याप्त पानी पिएँ और आराम करें। लक्षणों पर नज़र रखें।'
+                : 'Maintain hydration and rest. Monitor symptoms carefully.'));
 
     return Container(
       width: double.infinity,
@@ -879,7 +993,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Confidence ${(confidence * 100).clamp(0, 100).toStringAsFixed(0)}%',
+            '${_getTxt('confidence')} ${(confidence * 100).clamp(0, 100).toStringAsFixed(0)}%',
             style: TextStyle(
               color: Colors.grey.shade600,
               fontWeight: FontWeight.w600,
@@ -889,7 +1003,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
             const SizedBox(height: 12),
             ...top.take(3).map((row) {
               final map = row is Map ? Map<String, dynamic>.from(row) : <String, dynamic>{};
-              final name = map['disease']?.toString() ?? '';
+              final name = map['disease_display']?.toString() ?? map['disease']?.toString() ?? '';
               final score = map['confidence'] is num ? map['confidence'] as num : 0;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 6),
@@ -913,9 +1027,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  alertSent
-                      ? 'Potentially serious condition detected. ASHA worker and doctor have been notified.'
-                      : 'Maintain hydration and rest. Monitor symptoms carefully.',
+                  advice,
                   style: TextStyle(
                     color: Colors.grey.shade600,
                     fontSize: 14,
@@ -946,9 +1058,9 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _buildStatusChip('Low', Colors.green, currentSeverity == 'Low'),
-        _buildStatusChip('Moderate', Colors.orange, currentSeverity == 'Moderate'),
-        _buildStatusChip('High', Colors.red, currentSeverity == 'High' || currentSeverity == 'Critical'),
+        _buildStatusChip(_getTxt('low'), Colors.green, currentSeverity == 'Low'),
+        _buildStatusChip(_getTxt('moderate'), Colors.orange, currentSeverity == 'Moderate'),
+        _buildStatusChip(_getTxt('high'), Colors.red, currentSeverity == 'High' || currentSeverity == 'Critical'),
       ],
     );
   }

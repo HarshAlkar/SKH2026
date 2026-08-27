@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../features/user/screens/call_screen.dart';
 import '../../features/user/services/doctor_service.dart';
 import '../../providers/auth_provider.dart';
+import 'permission_dialog_service.dart';
 import 'signaling_service.dart';
 
 class CallLauncher {
@@ -16,6 +17,12 @@ class CallLauncher {
     int? ashaId,
     bool isEmergency = false,
   }) async {
+    final allowed = await PermissionDialogService.ensureCallPermissions(
+      context,
+      isVideo: isVideo,
+    );
+    if (!allowed || !context.mounted) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -38,6 +45,7 @@ class CallLauncher {
         consultationId: consultation['id'].toString(),
         callerName: auth.user?.name ?? 'Caller',
         callType: isVideo ? 'VIDEO' : 'AUDIO',
+        callerUserId: auth.user?.id.toString(),
       );
 
       Navigator.pop(context);
@@ -49,6 +57,7 @@ class CallLauncher {
             doctorName: peerName,
             isVideo: isVideo,
             isOfferer: true,
+            peerUserId: int.tryParse(receiverUserId),
           ),
         ),
       );

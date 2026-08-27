@@ -5,6 +5,7 @@ from apps.doctors.serializers import DoctorSerializer
 
 class ConsultationSerializer(serializers.ModelSerializer):
     doctor_details = DoctorSerializer(source='doctor', read_only=True)
+    doctor_name = serializers.SerializerMethodField()
     patient_name = serializers.SerializerMethodField()
     patient_user_id = serializers.SerializerMethodField()
     asha_user_id = serializers.SerializerMethodField()
@@ -14,11 +15,16 @@ class ConsultationSerializer(serializers.ModelSerializer):
         model = Consultation
         fields = [
             'id', 'patient', 'doctor', 'asha_worker', 'doctor_details',
-            'patient_name', 'patient_user_id', 'asha_user_id', 'asha_name',
-            'initiated_by', 'call_type', 'status',
+            'doctor_name', 'patient_name', 'patient_user_id', 'asha_user_id',
+            'asha_name', 'initiated_by', 'call_type', 'status',
             'created_at', 'end_time', 'meeting_link', 'notes', 'is_emergency',
         ]
         read_only_fields = ['status', 'created_at', 'initiated_by']
+
+    def get_doctor_name(self, obj):
+        if obj.doctor and obj.doctor.user:
+            return obj.doctor.user.name or obj.doctor.user.username
+        return None
 
     def get_patient_name(self, obj):
         if obj.patient and obj.patient.user:

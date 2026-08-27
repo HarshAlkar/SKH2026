@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/emergency_comms/emergency_comms.dart';
 import '../../../core/services/api_service.dart';
+import '../../../providers/auth_provider.dart';
 
 
 class EmergencyHelpScreen extends StatefulWidget {
@@ -16,6 +19,9 @@ class _EmergencyHelpScreenState extends State<EmergencyHelpScreen> with SingleTi
   late AnimationController _pulseController;
   String _currentLocation = "Fetching location...";
   bool _isLoadingLocation = true;
+  bool _sending = false;
+  double? _lat;
+  double? _lng;
 
   @override
   void initState() {
@@ -68,38 +74,158 @@ class _EmergencyHelpScreenState extends State<EmergencyHelpScreen> with SingleTi
       }
 
       Position position = await Geolocator.getCurrentPosition();
-      // In a real app, you'd use reverse geocoding to get the address.
-      // For this demo, we'll simulate the location text if it's successful.
       setState(() {
-        _currentLocation = "Rampur Village, Sector 4 (${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)})";
+        _lat = position.latitude;
+        _lng = position.longitude;
+        _currentLocation =
+            "${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}";
         _isLoadingLocation = false;
       });
     } catch (e) {
       setState(() {
-        _currentLocation = "Rampur Village, Sector 4";
+        _currentLocation = "Location unavailable";
         _isLoadingLocation = false;
       });
     }
   }
 
-  Future<void> _makePhoneCall(String phoneNumber) async {
-    final Uri launchUri = Uri(
-      scheme: 'tel',
-      path: phoneNumber,
-    );
-    if (await canLaunchUrl(launchUri)) {
-      await launchUrl(launchUri);
+  Future<void> _sendOfflineEmergency() async {
+    if (_sending) return;
+    final user = context.read<AuthProvider>().user;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to send an emergency alert')),
+      );
+      return;
+    }
+    setState(() => _sending = true);
+    try {
+      await _postOnlineEmergency();
+      final comms = EmergencyComms.instance;
+      if (!comms.isReady) {
+        await comms.initialize();
+      }
+      final packet = await comms.buildPatientPacket(
+        user: user,
+        latitude: _lat,
+        longitude: _lng,
+      );
+      debugPrint('EMERGENCY [ui] send ${packet.encode()}');
+      final result = await comms.send(packet);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message),
+          backgroundColor: result.delivered ? Colors.green : const Color(0xFFFFA000),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not send offline emergency: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _sending = false);
     }
   }
 
-  Future<void> _openMap() async {
-    // Simulated coordinate for Civil Hospital Main
-    const latitude = 28.6139;
-    const longitude = 77.2090;
-    final Uri googleMapsUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=$latitude,$longitude");
-    
-    if (await canLaunchUrl(googleMapsUri)) {
-      await launchUrl(googleMapsUri);
+  Future<void> _postOnlineEmergency() async {
+    try {
+      await ApiService().post('/alerts/emergencies/', body: {
+        'alert_type': 'Emergency SOS',
+        'location': _lat != null && _lng != null
+            ? '${_lat!.toStringAsFixed(6)}, ${_lng!.toStringAsFixed(6)}'
+            : _currentLocation,
+        if (_lat != null) 'latitude': _lat,
+        if (_lng != null) 'longitude': _lng,
+      });
+    } catch (_) {
+      // Offline or API unavailable — LoRa path still runs.
+    }
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final cleaned = phoneNumber.replaceAll(RegExp(r'[^0-9+]'), '');
+    if (cleaned.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No phone number saved')),
+      );
+      return;
+    }
+    final uri = Uri(scheme: 'tel', path: cleaned);
+    try {
+      await launchUrl(uri);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not start call: $e')),
+      );
+    }
+  }
+
+  Future<void> _openHospitalMap() async {
+    final lat = _lat;
+    final lng = _lng;
+    final uri = (lat != null && lng != null)
+        ? Uri.parse('https://www.google.com/maps/search/?api=1&query=hospital&query_place_id=&center=$lat,$lng')
+        : Uri.parse('https://www.google.com/maps/search/?api=1&query=hospital+near+me');
+    // Prefer a location-biased hospital search.
+    final search = (lat != null && lng != null)
+        ? Uri.parse('https://www.google.com/maps/search/hospital/@$lat,$lng,14z')
+        : Uri.parse('https://www.google.com/maps/search/?api=1&query=hospital');
+    try {
+      await launchUrl(search, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      try {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open maps: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _callFamily() async {
+    final user = context.read<AuthProvider>().user;
+    final fromProfile = user?.detail('emergency_contact').trim() ?? '';
+    final phone = fromProfile.isNotEmpty ? fromProfile : (user?.phoneNumber ?? '');
+    if (phone.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No family or emergency contact saved on your profile')),
+      );
+      return;
+    }
+    await _makePhoneCall(phone);
+  }
+
+  Future<void> _notifyAsha() async {
+    try {
+      final response = await ApiService().post('/alerts/notifications/', body: {
+        'disease': 'Emergency',
+        'severity': 'High',
+      });
+      if (!mounted) return;
+      final map = response is Map ? Map<String, dynamic>.from(response) : <String, dynamic>{};
+      final notified = map['notified'] == true;
+      final village = map['village']?.toString() ?? '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            notified
+                ? 'ASHA worker notified'
+                : 'No ASHA worker found${village.isNotEmpty ? ' for $village' : ''}. Update your village in Profile.',
+          ),
+          backgroundColor: notified ? Colors.green : const Color(0xFFFFA000),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not notify ASHA: $e')),
+      );
     }
   }
 
@@ -159,7 +285,7 @@ class _EmergencyHelpScreenState extends State<EmergencyHelpScreen> with SingleTi
             ),
             const SizedBox(height: 8),
             Text(
-              "Press the button below for urgent medical help. Help will be dispatched to your location.",
+              "Press the button below to send an offline emergency alert over the local network. Internet is not required.",
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
                 fontSize: 14,
@@ -169,75 +295,82 @@ class _EmergencyHelpScreenState extends State<EmergencyHelpScreen> with SingleTi
             ),
             const SizedBox(height: 40),
 
-            // Emergency Pulse Button
-            Center(
-              child: AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, child) {
-                  return Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Pulse Ripples
-                      Container(
-                        width: 180 + (_pulseController.value * 60),
-                        height: 180 + (_pulseController.value * 60),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: emergencyRed.withOpacity(1.0 - _pulseController.value),
-                        ),
-                      ),
-                      Container(
-                        width: 180 + (_pulseController.value * 30),
-                        height: 180 + (_pulseController.value * 30),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: emergencyRed.withOpacity(0.5 * (1.0 - _pulseController.value)),
-                        ),
-                      ),
-                      // Main Button
-                      GestureDetector(
-                        onTap: () => _makePhoneCall('102'), // Example emergency number
-                        child: Container(
-                          width: 180,
-                          height: 180,
+            // Emergency Pulse Button — fixed box so pulse does not grow the scroll view
+            SizedBox(
+              width: 260,
+              height: 260,
+              child: Center(
+                child: AnimatedBuilder(
+                  animation: _pulseController,
+                  builder: (context, child) {
+                    return Stack(
+                      alignment: Alignment.center,
+                      clipBehavior: Clip.hardEdge,
+                      children: [
+                        Container(
+                          width: 180 + (_pulseController.value * 60),
+                          height: 180 + (_pulseController.value * 60),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: emergencyRed,
-                            boxShadow: [
-                              BoxShadow(
-                                color: emergencyRed.withOpacity(0.4),
-                                blurRadius: 20,
-                                spreadRadius: 5,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.phone_in_talk,
-                                color: Colors.white,
-                                size: 48,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                "CALL\nEMERGENCY",
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.poppins(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 18,
-                                  height: 1.2,
-                                ),
-                              ),
-                            ],
+                            color: emergencyRed.withOpacity(1.0 - _pulseController.value),
                           ),
                         ),
+                        Container(
+                          width: 180 + (_pulseController.value * 30),
+                          height: 180 + (_pulseController.value * 30),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: emergencyRed.withOpacity(0.5 * (1.0 - _pulseController.value)),
+                          ),
+                        ),
+                        child!,
+                      ],
+                    );
+                  },
+                  child: GestureDetector(
+                    onTap: _sending ? null : _sendOfflineEmergency,
+                    child: Container(
+                      width: 180,
+                      height: 180,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: emergencyRed,
+                        boxShadow: [
+                          BoxShadow(
+                            color: emergencyRed.withOpacity(0.4),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
                       ),
-                    ],
-                  );
-                },
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (_sending)
+                            const CircularProgressIndicator(color: Colors.white)
+                          else
+                            const Icon(
+                              Icons.emergency,
+                              color: Colors.white,
+                              size: 48,
+                            ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _sending ? "SENDING..." : "SEND\nEMERGENCY",
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
+                              height: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
 
@@ -275,6 +408,19 @@ class _EmergencyHelpScreenState extends State<EmergencyHelpScreen> with SingleTi
               ),
             ),
 
+            const SizedBox(height: 12),
+            ListenableBuilder(
+              listenable: EmergencyComms.instance,
+              builder: (context, _) {
+                final comms = EmergencyComms.instance;
+                return Text(
+                  comms.statusLabel,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500]),
+                );
+              },
+            ),
+
             const SizedBox(height: 32),
 
             // Quick Contact Options
@@ -291,48 +437,41 @@ class _EmergencyHelpScreenState extends State<EmergencyHelpScreen> with SingleTi
             ),
             const SizedBox(height: 16),
             _buildContactCard(
-              title: "Call Family Doctor",
-              subtitle: "Direct line to Dr. Sharma",
-              icon: Icons.personal_video_outlined, // Changed to match design's medical-looking icon if possible
+              title: "Call 102",
+              subtitle: "Ambulance / emergency phone (cellular)",
+              icon: Icons.phone_in_talk,
+              iconColor: emergencyRed,
+              onTap: () => _makePhoneCall('102'),
+            ),
+            _buildContactCard(
+              title: "Call Family",
+              subtitle: "Emergency contact from your profile",
+              icon: Icons.personal_video_outlined,
               iconColor: primaryBlue,
-              onTap: () => _makePhoneCall('9876543210'),
+              onTap: _callFamily,
             ),
             _buildContactCard(
               title: "Notify ASHA Worker",
               subtitle: "Alert local health volunteer",
               icon: Icons.notification_important_outlined,
               iconColor: primaryBlue,
-              onTap: () async {
-                try {
-                  await ApiService().post('/alerts/emergencies/', body: {
-                    'alert_type': 'Notify ASHA',
-                    'location': _currentLocation,
-                  });
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Alert sent to ASHA workers')),
-                  );
-                } catch (e) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Could not notify ASHA: $e')),
-                  );
-                }
-              },
+              onTap: _notifyAsha,
             ),
             _buildContactCard(
               title: "Nearest Hospital",
-              subtitle: "4.2 km • Civil Hospital Main",
+              subtitle: _lat == null
+                  ? "Search hospitals near you"
+                  : "Hospitals near ${_lat!.toStringAsFixed(3)}, ${_lng!.toStringAsFixed(3)}",
               icon: Icons.local_hospital_outlined,
               iconColor: primaryBlue,
-              onTap: _openMap,
+              onTap: _openHospitalMap,
             ),
 
             const SizedBox(height: 24),
 
             // Map Section
             GestureDetector(
-              onTap: _openMap,
+              onTap: _openHospitalMap,
               child: Container(
                 height: 160,
                 width: double.infinity,

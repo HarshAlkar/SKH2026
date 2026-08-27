@@ -57,8 +57,15 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
         notification, created = notify_village_care_team(patient, disease, severity)
         serializer = self.get_serializer(notification)
+        notified = bool(notification and notification.asha_worker_id)
         return Response(
-            {**serializer.data, 'created': created},
+            {
+                **serializer.data,
+                'created': created,
+                'notified': notified,
+                'reason': None if notified else 'no_asha',
+                'village': getattr(patient, 'village', '') or '',
+            },
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
 

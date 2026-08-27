@@ -53,3 +53,28 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"Message {self.id} in thread {self.thread_id}"
+
+
+class ChatThreadHide(models.Model):
+    thread = models.ForeignKey(
+        ChatThread,
+        on_delete=models.CASCADE,
+        related_name='hides',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='hidden_chat_threads',
+    )
+    hidden_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['thread', 'user'],
+                name='unique_hidden_chat_thread',
+            ),
+        ]
+
+    def __str__(self):
+        return f"Hide thread {self.thread_id} for user {self.user_id}"

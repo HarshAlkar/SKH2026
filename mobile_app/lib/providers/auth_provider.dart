@@ -1,7 +1,10 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../core/services/authentication_service.dart';
 import '../core/services/signaling_service.dart';
+import '../core/sync/sync_status.dart';
 import '../core/utils/network_errors.dart';
 
 class AuthProvider extends ChangeNotifier {
@@ -18,7 +21,20 @@ class AuthProvider extends ChangeNotifier {
   bool get isAuthenticated => _user != null;
 
   AuthProvider() {
+    SyncStatus.instance.addListener(_onSyncStatusChanged);
     _loadCachedUser();
+  }
+
+  void _onSyncStatusChanged() {
+    if (!SyncStatus.instance.isSyncing && SyncStatus.instance.pendingCount == 0) {
+      unawaited(_loadCachedUser());
+    }
+  }
+
+  @override
+  void dispose() {
+    SyncStatus.instance.removeListener(_onSyncStatusChanged);
+    super.dispose();
   }
 
   Future<void> ensureLoaded() async {
@@ -154,6 +170,63 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       _error = _cleanError(e);
       _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> refreshUser() async {
+    try {
+      final json = await _authService.fetchMe();
+      _user = UserModel.fromJson(json);
+      notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> updateProfile(Map<String, dynamic> body) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final json = await _authService.updateProfile(body);
+      _user = UserModel.fromJson(json);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = _cleanError(e);
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> uploadPhoto(File file) async {
+    _error = null;
+    notifyListeners();
+    try {
+      final json = await _authService.uploadPhoto(file);
+      _user = UserModel.fromJson(json);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = _cleanError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> changePassword(String currentPassword, String newPassword) async {
+    _error = null;
+    try {
+      await _authService.changePassword(currentPassword, newPassword);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = _cleanError(e);
       notifyListeners();
       return false;
     }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/medicine_model.dart';
 import '../core/services/medicine_db_service.dart';
 import '../core/services/alarm_service.dart';
+import '../core/services/storage_service.dart';
 import '../core/sync/offline_api.dart';
 import 'package:intl/intl.dart';
 
@@ -48,9 +49,21 @@ class MedicineProvider extends ChangeNotifier {
   List<MedicineModel> getMedicinesForDate(DateTime date) {
     final dateStr = DateFormat('yyyy-MM-dd').format(date);
     return _medicines.where((m) {
-      // Check if current date falls between start and end date
       return m.startDate.compareTo(dateStr) <= 0 && m.endDate.compareTo(dateStr) >= 0;
     }).toList();
+  }
+
+  String _takenKey(int id, DateTime date) =>
+      'med_taken_$id-${DateFormat('yyyy-MM-dd').format(date)}';
+
+  bool isTakenOn(int id, DateTime date) {
+    return StorageService.getBoolSync(_takenKey(id, date));
+  }
+
+  Future<void> toggleTakenOn(int id, DateTime date) async {
+    final key = _takenKey(id, date);
+    await StorageService.saveBoolSync(key, !isTakenOn(id, date));
+    notifyListeners();
   }
 
   Future<void> addMedicine(MedicineModel medicine) async {

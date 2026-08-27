@@ -1,8 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'api_service.dart';
 import '../constants/api_constants.dart';
+import '../sync/offline_api.dart';
+import '../sync/pending_upload_store.dart';
 import 'storage_service.dart';
 
 class AuthenticationService {
@@ -49,14 +52,23 @@ class AuthenticationService {
     }
   }
 
+  Future<bool> _isOnline() async {
+    try {
+      final result = await Connectivity()
+          .checkConnectivity()
+          .timeout(const Duration(seconds: 2));
+      return result.isNotEmpty && result.first != ConnectivityResult.none;
+    } catch (_) {
+      return true;
+    }
+  }
+
   Future<Map<String, dynamic>> login(String phoneNumber, String password, String role) async {
-    var connectivityResult = await (Connectivity().checkConnectivity());
-    bool isOnline = connectivityResult.isNotEmpty && connectivityResult.first != ConnectivityResult.none;
+    final isOnline = await _isOnline();
 
     if (isOnline) {
       final response = await _apiService.post(
         ApiConstants.loginEndpoint,
-        headers: {'Content-Type': 'application/json'},
         body: {
           'phone_number': phoneNumber,
           'password': password,
@@ -113,7 +125,10 @@ class AuthenticationService {
 
   Future<void> logout() async {
     try {
-      await _apiService.post(ApiConstants.logoutEndpoint);
+      await _apiService.post(
+        ApiConstants.logoutEndpoint,
+        timeout: const Duration(seconds: 5),
+      );
     } catch (_) {
       // Token may already be invalid or the device may be offline.
     }
@@ -183,5 +198,72 @@ class AuthenticationService {
       };
     }
     return null;
+  }
+
+  Future<void> cacheUser(Map<String, dynamic> userData) async {
+    await _storageService.saveString('user_data', jsonEncode(userData));
+  }
+
+  Future<Map<String, dynamic>> fetchMe() async {
+    final response = await _apiService.get('/users/me/');
+    final user = Map<String, dynamic>.from(response as Map);
+    await cacheUser(user);
+    return user;
+  }
+
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> body) async {
+    final response = await _apiService.patch('/users/me/', body: body);
+    final user = Map<String, dynamic>.from(response as Map);
+    await cacheUser(user);
+    return user;
+  }
+
+  Future<Map<String, dynamic>> uploadPhoto(File file) async {
+    try {
+      final response = await _apiService.postMultipart(
+        '/users/me/photo/',
+        file: file,
+        field: 'photo',
+      );
+      final user = Map<String, dynamic>.from(response as Map);
+      user.remove('pending_photo_path');
+      await cacheUser(user);
+      return user;
+    } catch (e) {
+      if (!_isUploadNetworkFailure(e)) rethrow;
+      final saved = await PendingUploadStore.instance.saveProfilePhoto(file);
+      await OfflineApi.instance.postMultipart(
+        '/users/me/photo/',
+        filePath: saved.path,
+        field: 'photo',
+      );
+      final cached = await getCachedUser();
+      final base = cached != null && cached['user'] is Map
+          ? Map<String, dynamic>.from(cached['user'] as Map)
+          : <String, dynamic>{};
+      base['pending_photo_path'] = saved.path;
+      await cacheUser(base);
+      return base;
+    }
+  }
+
+  bool _isUploadNetworkFailure(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('socket') ||
+        message.contains('timeout') ||
+        message.contains('connection') ||
+        message.contains('network') ||
+        message.contains('failed host lookup');
+  }
+
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    await _apiService.post(
+      '/users/change-password/',
+      body: {
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      },
+    );
+    await _secureStorage.write(key: 'password', value: newPassword);
   }
 }

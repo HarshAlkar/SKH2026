@@ -12,13 +12,3 @@ class SymptomAnalysisConfig(AppConfig):
         project_root = str(settings.BASE_DIR.parent.parent)
         if project_root not in sys.path:
             sys.path.append(project_root)
-        try:
-            from ai_engine.predict import _load_bundle
-            _load_bundle()
-        except Exception:
-            pass
-        try:
-            from ai_engine.skin.predict import _load_interpreter
-            _load_interpreter()
-        except Exception:
-            pass
