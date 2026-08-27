@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 
 import '../services/api_service.dart';
 import '../services/connectivity_service.dart';
+import '../services/storage_service.dart';
 import 'local_store.dart';
+import 'pending_upload_store.dart';
 import 'sync_status.dart';
 
 class SyncService {
@@ -16,6 +19,7 @@ class SyncService {
   final ApiService _api = ApiService();
   final LocalStore _store = LocalStore.instance;
   final ConnectivityService _connectivity = ConnectivityService();
+  final StorageService _storage = StorageService();
   StreamSubscription<List<ConnectivityResult>>? _sub;
   bool _flushing = false;
   bool _started = false;
@@ -59,13 +63,33 @@ class SyncService {
         final path = row['path'] as String;
         final rawBody = row['body'] as String?;
         final body = rawBody == null ? null : jsonDecode(rawBody);
+        final filePath = row['file_path'] as String?;
+        final fileField = row['file_field'] as String?;
+        final fieldsRaw = row['fields_json'] as String?;
+        final fields = fieldsRaw == null
+            ? null
+            : Map<String, String>.from(jsonDecode(fieldsRaw) as Map);
         try {
-          await _send(method, path, body);
+          final response = await _send(
+            method,
+            path,
+            body,
+            filePath: filePath,
+            fileField: fileField,
+            fields: fields,
+          );
+          await _afterSync(path, body, response, filePath: filePath);
           await _store.markSynced(id);
+          if (filePath != null) {
+            await PendingUploadStore.instance.deleteIfExists(filePath);
+          }
         } catch (e) {
           final message = e.toString();
           if (_alreadyOnServer(message)) {
             await _store.markSynced(id);
+            if (filePath != null) {
+              await PendingUploadStore.instance.deleteIfExists(filePath);
+            }
             continue;
           }
           lastError = message;
@@ -85,8 +109,28 @@ class SyncService {
     return (await _store.pendingCount()) == 0;
   }
 
-  Future<void> _send(String method, String path, dynamic body) {
+  Future<dynamic> _send(
+    String method,
+    String path,
+    dynamic body, {
+    String? filePath,
+    String? fileField,
+    Map<String, String>? fields,
+  }) {
     const timeout = Duration(seconds: 25);
+    if (filePath != null && filePath.isNotEmpty && method == 'POST') {
+      final file = File(filePath);
+      if (!file.existsSync()) {
+        throw Exception('Pending upload file missing: $filePath');
+      }
+      return _api.postMultipart(
+        path,
+        file: file,
+        field: fileField ?? 'photo',
+        fields: fields,
+        timeout: timeout,
+      );
+    }
     switch (method) {
       case 'POST':
         return _api.post(path, body: body, timeout: timeout);
@@ -98,6 +142,60 @@ class SyncService {
         return _api.delete(path);
       default:
         throw Exception('Unsupported sync method $method');
+    }
+  }
+
+  Future<void> _afterSync(
+    String path,
+    dynamic body,
+    dynamic response, {
+    String? filePath,
+  }) async {
+    if (path.contains('/chat/threads/') && path.endsWith('/messages/')) {
+      await _resolveChatMessage(body, response);
+    } else if (path == '/users/me/photo/' && response is Map) {
+      await _resolveProfilePhoto(response, filePath: filePath);
+    }
+  }
+
+  Future<void> _resolveChatMessage(dynamic body, dynamic response) async {
+    if (body is! Map || response is! Map) return;
+    final clientId = body['client_message_id']?.toString();
+    if (clientId == null || clientId.isEmpty) return;
+    final threadId = int.tryParse(body['thread_id']?.toString() ?? '');
+    final serverId = int.tryParse(response['id']?.toString() ?? '');
+    if (threadId == null || serverId == null) return;
+
+    final db = await _store.database;
+    await db.update(
+      'chat_messages',
+      {
+        'server_id': serverId,
+        'pending_sync': 0,
+        'created_at': response['created_at']?.toString() ??
+            DateTime.now().toIso8601String(),
+      },
+      where: 'client_id = ? AND thread_id = ?',
+      whereArgs: [clientId, threadId],
+    );
+  }
+
+  Future<void> _resolveProfilePhoto(Map response, {String? filePath}) async {
+    final raw = _storage.getString('user_data');
+    if (raw == null) return;
+    final user = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+    if (response['photo_url'] != null) {
+      user['photo_url'] = response['photo_url'];
+    } else if (response['user'] is Map) {
+      final nested = Map<String, dynamic>.from(response['user'] as Map);
+      if (nested['photo_url'] != null) {
+        user['photo_url'] = nested['photo_url'];
+      }
+    }
+    user.remove('pending_photo_path');
+    await _storage.saveString('user_data', jsonEncode(user));
+    if (filePath != null) {
+      await PendingUploadStore.instance.deleteIfExists(filePath);
     }
   }
 

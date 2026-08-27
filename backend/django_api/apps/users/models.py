@@ -8,11 +8,13 @@ class User(AbstractUser):
         ('user', 'User'),
         ('doctor', 'Doctor'),
         ('asha_worker', 'ASHA Worker'),
+        ('medical_staff', 'Medical Staff'),
     )
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
     phone_number = models.CharField(max_length=15, blank=True, null=True, unique=True)
     village = models.CharField(max_length=100, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
+    photo = models.ImageField(upload_to='profiles/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

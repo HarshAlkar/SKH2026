@@ -21,6 +21,8 @@ import '../features/user/screens/medicine_call_screen.dart';
 import '../features/user/screens/nearby_healthcare_screen.dart';
 import '../features/user/screens/my_prescriptions_screen.dart';
 import '../features/user/screens/emergency_help_screen.dart';
+import '../features/user/screens/health_tips_screen.dart';
+import '../features/user/screens/patient_alerts_screen.dart';
 
 // ASHA Feature Screens
 import '../features/reports/screens/village_health_report_screen.dart';
@@ -38,10 +40,15 @@ import '../features/referral/screens/emergency_referral_screen.dart';
 import '../features/referral/screens/referral_history_screen.dart';
 import '../features/patient/screens/edit_patient_screen.dart';
 import '../features/patient/models/patient_model.dart';
-import '../features/asha_worker/screens/asha_settings_screen.dart';
+import '../features/profile/screens/profile_screen.dart';
+import '../features/profile/screens/settings_screen.dart';
 import '../features/asha_worker/screens/asha_call_screen.dart';
 import '../features/user/screens/asha_workers_screen.dart';
 import '../features/chat/screens/chat_inbox_screen.dart';
+import '../features/chat/screens/chat_screen.dart';
+import '../features/user/screens/call_history_screen.dart';
+import '../features/user/screens/incoming_call_screen.dart';
+import '../features/stock/screens/medicine_stock_screen.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -95,18 +102,27 @@ class RouteGenerator {
         );
       case AppRoutes.nearbyClinics:
         return _fadeRoute(const NearbyHealthcareScreen());
+      case AppRoutes.medicineStock:
+      case AppRoutes.medicineAvailability:
+        return _fadeRoute(const MedicineStockScreen(canUpdate: false));
+      case AppRoutes.updateStock:
+        return _fadeRoute(const MedicineStockScreen(canUpdate: true));
       case AppRoutes.consultDoctor:
         return _fadeRoute(const DoctorConsultScreen());
       case AppRoutes.myPrescriptions:
         return _fadeRoute(const MyPrescriptionsScreen());
       case AppRoutes.healthTips:
-        return _fadeRoute(_PlaceholderScreen(title: 'Health Tips'));
+        return _fadeRoute(const HealthTipsScreen());
+      case AppRoutes.patientAlerts:
+        return _fadeRoute(const PatientAlertsScreen());
       case AppRoutes.emergencyHelp:
         return _fadeRoute(const EmergencyHelpScreen());
       case AppRoutes.settings:
-        return _fadeRoute(_PlaceholderScreen(title: 'Settings'));
+      case AppRoutes.ashaSettings:
+      case AppRoutes.doctorSettings:
+        return _fadeRoute(const SettingsScreen());
       case AppRoutes.profile:
-        return _fadeRoute(_PlaceholderScreen(title: 'Profile'));
+        return _fadeRoute(const ProfileScreen());
 
       // ASHA Worker portal routes
       case AppRoutes.villageHealthReport:
@@ -139,14 +155,34 @@ class RouteGenerator {
         return _fadeRoute(const EmergencyReferralScreen());
       case AppRoutes.referralHistory:
         return _fadeRoute(const ReferralHistoryScreen());
-      case AppRoutes.ashaSettings:
-        return _fadeRoute(const AshaSettingsScreen());
       case AppRoutes.ashaCall:
         return _fadeRoute(const AshaCallScreen());
       case AppRoutes.ashaWorkers:
         return _fadeRoute(const AshaWorkersScreen());
       case AppRoutes.chatInbox:
         return _fadeRoute(const ChatInboxScreen());
+      case AppRoutes.callHistory:
+        return _fadeRoute(const CallHistoryScreen());
+      case AppRoutes.incomingCall:
+        final args = (settings.arguments as Map?) ?? {};
+        return MaterialPageRoute(
+          builder: (_) => IncomingCallScreen(
+            consultationId: args['consultationId']?.toString() ?? '',
+            callerName: args['callerName']?.toString() ?? 'Caller',
+            callType: args['callType']?.toString() ?? 'VIDEO',
+            callerUserId: int.tryParse(args['callerUserId']?.toString() ?? ''),
+          ),
+        );
+      case AppRoutes.chatThread:
+        final args = (settings.arguments as Map?) ?? {};
+        final peerId = int.tryParse(args['peerUserId']?.toString() ?? '') ?? 0;
+        return MaterialPageRoute(
+          builder: (_) => ChatScreen(
+            peerUserId: peerId,
+            peerName: args['peerName']?.toString() ?? 'Chat',
+            peerPhone: args['peerPhone']?.toString(),
+          ),
+        );
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

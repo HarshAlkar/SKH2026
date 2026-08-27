@@ -108,6 +108,8 @@ flutter:
     - assets/images/VitalReach_logo.png
     - assets/images/splash_icon.png
     - assets/models/
+    - lib/dataset/disease/dataset.csv
+    - lib/dataset/medicine_dataset/medicines.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

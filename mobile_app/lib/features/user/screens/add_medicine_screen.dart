@@ -32,7 +32,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     super.initState();
     _loadMedicineDataset();
     _startDateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    _endDateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now().add(const Duration(days: 7)));
+    _endDateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
   }
 
   Future<void> _loadMedicineDataset() async {

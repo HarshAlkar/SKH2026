@@ -1,11 +1,27 @@
 from datetime import timedelta
 
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.asha_workers.models import ASHAWorker
 from apps.doctors.models import Doctor
 
 from .models import AlertNotification
+
+
+def find_asha_for_village(village):
+    village = (village or "").strip()
+    if not village:
+        return None
+    qs = ASHAWorker.objects.select_related("user")
+    exact = qs.filter(
+        Q(assigned_village__iexact=village) | Q(user__village__iexact=village)
+    ).first()
+    if exact:
+        return exact
+    return qs.filter(
+        Q(assigned_village__icontains=village) | Q(user__village__icontains=village)
+    ).first()
 
 
 def notify_village_care_team(patient_user, disease, severity, dedupe_minutes=30):
@@ -26,10 +42,8 @@ def notify_village_care_team(patient_user, disease, severity, dedupe_minutes=30)
     if existing:
         return existing, False
 
-    asha = None
     village = getattr(patient_user, "village", None)
-    if village:
-        asha = ASHAWorker.objects.filter(assigned_village__iexact=village).first()
+    asha = find_asha_for_village(village)
 
     doctor = Doctor.objects.filter(is_available=True).first() or Doctor.objects.first()
     notification = AlertNotification.objects.create(

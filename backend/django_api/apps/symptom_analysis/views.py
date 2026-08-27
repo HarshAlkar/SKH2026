@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import VoiceSymptomInput, SymptomAnalysis
+from .i18n import localize_analysis
 from apps.alerts.notify import notify_village_care_team
 from django.conf import settings
 import sys
@@ -47,6 +48,7 @@ class SymptomAnalysisView(APIView):
         user = request.user
         recognized_text = request.data.get('recognized_text', '')
         symptoms_text = request.data.get('symptoms', request.data.get('symptoms_text', recognized_text))
+        language = request.data.get('language', 'en')
         
         # 1. Store Voice Input if provided
         if recognized_text:
@@ -96,14 +98,20 @@ class SymptomAnalysisView(APIView):
         if severity in ['High', 'Critical']:
             _, alert_sent = notify_village_care_team(user, predicted_disease, severity)
 
+        localized = localize_analysis(analysis_result, language=language, alert_sent=alert_sent)
+
         return Response({
             "analysis_id": analysis.id,
             "disease": predicted_disease,
+            "disease_display": localized["disease_display"],
             "severity": severity,
+            "severity_display": localized["severity_display"],
             "confidence": confidence,
-            "top_predictions": top_predictions,
+            "top_predictions": localized["top_predictions"],
             "alert_sent": alert_sent,
-            "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+            "advice": localized["advice"],
+            "disclaimer": localized["disclaimer"],
+            "language": localized["language"],
         }, status=status.HTTP_200_OK)
 
 
@@ -147,11 +155,6 @@ class SkinAnalysisView(APIView):
         predicted_disease = analysis_result.get("disease", "Unknown")
         severity = analysis_result.get("severity", "Low")
         confidence = analysis_result.get("confidence", 0)
-        top_predictions = analysis_result.get("top_predictions") or []
-        disclaimer = analysis_result.get(
-            "disclaimer",
-            "This is a screening suggestion, not a medical diagnosis.",
-        )
 
         analysis = SymptomAnalysis.objects.create(
             user=request.user,
@@ -166,17 +169,24 @@ class SkinAnalysisView(APIView):
                 request.user, predicted_disease, severity
             )
 
+        language = request.data.get("language", "en")
+        localized = localize_analysis(analysis_result, language=language, alert_sent=alert_sent)
+
         return Response(
             {
                 "analysis_id": analysis.id,
                 "disease": predicted_disease,
+                "disease_display": localized["disease_display"],
                 "code": analysis_result.get("code"),
                 "severity": severity,
+                "severity_display": localized["severity_display"],
                 "confidence": confidence,
-                "top_predictions": top_predictions,
+                "top_predictions": localized["top_predictions"],
                 "alert_sent": alert_sent,
                 "source": "skin_cnn",
-                "disclaimer": disclaimer,
+                "advice": localized["advice"],
+                "disclaimer": localized["disclaimer"],
+                "language": localized["language"],
             },
             status=status.HTTP_200_OK,
         )

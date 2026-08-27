@@ -23,10 +23,15 @@ class AppRoutes {
   static const String consultDoctor = '/consult-doctor';
   static const String myPrescriptions = '/my-prescriptions';
   static const String healthTips = '/health-tips';
+  static const String patientAlerts = '/user/alerts';
   static const String emergencyHelp = '/emergency-help';
   static const String settings = '/settings';
   static const String profile = '/profile';
   static const String medicineSchedule = '/medicine-schedule';
+
+  static const String medicineStock = '/medicine-stock';
+  static const String updateStock = '/update-stock';
+  static const String medicineAvailability = '/medicine-availability';
 
   // ASHA Worker portal routes
   static const String villageHealthReport = '/asha/village-health-report';
@@ -41,10 +46,14 @@ class AppRoutes {
   static const String emergencyReferral = '/asha/emergency-referral';
   static const String referralHistory = '/asha/referral-history';
   static const String ashaSettings = '/asha/settings';
+  static const String doctorSettings = '/doctor/settings';
   static const String editPatient = '/asha/edit-patient';
   static const String registeredDoctors = '/asha/registered-doctors';
   static const String ashaCall = '/asha/call';
   static const String ashaWorkers = '/user/asha-workers';
   static const String chatInbox = '/chat/inbox';
+  static const String callHistory = '/call-history';
+  static const String incomingCall = '/incoming-call';
+  static const String chatThread = '/chat/thread';
 }
 

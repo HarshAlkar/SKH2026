@@ -78,6 +78,8 @@ INSTALLED_APPS = [
     'apps.health_records',
     'apps.asha_workers',
     'apps.chat',
+    'apps.inventory.apps.InventoryConfig',
+    'apps.admin_api.apps.AdminApiConfig',
     'rest_framework.authtoken',
 ]
 
@@ -177,15 +179,46 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+_aws_bucket = os.environ.get('AWS_STORAGE_BUCKET_NAME', '').strip()
+if _aws_bucket:
+    AWS_STORAGE_BUCKET_NAME = _aws_bucket
+    AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'us-east-1')
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+    AWS_S3_CUSTOM_DOMAIN = os.environ.get('AWS_S3_CUSTOM_DOMAIN', f'{_aws_bucket}.s3.amazonaws.com')
+    AWS_DEFAULT_ACL = 'public-read'
+    AWS_QUERYSTRING_AUTH = False
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/'
+
 try:
     import whitenoise  # noqa: F401
+    _static_backend = 'whitenoise.storage.CompressedStaticFilesStorage'
+except ImportError:
+    _static_backend = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+if _aws_bucket:
     STORAGES = {
         'default': {
-            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+            'BACKEND': 'storages.backends.s3boto3.S3Boto3Storage',
         },
         'staticfiles': {
-            'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+            'BACKEND': _static_backend,
         },
     }
-except ImportError:
-    pass
+else:
+    try:
+        import whitenoise  # noqa: F401
+        STORAGES = {
+            'default': {
+                'BACKEND': 'django.core.files.storage.FileSystemStorage',
+            },
+            'staticfiles': {
+                'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
+            },
+        }
+    except ImportError:
+        pass

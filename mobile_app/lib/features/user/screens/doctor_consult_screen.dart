@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/user_sidebar.dart';
 import '../services/doctor_service.dart';
@@ -72,7 +73,7 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
               ),
             ),
             Text(
-              'Gramin Health Connect',
+              AppConstants.appName,
               style: TextStyle(
                 color: Colors.grey.shade500,
                 fontSize: 12,

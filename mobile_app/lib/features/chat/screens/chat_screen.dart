@@ -5,6 +5,7 @@ import '../../../core/services/signaling_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/auth_provider.dart';
 import '../services/chat_service.dart';
+import '../services/chat_local_store.dart';
 
 class ChatScreen extends StatefulWidget {
   final int peerUserId;
@@ -49,14 +50,32 @@ class _ChatScreenState extends State<ChatScreen> {
           'created_at': data['timestamp'],
         });
       });
+      if (_threadId != null) {
+        ChatService().persistIncoming(
+          threadId: _threadId!,
+          peerUserId: widget.peerUserId,
+          peerName: widget.peerName,
+          text: data['text']?.toString() ?? '',
+          messageId: int.tryParse(data['messageId']?.toString() ?? ''),
+          senderId: int.tryParse(senderId ?? ''),
+          createdAt: data['timestamp']?.toString(),
+        );
+      }
       _jumpToEnd();
     };
     SignalingService().addChatListener(_onChat);
+    ChatSession.openPeerUserId = widget.peerUserId;
     _openThread();
   }
 
   @override
   void dispose() {
+    if (ChatSession.openThreadId == _threadId) {
+      ChatSession.openThreadId = null;
+    }
+    if (ChatSession.openPeerUserId == widget.peerUserId) {
+      ChatSession.openPeerUserId = null;
+    }
     SignalingService().removeChatListener(_onChat);
     _controller.dispose();
     _scroll.dispose();
@@ -74,6 +93,18 @@ class _ChatScreenState extends State<ChatScreen> {
       if (threadId == null) {
         throw Exception('Could not open chat');
       }
+      ChatSession.openThreadId = threadId;
+      final localMessages = await ChatLocalStore.instance.listMessages(threadId);
+      if (mounted && localMessages.isNotEmpty) {
+        setState(() {
+          _threadId = threadId;
+          _messages
+            ..clear()
+            ..addAll(localMessages);
+          _loading = false;
+        });
+        _jumpToEnd();
+      }
       final messages = await _chat.getMessages(threadId);
       if (!mounted) return;
       setState(() {
@@ -85,6 +116,24 @@ class _ChatScreenState extends State<ChatScreen> {
       });
       _jumpToEnd();
     } catch (e) {
+      final local = await ChatLocalStore.instance.getThreadByPeer(widget.peerUserId);
+      if (local != null && mounted) {
+        final threadId = int.tryParse(local['id'].toString());
+        if (threadId != null) {
+          ChatSession.openThreadId = threadId;
+          final messages = await ChatLocalStore.instance.listMessages(threadId);
+          setState(() {
+            _threadId = threadId;
+            _messages
+              ..clear()
+              ..addAll(messages);
+            _loading = false;
+            _error = null;
+          });
+          _jumpToEnd();
+          return;
+        }
+      }
       if (!mounted) return;
       setState(() {
         _loading = false;
@@ -109,19 +158,31 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty || _threadId == null) return;
     _controller.clear();
     try {
-      final saved = await _chat.sendMessage(_threadId!, text);
-      if (!mounted) return;
       final auth = context.read<AuthProvider>();
+      final saved = await _chat.sendMessage(
+        _threadId!,
+        text,
+        senderId: auth.user?.id,
+      );
+      if (!mounted) return;
       setState(() => _messages.add(saved));
       _jumpToEnd();
-      SignalingService().sendPersistentChat(
-        receiverId: widget.peerUserId.toString(),
-        threadId: _threadId!,
-        text: text,
-        senderId: auth.user?.id.toString() ?? '',
-        senderName: auth.user?.name ?? '',
-        messageId: int.tryParse(saved['id']?.toString() ?? ''),
-      );
+      if (saved['pending_sync'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Saved on this phone. Will send when internet is back.'),
+          ),
+        );
+      } else {
+        SignalingService().sendPersistentChat(
+          receiverId: widget.peerUserId.toString(),
+          threadId: _threadId!,
+          text: text,
+          senderId: auth.user?.id.toString() ?? '',
+          senderName: auth.user?.name ?? '',
+          messageId: int.tryParse(saved['id']?.toString() ?? ''),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -236,12 +297,27 @@ class _ChatScreenState extends State<ChatScreen> {
                                       ),
                                     ],
                                   ),
-                                  child: Text(
-                                    message['text']?.toString() ?? '',
-                                    style: TextStyle(
-                                      color: mine ? Colors.white : AppColors.textPrimary,
-                                      fontSize: 14,
-                                    ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          message['text']?.toString() ?? '',
+                                          style: TextStyle(
+                                            color: mine ? Colors.white : AppColors.textPrimary,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                      if (message['pending_sync'] == true) ...[
+                                        const SizedBox(width: 6),
+                                        Icon(
+                                          Icons.schedule,
+                                          size: 14,
+                                          color: mine ? Colors.white70 : Colors.grey,
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
                               );

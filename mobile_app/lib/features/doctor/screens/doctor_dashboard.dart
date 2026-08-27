@@ -12,6 +12,10 @@ import '../widgets/doctor_navigation_drawer.dart';
 import '../../../providers/consultation_provider.dart';
 import '../../../core/services/api_service.dart';
 import '../services/doctor_appointment_service.dart';
+import '../../../core/services/permission_dialog_service.dart';
+import '../../../core/widgets/sync_status_banner.dart';
+import '../../../routes/app_routes.dart';
+import '../../profile/widgets/profile_avatar.dart';
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({super.key});
@@ -40,6 +44,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       if (user != null) {
         context.read<ConsultationProvider>().initSignaling(user.id.toString());
       }
+      PermissionDialogService.ensureNotifications(context);
     });
   }
 
@@ -111,41 +116,48 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   }
 
   Widget _buildHomeBody() {
-    return RefreshIndicator(
-        onRefresh: _fetchStats,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              if (_isLoading)
-                const LinearProgressIndicator(
-                  minHeight: 2,
-                  backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2A7DE1)),
-                ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildWelcomeSection(),
-                    const SizedBox(height: 32),
-                    _buildSectionTitle('PERFORMANCE SUMMARY'),
-                    const SizedBox(height: 16),
-                    _buildPerformanceGrid(),
-                    const SizedBox(height: 32),
-                    _buildSectionTitle('QUICK ACTIONS'),
-                    const SizedBox(height: 16),
-                    _buildQuickActions(),
-                    const SizedBox(height: 32),
-                    _buildUpcomingAppointments(),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+    return Column(
+      children: [
+        const SyncStatusBanner(),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _fetchStats,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  if (_isLoading)
+                    const LinearProgressIndicator(
+                      minHeight: 2,
+                      backgroundColor: Colors.transparent,
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2A7DE1)),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildWelcomeSection(),
+                        const SizedBox(height: 32),
+                        _buildSectionTitle('PERFORMANCE SUMMARY'),
+                        const SizedBox(height: 16),
+                        _buildPerformanceGrid(),
+                        const SizedBox(height: 32),
+                        _buildSectionTitle('QUICK ACTIONS'),
+                        const SizedBox(height: 16),
+                        _buildQuickActions(),
+                        const SizedBox(height: 32),
+                        _buildUpcomingAppointments(),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
+      ],
     );
   }
 
@@ -213,10 +225,14 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         ),
         Padding(
           padding: const EdgeInsets.only(right: 16.0, left: 4.0),
-          child: CircleAvatar(
-            radius: 17,
-            backgroundColor: Colors.teal.shade700,
-            child: const Icon(Icons.person, color: Colors.white, size: 20),
+          child: GestureDetector(
+            onTap: () => Navigator.pushNamed(context, AppRoutes.profile),
+            child: ProfileAvatar(
+              user: context.watch<AuthProvider>().user,
+              radius: 17,
+              backgroundColor: Colors.teal.shade700,
+              iconColor: Colors.white,
+            ),
           ),
         ),
       ],

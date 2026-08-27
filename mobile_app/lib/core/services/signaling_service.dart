@@ -27,6 +27,7 @@ class SignalingService {
 
   String get serverUrl => AppConfig.signalingServerUrl;
   bool get isConnected => _socket?.connected ?? false;
+  String? get connectedUserId => _connectedUserId;
 
   void connect(String userId) {
     if (_connectedUserId == userId && (_socket?.connected ?? false)) {
@@ -123,12 +124,14 @@ class SignalingService {
     required String consultationId,
     required String callerName,
     required String callType,
+    String? callerUserId,
   }) {
     _socket?.emit('call-request', {
       'receiverId': receiverId,
       'consultationId': consultationId,
       'callerName': callerName,
       'callType': callType,
+      if (callerUserId != null) 'callerUserId': callerUserId,
     });
   }
 

@@ -5,6 +5,15 @@ class EmergencyAlert(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     alert_type = models.CharField(max_length=50, default='General Emergency')
     location = models.CharField(max_length=255, blank=True, null=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    assigned_doctor = models.ForeignKey(
+        'doctors.Doctor',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='assigned_emergencies',
+    )
     timestamp = models.DateTimeField(auto_now_add=True)
     is_resolved = models.BooleanField(default=False)
 

@@ -9,6 +9,7 @@ import '../../../core/services/signaling_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/auth_provider.dart';
 import '../../user/services/doctor_service.dart';
+import '../../chat/services/chat_service.dart';
 import '../../../main.dart';
 
 class CallScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class CallScreen extends StatefulWidget {
   final String doctorName;
   final bool isVideo;
   final bool isOfferer;
+  final int? peerUserId;
 
   const CallScreen({
     super.key,
@@ -23,6 +25,7 @@ class CallScreen extends StatefulWidget {
     required this.doctorName,
     this.isVideo = true,
     this.isOfferer = true,
+    this.peerUserId,
   });
 
   @override
@@ -69,6 +72,8 @@ class _CallScreenState extends State<CallScreen> {
   StreamSubscription<MediaStream?>? _localSub;
 
   String _myId = 'me';
+  int? _chatThreadId;
+  final _chatService = ChatService();
 
   String get _elapsed {
     if (_startedAt == null) return '00:00';
@@ -182,6 +187,7 @@ class _CallScreenState extends State<CallScreen> {
       _messages.add(_ChatLine(text: text, senderId: senderId));
     });
     _scrollChat();
+    _persistChatLine(text, senderId: int.tryParse(senderId), outgoing: false);
   }
 
   void _flushPendingMessages() {
@@ -293,6 +299,37 @@ class _CallScreenState extends State<CallScreen> {
     } else {
       _pendingMessages.add(text);
     }
+    _persistChatLine(text, senderId: int.tryParse(_myId), outgoing: true);
+  }
+
+  Future<void> _ensureChatThread() async {
+    if (_chatThreadId != null || widget.peerUserId == null) return;
+    try {
+      final thread = await _chatService.openThread(widget.peerUserId!);
+      _chatThreadId = int.tryParse(thread['id'].toString());
+    } catch (_) {}
+  }
+
+  Future<void> _persistChatLine(
+    String text, {
+    int? senderId,
+    required bool outgoing,
+  }) async {
+    await _ensureChatThread();
+    if (_chatThreadId == null || widget.peerUserId == null) return;
+    if (outgoing) {
+      try {
+        await _chatService.sendMessage(_chatThreadId!, text);
+        return;
+      } catch (_) {}
+    }
+    await _chatService.persistIncoming(
+      threadId: _chatThreadId!,
+      peerUserId: widget.peerUserId!,
+      peerName: widget.doctorName,
+      text: text,
+      senderId: senderId,
+    );
   }
 
   void _scrollChat() {

@@ -1,33 +1,66 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/services/signaling_service.dart';
+import '../../../core/services/permission_dialog_service.dart';
+import '../../../core/services/notification_service.dart';
 import 'call_screen.dart';
 
 class IncomingCallScreen extends StatelessWidget {
   final String consultationId;
   final String callerName;
   final String callType;
+  final int? callerUserId;
 
   const IncomingCallScreen({
     super.key,
     required this.consultationId,
     required this.callerName,
     required this.callType,
+    this.callerUserId,
   });
+
+  Future<void> _accept(BuildContext context) async {
+    final isVideo = callType == 'VIDEO';
+    final allowed = await PermissionDialogService.ensureCallPermissions(
+      context,
+      isVideo: isVideo,
+    );
+    if (!allowed || !context.mounted) return;
+    await NotificationService().cancelIncomingCall(consultationId);
+    if (!context.mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CallScreen(
+          consultationId: consultationId,
+          doctorName: callerName,
+          isVideo: isVideo,
+          isOfferer: false,
+          peerUserId: callerUserId,
+        ),
+      ),
+    );
+  }
+
+  void _decline(BuildContext context) {
+    SignalingService().emitReject(consultationId);
+    NotificationService().cancelIncomingCall(consultationId);
+    Navigator.pop(context);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1E293B),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0xFF1E293B),
-              const Color(0xFF334155),
-              const Color(0xFF1E293B),
+              Color(0xFF1E293B),
+              Color(0xFF334155),
+              Color(0xFF1E293B),
             ],
           ),
         ),
@@ -43,7 +76,7 @@ class IncomingCallScreen extends StatelessWidget {
                     height: 120,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       border: Border.all(color: AppColors.primary, width: 2),
                     ),
                     child: const Icon(
@@ -65,7 +98,7 @@ class IncomingCallScreen extends StatelessWidget {
                   Text(
                     'Incoming ${callType == 'VIDEO' ? 'Video' : 'Voice'} Call',
                     style: TextStyle(
-                      color: AppColors.primary.withOpacity(0.8),
+                      color: AppColors.primary.withValues(alpha: 0.8),
                       fontSize: 16,
                       letterSpacing: 1.2,
                     ),
@@ -79,28 +112,13 @@ class IncomingCallScreen extends StatelessWidget {
                     icon: Icons.close,
                     color: Colors.redAccent,
                     label: 'Decline',
-                    onTap: () {
-                      SignalingService().emitReject(consultationId);
-                      Navigator.pop(context);
-                    },
+                    onTap: () => _decline(context),
                   ),
                   _buildCallAction(
                     icon: callType == 'VIDEO' ? Icons.videocam : Icons.call,
                     color: Colors.greenAccent.shade700,
                     label: 'Accept',
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CallScreen(
-                            consultationId: consultationId,
-                            doctorName: callerName,
-                            isVideo: callType == 'VIDEO',
-                            isOfferer: false,
-                          ),
-                        ),
-                      );
-                    },
+                    onTap: () => _accept(context),
                   ),
                 ],
               ),
@@ -130,7 +148,7 @@ class IncomingCallScreen extends StatelessWidget {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: color.withOpacity(0.3),
+                  color: color.withValues(alpha: 0.3),
                   blurRadius: 15,
                   spreadRadius: 2,
                 ),

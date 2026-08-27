@@ -14,46 +14,108 @@ class LocalStore {
     final dbPath = await getDatabasesPath();
     _db = await openDatabase(
       join(dbPath, 'vitalreach.db'),
-      version: 1,
+      version: 3,
       onCreate: (db, _) async {
-        await db.execute('''
-          CREATE TABLE outbox (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            method TEXT NOT NULL,
-            path TEXT NOT NULL,
-            body TEXT,
-            status TEXT NOT NULL DEFAULT 'pending',
-            retries INTEGER NOT NULL DEFAULT 0,
-            last_error TEXT,
-            created_at TEXT NOT NULL
-          )
-        ''');
-        await db.execute('''
-          CREATE TABLE cache_entries (
-            cache_key TEXT PRIMARY KEY,
-            payload TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-          )
-        ''');
+        await _createV1Tables(db);
+        await _createChatTables(db);
+        await _upgradeToV3(db);
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await _createChatTables(db);
+        }
+        if (oldVersion < 3) {
+          await _upgradeToV3(db);
+        }
       },
     );
     return _db!;
+  }
+
+  Future<void> _createV1Tables(Database db) async {
+    await db.execute('''
+      CREATE TABLE outbox (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        method TEXT NOT NULL,
+        path TEXT NOT NULL,
+        body TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        retries INTEGER NOT NULL DEFAULT 0,
+        last_error TEXT,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE cache_entries (
+        cache_key TEXT PRIMARY KEY,
+        payload TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> _createChatTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS chat_threads (
+        id INTEGER PRIMARY KEY,
+        peer_user_id INTEGER NOT NULL,
+        peer_name TEXT,
+        peer_phone TEXT,
+        last_text TEXT,
+        last_at TEXT,
+        unread INTEGER NOT NULL DEFAULT 0,
+        hidden INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        server_id INTEGER,
+        thread_id INTEGER NOT NULL,
+        sender_id INTEGER,
+        text TEXT NOT NULL,
+        created_at TEXT
+      )
+    ''');
+    await db.execute(
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_chat_messages_server_id ON chat_messages(server_id) WHERE server_id IS NOT NULL',
+    );
+  }
+
+  Future<void> _upgradeToV3(Database db) async {
+    await db.execute('ALTER TABLE outbox ADD COLUMN file_path TEXT');
+    await db.execute('ALTER TABLE outbox ADD COLUMN file_field TEXT');
+    await db.execute('ALTER TABLE outbox ADD COLUMN fields_json TEXT');
+    await db.execute('ALTER TABLE chat_messages ADD COLUMN pending_sync INTEGER NOT NULL DEFAULT 0');
+    await db.execute('ALTER TABLE chat_messages ADD COLUMN client_id TEXT');
   }
 
   Future<int> enqueue({
     required String method,
     required String path,
     dynamic body,
+    String? filePath,
+    String? fileField,
+    Map<String, String>? fields,
   }) async {
     final db = await database;
     return db.insert('outbox', {
       'method': method.toUpperCase(),
       'path': path,
       'body': body == null ? null : jsonEncode(body),
+      'file_path': filePath,
+      'file_field': fileField,
+      'fields_json': fields == null ? null : jsonEncode(fields),
       'status': 'pending',
       'retries': 0,
       'created_at': DateTime.now().toIso8601String(),
     });
+  }
+
+  Future<void> deleteOutboxRow(int id) async {
+    final db = await database;
+    await db.delete('outbox', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<List<Map<String, dynamic>>> pending() async {

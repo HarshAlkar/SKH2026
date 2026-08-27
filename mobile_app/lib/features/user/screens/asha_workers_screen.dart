@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../routes/app_routes.dart';
 import '../../chat/screens/chat_inbox_screen.dart';
 import '../../chat/widgets/contact_action_row.dart';
 import '../../chat/widgets/directory_contact_card.dart';
@@ -78,10 +81,32 @@ class _AshaWorkersScreenState extends State<AshaWorkersScreen> {
               onRefresh: _load,
               child: _workers.isEmpty
                   ? ListView(
-                      children: const [
-                        SizedBox(height: 120),
-                        Center(
-                          child: Text('No ASHA worker found for your village'),
+                      children: [
+                        const SizedBox(height: 80),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Column(
+                            children: [
+                              const Icon(Icons.health_and_safety_outlined, size: 48, color: AppColors.textSecondary),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'No ASHA worker found for your village.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Village on your profile: ${context.read<AuthProvider>().user?.village.isNotEmpty == true ? context.read<AuthProvider>().user!.village : 'not set'}. Update it in Profile if this is wrong.',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: AppColors.textSecondary),
+                              ),
+                              const SizedBox(height: 16),
+                              TextButton(
+                                onPressed: () => Navigator.pushNamed(context, AppRoutes.profile),
+                                child: const Text('Update profile village'),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     )

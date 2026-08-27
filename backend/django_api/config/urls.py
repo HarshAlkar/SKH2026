@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
+from django.conf import settings
+from django.conf.urls.static import static
 
 def health_view(request):
     return JsonResponse({"status": "ok"})
@@ -40,6 +42,8 @@ def api_root_view(request):
             "/api/patients/",
             "/api/asha/",
             "/api/chat/",
+            "/api/stock/",
+            "/api/admin/",
         ]
     })
 
@@ -59,5 +63,9 @@ urlpatterns = [
     path('api/patients/', include('apps.patients.urls')),
     path('api/asha/', include('apps.asha_workers.urls')),
     path('api/chat/', include('apps.chat.urls')),
+    path('api/stock/', include('apps.inventory.urls')),
+    path('api/admin/', include('apps.admin_api.urls')),
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

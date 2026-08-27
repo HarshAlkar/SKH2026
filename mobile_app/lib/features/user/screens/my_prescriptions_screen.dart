@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../routes/app_routes.dart';
 import '../widgets/user_sidebar.dart';
-import '../../../core/services/api_service.dart';
+import '../../../core/sync/offline_api.dart';
 import '../../../core/services/pdf_service.dart';
 import 'package:intl/intl.dart';
 
@@ -14,8 +15,9 @@ class MyPrescriptionsScreen extends StatefulWidget {
 
 class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final ApiService _api = ApiService();
+  final OfflineApi _api = OfflineApi.instance;
   bool _isLoading = true;
+  String? _error;
   List<dynamic> _prescriptions = [];
 
   @override
@@ -32,17 +34,29 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
   }
 
   Future<void> _fetchPrescriptions() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
       final data = await _api.get('/prescriptions/user/');
       setState(() {
-        _prescriptions = data;
+        _prescriptions = data is List ? data : [];
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error fetching prescriptions: $e');
-      setState(() => _isLoading = false);
+      setState(() {
+        _error = 'Could not load prescriptions';
+        _isLoading = false;
+      });
     }
+  }
+
+  DateTime _issuedAt(dynamic p) {
+    if (p is! Map) return DateTime.now();
+    final raw = p['issued_at'] ?? p['created_at'] ?? '';
+    return DateTime.tryParse(raw.toString()) ?? DateTime.now();
   }
 
   @override
@@ -90,25 +104,27 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
       ),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
-        : TabBarView(
+        : _error != null
+            ? Center(child: Text(_error!, style: const TextStyle(color: Colors.grey)))
+            : TabBarView(
             controller: _tabController,
             children: [
               _buildCurrentTab(),
               _buildPastRecordsTab(),
             ],
           ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.pushNamed(context, AppRoutes.consultDoctor),
         backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
+        icon: const Icon(Icons.medical_services_outlined, color: Colors.white),
+        label: const Text('Consult Doctor', style: TextStyle(color: Colors.white)),
       ),
     );
   }
 
   Widget _buildCurrentTab() {
     final current = _prescriptions.where((p) {
-      final date = DateTime.tryParse(p['created_at'] ?? '') ?? DateTime.now();
-      return DateTime.now().difference(date).inDays < 30;
+      return DateTime.now().difference(_issuedAt(p)).inDays < 30;
     }).toList();
 
     if (current.isEmpty) {
@@ -131,8 +147,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
 
   Widget _buildPastRecordsTab() {
     final past = _prescriptions.where((p) {
-      final date = DateTime.tryParse(p['created_at'] ?? '') ?? DateTime.now();
-      return DateTime.now().difference(date).inDays >= 30;
+      return DateTime.now().difference(_issuedAt(p)).inDays >= 30;
     }).toList();
 
     if (past.isEmpty) {
@@ -154,7 +169,7 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
   }
 
   Widget _buildPrescriptionFromData(dynamic data, {bool isPast = false}) {
-    final date = DateTime.tryParse(data['created_at'] ?? '') ?? DateTime.now();
+    final date = _issuedAt(data);
     final formattedDate = DateFormat('dd MMM yyyy').format(date);
     
     // Medications parsing: Medications is a string of comma separated values usually
@@ -274,7 +289,23 @@ class _MyPrescriptionsScreenState extends State<MyPrescriptionsScreen> with Sing
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => PdfService.generatePrescriptionPdf(Map<String, dynamic>.from(data)),
+                  onPressed: () async {
+                    try {
+                      final path = await PdfService.generatePrescriptionPdf(
+                        Map<String, dynamic>.from(data),
+                        context: context,
+                      );
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Saved to $path')),
+                      );
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Download failed: $e')),
+                      );
+                    }
+                  },
                   icon: const Icon(Icons.download, size: 18),
                   label: const Text('Download'),
                   style: ElevatedButton.styleFrom(
