@@ -11,6 +11,8 @@ import { DataTable } from '../../components/ui/DataTable';
 import { Badge } from '../../components/ui/Badge';
 import { Modal, Field, inputClass } from '../../components/ui/Modal';
 import { toast } from '../../components/ui/Toast';
+import VerificationStatusBadge from '../../components/verification/VerificationStatusBadge';
+import VerificationModal from '../../components/verification/VerificationModal';
 
 const empty = {
   name: '',
@@ -30,12 +32,22 @@ export default function AshaPage() {
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
   const [village, setVillage] = useState('');
+  const [verStatus, setVerStatus] = useState('');
+  const [verifyAsha, setVerifyAsha] = useState(null);
 
   const villages = useMemo(() => [...new Set(rows.map((r) => r.assigned_village).filter(Boolean))], [rows]);
-  const filtered = useMemo(
-    () => (village ? rows.filter((r) => r.assigned_village === village) : rows),
-    [rows, village],
-  );
+  const filtered = useMemo(() => {
+    return rows.filter((r) => {
+      if (village && r.assigned_village !== village) return false;
+      if (verStatus) {
+        const vs = r.verification_status || 'INCOMPLETE';
+        if (verStatus === 'PENDING' && vs !== 'PENDING_VERIFICATION') return false;
+        if (verStatus === 'VERIFIED' && vs !== 'VERIFIED') return false;
+        if (verStatus === 'REJECTED' && vs !== 'REJECTED') return false;
+      }
+      return true;
+    });
+  }, [rows, village, verStatus]);
   const activeCount = rows.filter((r) => r.is_active).length;
 
   const save = async (e) => {
@@ -95,6 +107,17 @@ export default function AshaPage() {
           onChange={setVillage}
           options={[['', 'All villages'], ...villages.map((v) => [v, v])]}
         />
+        <FilterSelect
+          label="Verification"
+          value={verStatus}
+          onChange={setVerStatus}
+          options={[
+            ['', 'All Statuses'],
+            ['PENDING', 'Pending Verification'],
+            ['VERIFIED', 'Verified'],
+            ['REJECTED', 'Rejected']
+          ]}
+        />
       </FilterBar>
       <ErrorBanner error={error} onRetry={reload} />
       <DataTable
@@ -134,20 +157,36 @@ export default function AshaPage() {
             render: (r) => <Badge tone={r.is_active ? 'green' : 'rose'}>{r.is_active ? 'Active' : 'Inactive'}</Badge>,
           },
           {
+            key: 'verification',
+            header: 'Verification',
+            render: (r) => <VerificationStatusBadge status={r.verification_status || 'INCOMPLETE'} />,
+          },
+          {
             key: 'a',
             header: '',
             render: (r) => (
-              <button
-                type="button"
-                className="text-primary text-xs font-semibold"
-                onClick={() => {
-                  setEdit(r);
-                  setForm({ ...empty, ...r, name: r.full_name });
-                  setOpen(true);
-                }}
-              >
-                Edit
-              </button>
+              <div className="flex gap-2">
+                {r.verification_status === 'PENDING_VERIFICATION' && (
+                  <button
+                    type="button"
+                    className="text-orange-600 text-xs font-bold bg-orange-50 px-2 py-1 rounded hover:bg-orange-100"
+                    onClick={() => setVerifyAsha(r)}
+                  >
+                    Review
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="text-primary text-xs font-semibold px-2 py-1"
+                  onClick={() => {
+                    setEdit(r);
+                    setForm({ ...empty, ...r, name: r.full_name });
+                    setOpen(true);
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
             ),
           },
         ]}
@@ -186,6 +225,31 @@ export default function AshaPage() {
           </button>
         </form>
       </Modal>
+
+      <VerificationModal
+        isOpen={!!verifyAsha}
+        onClose={() => setVerifyAsha(null)}
+        data={verifyAsha}
+        title={`Verify ASHA: ${verifyAsha?.full_name || verifyAsha?.name}`}
+        profileFields={[
+          { label: 'Full Name', value: verifyAsha?.full_name || verifyAsha?.name },
+          { label: 'Worker ID', value: verifyAsha?.worker_id },
+          { label: 'Phone', value: verifyAsha?.phone_number },
+          { label: 'Village', value: verifyAsha?.assigned_village },
+          { label: 'PHC Center', value: verifyAsha?.phc_center },
+          { label: 'District', value: verifyAsha?.district },
+        ]}
+        onApprove={async (id) => {
+          await adminApi.approveAsha(id);
+          setVerifyAsha(null);
+          reload();
+        }}
+        onReject={async (id, reason) => {
+          await adminApi.rejectAsha(id, reason);
+          setVerifyAsha(null);
+          reload();
+        }}
+      />
     </div>
   );
 }

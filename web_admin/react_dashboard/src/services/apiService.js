@@ -65,10 +65,14 @@ export const adminApi = {
   doctors: (params) => unwrap(api.get('/admin/doctors/', { params })),
   createDoctor: (body) => unwrap(api.post('/admin/doctors/', body)),
   patchDoctor: (id, body) => unwrap(api.patch(`/admin/doctors/${id}/`, body)),
+  approveDoctor: (id) => unwrap(api.post(`/admin/doctors/${id}/approve/`)),
+  rejectDoctor: (id, reason) => unwrap(api.post(`/admin/doctors/${id}/reject/`, { reason })),
 
   ashaWorkers: (params) => unwrap(api.get('/admin/asha-workers/', { params })),
   createAsha: (body) => unwrap(api.post('/admin/asha-workers/', body)),
   patchAsha: (id, body) => unwrap(api.patch(`/admin/asha-workers/${id}/`, body)),
+  approveAsha: (id) => unwrap(api.post(`/admin/asha-workers/${id}/approve/`)),
+  rejectAsha: (id, reason) => unwrap(api.post(`/admin/asha-workers/${id}/reject/`, { reason })),
 
   consultations: (params) => unwrap(api.get('/admin/consultations/', { params })),
   patchConsultation: (id, body) => unwrap(api.patch(`/admin/consultations/${id}/`, body)),

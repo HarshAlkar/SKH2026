@@ -11,6 +11,8 @@ import { DataTable } from '../../components/ui/DataTable';
 import { Badge } from '../../components/ui/Badge';
 import { Modal, Field, inputClass } from '../../components/ui/Modal';
 import { toast } from '../../components/ui/Toast';
+import DoctorVerification from './DoctorVerification';
+import VerificationStatusBadge from '../../components/verification/VerificationStatusBadge';
 
 const empty = {
   name: '',
@@ -32,12 +34,22 @@ export default function DoctorsPage() {
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
   const [spec, setSpec] = useState('');
+  const [verStatus, setVerStatus] = useState('');
+  const [verifyDoctor, setVerifyDoctor] = useState(null);
 
   const specs = useMemo(() => [...new Set(rows.map((r) => r.specialization).filter(Boolean))], [rows]);
-  const filtered = useMemo(
-    () => (spec ? rows.filter((r) => r.specialization === spec) : rows),
-    [rows, spec],
-  );
+  const filtered = useMemo(() => {
+    return rows.filter((r) => {
+      if (spec && r.specialization !== spec) return false;
+      if (verStatus) {
+        const vs = r.verification_status || 'INCOMPLETE';
+        if (verStatus === 'PENDING' && vs !== 'PENDING_VERIFICATION') return false;
+        if (verStatus === 'VERIFIED' && vs !== 'VERIFIED') return false;
+        if (verStatus === 'REJECTED' && vs !== 'REJECTED') return false;
+      }
+      return true;
+    });
+  }, [rows, spec, verStatus]);
   const activeCount = rows.filter((r) => r.is_available).length;
 
   const save = async (e) => {
@@ -99,6 +111,17 @@ export default function DoctorsPage() {
           onChange={setSpec}
           options={[['', 'All specializations'], ...specs.map((s) => [s, s])]}
         />
+        <FilterSelect
+          label="Verification"
+          value={verStatus}
+          onChange={setVerStatus}
+          options={[
+            ['', 'All Statuses'],
+            ['PENDING', 'Pending Verification'],
+            ['VERIFIED', 'Verified'],
+            ['REJECTED', 'Rejected']
+          ]}
+        />
       </FilterBar>
       <ErrorBanner error={error} onRetry={reload} />
       <DataTable
@@ -136,20 +159,36 @@ export default function DoctorsPage() {
             render: (r) => <Badge tone={r.is_available ? 'green' : 'slate'}>{r.is_available ? 'Available' : 'Offline'}</Badge>,
           },
           {
+            key: 'verification',
+            header: 'Verification',
+            render: (r) => <VerificationStatusBadge status={r.verification_status || 'INCOMPLETE'} />,
+          },
+          {
             key: 'a',
             header: '',
             render: (r) => (
-              <button
-                type="button"
-                className="text-primary text-xs font-semibold"
-                onClick={() => {
-                  setEdit(r);
-                  setForm({ ...empty, ...r, name: r.full_name });
-                  setOpen(true);
-                }}
-              >
-                Edit
-              </button>
+              <div className="flex gap-2">
+                {r.verification_status === 'PENDING_VERIFICATION' && (
+                  <button
+                    type="button"
+                    className="text-orange-600 text-xs font-bold bg-orange-50 px-2 py-1 rounded hover:bg-orange-100"
+                    onClick={() => setVerifyDoctor(r)}
+                  >
+                    Review
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="text-primary text-xs font-semibold px-2 py-1"
+                  onClick={() => {
+                    setEdit(r);
+                    setForm({ ...empty, ...r, name: r.full_name });
+                    setOpen(true);
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
             ),
           },
         ]}
@@ -197,6 +236,16 @@ export default function DoctorsPage() {
           </button>
         </form>
       </Modal>
+
+      <DoctorVerification
+        isOpen={!!verifyDoctor}
+        onClose={() => setVerifyDoctor(null)}
+        doctor={verifyDoctor}
+        onVerified={() => {
+          setVerifyDoctor(null);
+          reload();
+        }}
+      />
     </div>
   );
 }
