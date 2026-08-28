@@ -7,6 +7,7 @@ import '../widgets/emergency_button.dart';
 import '../widgets/asha_sidebar.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../models/user_model.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/sync/offline_api.dart';
 import '../../../core/widgets/sync_status_banner.dart';
 import '../../../providers/consultation_provider.dart';
@@ -34,6 +35,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
   int _highRiskCount = 0;
   int _newAlerts = 0;
   int _pendingVisits = 0;
+  String? _dashboardError;
   List<dynamic> _recentActivity = [];
 
   @override
@@ -49,8 +51,11 @@ class _AshaDashboardState extends State<AshaDashboard> {
     });
   }
 
-  Future<void> _fetchDashboardData() async {
-    setState(() => _isLoading = true);
+  Future<void> _fetchDashboardData({bool isRetry = false}) async {
+    setState(() {
+      _isLoading = true;
+      if (!isRetry) _dashboardError = null;
+    });
     final api = OfflineApi.instance;
     try {
       final dash = await api.get('/asha/dashboard/');
@@ -63,11 +68,23 @@ class _AshaDashboardState extends State<AshaDashboard> {
         _recentActivity = dash is Map && dash['recent_activity'] is List
             ? List.from(dash['recent_activity'])
             : [];
+        _dashboardError = null;
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error fetching asha dashboard data: $e');
-      setState(() => _isLoading = false);
+      if (!isRetry) {
+        await Future<void>.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          await _fetchDashboardData(isRetry: true);
+          return;
+        }
+      }
+      setState(() {
+        _dashboardError =
+            'Could not load data from ${AppConfig.displayHost}. Log out and log in again.';
+        _isLoading = false;
+      });
     }
   }
 
@@ -112,6 +129,25 @@ class _AshaDashboardState extends State<AshaDashboard> {
       body: Column(
         children: [
           const SyncStatusBanner(),
+          if (_dashboardError != null)
+            Material(
+              color: const Color(0xFFFFEBEE),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _dashboardError!,
+                        style: const TextStyle(color: Color(0xFFB71C1C), fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           Expanded(
             child: IndexedStack(
               index: _selectedIndex,

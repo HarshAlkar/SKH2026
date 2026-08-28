@@ -8,6 +8,7 @@ import '../screens/health_reports_screen.dart';
 import '../screens/my_patients_screen.dart';
 import '../screens/asha_workers_screen.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../core/utils/logout_helper.dart';
 import '../../profile/widgets/profile_avatar.dart';
 import '../../../core/emergency_comms/widgets/offline_emergency_status.dart';
 
@@ -283,15 +284,8 @@ class DoctorNavigationDrawer extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: InkWell(
                 onTap: () async {
-                  Navigator.pop(context); // Close drawer
-                  await authProvider.logout();
-                  if (context.mounted) {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      AppRoutes.roleSelection,
-                      (route) => false,
-                    );
-                  }
+                  Navigator.pop(context);
+                  await LogoutHelper.logout(context);
                 },
                 borderRadius: BorderRadius.circular(12),
                 child: const Padding(

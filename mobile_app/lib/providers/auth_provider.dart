@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
+import '../core/config/app_config.dart';
 import '../core/services/authentication_service.dart';
 import '../core/services/signaling_service.dart';
 import '../core/sync/sync_status.dart';
@@ -12,6 +13,7 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   bool _isReady = false;
+  bool _suppressCacheLoad = false;
   String? _error;
 
   UserModel? get user => _user;
@@ -43,6 +45,11 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _loadCachedUser() async {
+    if (_suppressCacheLoad) {
+      _isReady = true;
+      notifyListeners();
+      return;
+    }
     try {
       final cachedData = await _authService.getCachedUser();
       if (cachedData != null &&
@@ -60,7 +67,18 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  String _cleanError(Object e) => friendlyNetworkError(e);
+  String _cleanError(Object e) {
+    var msg = friendlyNetworkError(e);
+    final lower = msg.toLowerCase();
+    if (lower.contains('invalid credentials') || lower.contains('user not found')) {
+      final host = AppConfig.host.toLowerCase();
+      if (host.contains('onrender.com') || host.startsWith('https://')) {
+        msg +=
+            ' This account may exist only on your local PC. Register on cloud or use demo credentials (e.g. 9876543210 / password123).';
+      }
+    }
+    return msg;
+  }
 
   Future<bool> login(String phoneNumber, String password, String role) async {
     _isLoading = true;
@@ -68,6 +86,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      _suppressCacheLoad = false;
       final response = await _authService.login(phoneNumber, password, role);
       final userJson = response['user'];
       if (userJson is! Map) {
@@ -91,6 +110,7 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      _suppressCacheLoad = false;
       final response = await _authService.register(data);
       final userJson = response['user'];
       if (userJson is! Map) {
@@ -109,9 +129,13 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    _isReady = false;
+    _suppressCacheLoad = true;
+    notifyListeners();
     await _authService.logout();
     SignalingService().disconnect();
     _user = null;
+    _isReady = true;
     notifyListeners();
   }
 
@@ -137,6 +161,7 @@ class AuthProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
+      _suppressCacheLoad = false;
       final response = await _authService.verifyOtp(phoneNumber, otp, role: role);
       final userJson = response['user'];
       final token = response['token'];

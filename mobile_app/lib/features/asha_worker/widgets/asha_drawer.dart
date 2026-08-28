@@ -9,6 +9,7 @@ import '../../doctor/screens/consult_doctor_screen.dart';
 import '../../reports/screens/village_health_report_screen.dart';
 import '../../referral/screens/emergency_referral_screen.dart';
 import '../../referral/screens/referral_history_screen.dart';
+import '../../../core/utils/logout_helper.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../routes/app_routes.dart';
 import '../../profile/widgets/profile_avatar.dart';
@@ -170,14 +171,8 @@ class AshaDrawer extends StatelessWidget {
               style: TextStyle(color: Colors.redAccent),
             ),
             onTap: () async {
-              await authProvider.logout();
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  AppRoutes.roleSelection,
-                  (route) => false,
-                );
-              }
+              Navigator.pop(context);
+              await LogoutHelper.logout(context);
             },
           ),
         ],

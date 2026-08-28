@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/server_host_helper.dart';
 import '../../../routes/app_routes.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
@@ -29,14 +30,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   Future<void> _saveHost() async {
     final value = _hostController.text.trim();
     if (value.isEmpty) return;
-    await AppConfig.setHost(value);
+    await ServerHostHelper.saveHost(context, value);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Server host saved: $value'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
     setState(() {});
   }
 
@@ -58,6 +53,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               fontWeight: FontWeight.bold,
               color: Color(0xFF1E293B),
             ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Active API: ${AppConfig.baseUrl}',
+            style: const TextStyle(fontSize: 11, color: AppColors.primary),
           ),
           const SizedBox(height: 4),
           const Text(

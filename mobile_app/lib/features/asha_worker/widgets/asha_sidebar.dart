@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../routes/app_routes.dart';
+import '../../../core/utils/logout_helper.dart';
 import '../../../providers/auth_provider.dart';
 import '../../profile/widgets/profile_avatar.dart';
 import '../../../core/emergency_comms/widgets/offline_emergency_status.dart';
@@ -76,10 +77,8 @@ class AshaSidebar extends StatelessWidget {
                 leading: const Icon(Icons.logout, color: Colors.redAccent),
                 title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
                 onTap: () async {
-                  await auth.logout();
-                  if (context.mounted) {
-                    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.roleSelection, (route) => false);
-                  }
+                  Navigator.pop(context);
+                  await LogoutHelper.logout(context);
                 },
               ),
               const SizedBox(height: 20),

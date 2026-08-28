@@ -10,6 +10,7 @@ import 'asha_workers_screen.dart';
 import '../../../providers/auth_provider.dart';
 import '../widgets/doctor_navigation_drawer.dart';
 import '../../../providers/consultation_provider.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/permission_dialog_service.dart';
 import '../../../core/widgets/sync_status_banner.dart';
@@ -30,6 +31,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   int _ashaCount = 0;
   int _pendingAlerts = 0;
   int _virtualCalls = 0;
+  String? _statsError;
   final ApiService _api = ApiService();
 
   @override
@@ -45,26 +47,43 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     });
   }
 
-  Future<void> _fetchStats() async {
+  Future<void> _fetchStats({bool isRetry = false}) async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      if (!isRetry) _statsError = null;
+    });
     try {
       final patients = await _api.get('/users/patients/');
       final ashas = await _api.get('/users/asha-workers/');
       final alerts = await _api.get('/alerts/notifications/');
       final history = await _api.get('/consultations/history/');
-      
+
       if (!mounted) return;
       setState(() {
-        _patientCount = patients.length;
-        _ashaCount = ashas.length;
-        _pendingAlerts = alerts.length;
+        _patientCount = patients is List ? patients.length : 0;
+        _ashaCount = ashas is List ? ashas.length : 0;
+        _pendingAlerts = alerts is List ? alerts.length : 0;
         _virtualCalls = history is List ? history.length : 0;
+        _statsError = null;
         _isLoading = false;
       });
     } catch (e) {
       debugPrint('Error fetching doctor stats: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (!isRetry) {
+        await Future<void>.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          await _fetchStats(isRetry: true);
+          return;
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _statsError =
+              'Could not load data from ${AppConfig.displayHost}. Log out and log in again.';
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -109,6 +128,25 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     return Column(
       children: [
         const SyncStatusBanner(),
+        if (_statsError != null)
+          Material(
+            color: const Color(0xFFFFEBEE),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _statsError!,
+                      style: const TextStyle(color: Color(0xFFB71C1C), fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _fetchStats,

@@ -7,6 +7,8 @@ import '../../../core/emergency_comms/emergency_comms_config.dart';
 import '../../../core/emergency_comms/emergency_mode.dart';
 import '../../../core/services/settings_store.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/logout_helper.dart';
+import '../../../core/utils/server_host_helper.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../routes/app_routes.dart';
 import '../widgets/profile_avatar.dart';
@@ -57,12 +59,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final value = _hostController.text.trim();
     if (value.isEmpty) return;
     setState(() => _savingHost = true);
-    await AppConfig.setHost(value);
+    await ServerHostHelper.saveHost(
+      context,
+      value,
+      savedMessage:
+          '${t('Server host saved', 'सर्वर होस्ट सेव हुआ')}. API: ${AppConfig.baseUrl}',
+    );
     if (!mounted) return;
     setState(() => _savingHost = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${t('Server host saved', 'सर्वर होस्ट सेव हुआ')}: $value')),
-    );
   }
 
   Future<void> _saveGateway() async {
@@ -103,9 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _logout() async {
-    await context.read<AuthProvider>().logout();
-    if (!mounted) return;
-    Navigator.pushNamedAndRemoveUntil(context, AppRoutes.roleSelection, (route) => false);
+    await LogoutHelper.logout(context);
   }
 
   Future<void> _changePassword() async {
@@ -301,6 +303,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
           _label(t('SERVER', 'सर्वर')),
           _card([
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Text(
+                '${t('Active API', 'सक्रिय API')}: ${AppConfig.baseUrl}',
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: TextField(
