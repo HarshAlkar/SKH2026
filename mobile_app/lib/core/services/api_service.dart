@@ -172,7 +172,9 @@ class ApiService {
 
   Future<dynamic> postMultipart(
     String endpoint, {
-    required File file,
+    File? file,
+    List<int>? fileBytes,
+    String? fileName,
     String field = 'image',
     Map<String, String>? fields,
     Duration? timeout,
@@ -180,7 +182,15 @@ class ApiService {
     return _send(() async {
       final request = http.MultipartRequest('POST', _uri(endpoint));
       request.headers.addAll(await _getHeaders(endpoint, null));
-      request.files.add(await http.MultipartFile.fromPath(field, file.path));
+      
+      if (file != null) {
+        request.files.add(await http.MultipartFile.fromPath(field, file.path));
+      } else if (fileBytes != null && fileName != null) {
+        request.files.add(http.MultipartFile.fromBytes(field, fileBytes, filename: fileName));
+      } else {
+        throw Exception('Must provide either file or (fileBytes and fileName)');
+      }
+
       if (fields != null) {
         request.fields.addAll(fields);
       }

@@ -5,14 +5,14 @@ import '../../../core/utils/helpers.dart';
 import '../../../routes/app_routes.dart';
 import '../../auth/screens/forgot_password_screen.dart';
 
-class AshaLoginScreen extends StatefulWidget {
-  const AshaLoginScreen({super.key});
+class PatientLoginScreen extends StatefulWidget {
+  const PatientLoginScreen({super.key});
 
   @override
-  State<AshaLoginScreen> createState() => _AshaLoginScreenState();
+  State<PatientLoginScreen> createState() => _PatientLoginScreenState();
 }
 
-class _AshaLoginScreenState extends State<AshaLoginScreen> {
+class _PatientLoginScreenState extends State<PatientLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailPhoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -33,11 +33,11 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
       final success = await authProvider.login(
         _emailPhoneController.text,
         _passwordController.text,
-        'asha_worker',
+        'user',
       );
       
       if (success && mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.ashaDashboard);
+        Navigator.pushReplacementNamed(context, AppRoutes.userDashboard);
       } else if (mounted) {
         Helpers.showSnackBar(
           context,
@@ -64,7 +64,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
         AppRoutes.loginWithOtp,
         arguments: {
           'phoneNumber': identifier,
-          'role': 'asha_worker',
+          'role': 'user',
           'isForgotPassword': false,
           'debugOtp': response['otp'],
         },
@@ -80,9 +80,9 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF10B981); // Emerald Green for ASHA
-    const accentGreen = Color(0xFF059669);
-    const lightBlue = Color(0xFFECFDF5); // Light emerald background
+    const primaryColor = Color(0xFF2A7DE1);
+    const accentGreen = Color(0xFF4CAF50);
+    const lightBlue = Color(0xFFE8F1FF);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -121,7 +121,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         gradient: LinearGradient(
-                          colors: [lightBlue, Colors.green.shade100],
+                          colors: [lightBlue, Colors.blue.shade100],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -139,7 +139,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                             right: -20,
                             bottom: -20,
                             child: Icon(
-                              Icons.health_and_safety,
+                              Icons.family_restroom,
                               size: 150,
                               color: primaryColor.withOpacity(0.1),
                             ),
@@ -157,7 +157,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: const Text(
-                                    "Community Health Access",
+                                    "Patient Portal",
                                     style: TextStyle(
                                       color: primaryColor,
                                       fontWeight: FontWeight.bold,
@@ -168,7 +168,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 const Text(
-                                  "ASHA Worker\nPortal",
+                                  "Your Family's\nHealth Dashboard",
                                   style: TextStyle(
                                     color: Color(0xFF1E293B),
                                     fontSize: 22,
@@ -187,7 +187,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                     
                     // DESCRIPTION TEXT
                     const Text(
-                      "Manage village health data, track community visits, and assist local patients.",
+                      "Check symptoms, track medicines, and consult doctors from anywhere.",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Color(0xFF475569),
@@ -219,7 +219,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                           children: [
                             // FIELD 1
                             const Text(
-                              "Worker ID or Phone Number",
+                              "Phone Number or Email",
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
@@ -233,7 +233,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                               decoration: InputDecoration(
                                 hintText: "Enter your phone number",
                                 hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-                                prefixIcon: const Icon(Icons.badge, color: primaryColor, size: 20),
+                                prefixIcon: const Icon(Icons.phone_android, color: primaryColor, size: 20),
                                 contentPadding: const EdgeInsets.symmetric(vertical: 16),
                                 filled: true,
                                 fillColor: const Color(0xFFF8FAFC),
@@ -256,7 +256,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
-                                  return 'Worker ID/Phone must not be empty';
+                                  return 'Phone/Email must not be empty';
                                 }
                                 return null;
                               },
@@ -392,7 +392,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                                               Icon(Icons.login_rounded, size: 20),
                                               SizedBox(width: 8),
                                               Text(
-                                                "Login as ASHA",
+                                                "Login",
                                                 style: TextStyle(
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.bold,
@@ -413,7 +413,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                               height: 52,
                               child: ElevatedButton(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, AppRoutes.ashaRegister);
+                                  Navigator.pushNamed(context, AppRoutes.userRegister);
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFFF0FDF4),
@@ -429,7 +429,7 @@ class _AshaLoginScreenState extends State<AshaLoginScreen> {
                                     Icon(Icons.person_add_alt_1_rounded, size: 20),
                                     SizedBox(width: 8),
                                     Text(
-                                      "Register as ASHA",
+                                      "Create Account",
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,

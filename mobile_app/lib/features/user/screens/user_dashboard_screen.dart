@@ -306,7 +306,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
       children: [
         _buildActionCard('Medicine Tracker', Icons.medication_outlined, AppRoutes.medicineTracker),
         _buildActionCard('Nearby Clinics', Icons.location_on_outlined, AppRoutes.nearbyClinics),
-        _buildActionCard('Consult Doctor', Icons.video_camera_front_outlined, AppRoutes.consultDoctor),
+        _buildActionCard('Book Appointment', Icons.video_camera_front_outlined, AppRoutes.bookAppointment),
+        _buildActionCard('My Appointments', Icons.event_available, AppRoutes.patientAppointments),
         _buildActionCard('ASHA Workers', Icons.health_and_safety_outlined, AppRoutes.ashaWorkers),
         _buildActionCard('My Prescriptions', Icons.description_outlined, AppRoutes.myPrescriptions),
         _buildActionCard('Health Tips', Icons.lightbulb_outline, AppRoutes.healthTips),

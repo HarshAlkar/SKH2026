@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
 import 'patient_details_screen.dart';
 import '../widgets/doctor_navigation_drawer.dart';
 
@@ -74,6 +76,16 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
   }
 
   void _acceptRequest(String id) {
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    final isVerified = user?.detail('verification_status', fallback: 'INCOMPLETE') == 'VERIFIED';
+    
+    if (!isVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must complete your professional profile and be verified by admin before accepting requests.')),
+      );
+      return;
+    }
+
     setState(() {
       final index = _requests.indexWhere((r) => r.id == id);
       if (index != -1) {

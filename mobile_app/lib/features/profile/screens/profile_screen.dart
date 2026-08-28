@@ -11,6 +11,7 @@ import '../../../core/services/settings_store.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../routes/app_routes.dart';
+import '../../../models/user_model.dart';
 import '../widgets/profile_avatar.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -289,6 +290,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
+                if (role == 'doctor' || role == 'asha_worker') _buildVerificationSection(user, role),
+                const SizedBox(height: 4),
                 Center(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -407,6 +410,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
           fillColor: Colors.white,
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
+      ),
+    );
+  }
+
+  Widget _buildVerificationSection(UserModel user, String role) {
+    final status = user.getDetail('verification_status', fallback: 'INCOMPLETE');
+    
+    Color color;
+    String text;
+    IconData icon;
+
+    switch (status) {
+      case 'VERIFIED':
+        color = Colors.green;
+        text = t('VERIFIED', 'सत्यापित');
+        icon = Icons.verified;
+        break;
+      case 'PENDING_VERIFICATION':
+        color = Colors.orange;
+        text = t('VERIFICATION PENDING', 'सत्यापन लंबित');
+        icon = Icons.hourglass_empty;
+        break;
+      case 'REJECTED':
+        color = Colors.red;
+        text = t('VERIFICATION REJECTED', 'सत्यापन अस्वीकृत');
+        icon = Icons.error_outline;
+        break;
+      case 'INCOMPLETE':
+      default:
+        color = Colors.red;
+        text = t('UNVERIFIED', 'असत्यापित');
+        icon = Icons.warning_amber_rounded;
+        break;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                text,
+                style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ],
+          ),
+          if (status == 'INCOMPLETE' || status == 'REJECTED')
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: TextButton.icon(
+                onPressed: () {
+                  if (role == 'asha_worker') {
+                    Navigator.pushNamed(context, '/asha-verification');
+                  } else {
+                    Navigator.pushNamed(context, '/doctor-verification');
+                  }
+                },
+                icon: const Icon(Icons.upload_file, size: 16),
+                label: Text(t('Complete Your Profile', 'अपनी प्रोफ़ाइल पूरी करें')),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  backgroundColor: AppColors.lightBlue,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

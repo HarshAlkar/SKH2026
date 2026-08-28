@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../routes/app_routes.dart';
 import '../widgets/user_sidebar.dart';
 import '../services/doctor_service.dart';
 import '../../chat/widgets/contact_action_row.dart';
@@ -294,6 +295,36 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
             peerName: 'Dr. ${doctor['full_name'] ?? 'Doctor'}',
             peerUserId: parseContactId(doctor['user_id']) ?? parseContactId(doctor['id']) ?? 0,
             doctorId: parseContactId(doctor['id']),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final success = await Navigator.pushNamed(
+                  context,
+                  AppRoutes.bookAppointment,
+                  arguments: {
+                    'doctorId': parseContactId(doctor['id']) ?? 0,
+                    'doctorName': 'Dr. ${doctor['full_name'] ?? 'Doctor'}',
+                    'doctorSpecialization': doctor['specialization'] ?? 'General Physician',
+                  },
+                );
+                
+                // If appointment was booked successfully, navigate to My Appointments
+                if (success == true && mounted) {
+                  Navigator.pushReplacementNamed(context, AppRoutes.patientAppointments);
+                }
+              },
+              icon: const Icon(Icons.event_available, color: Colors.white, size: 18),
+              label: const Text('Book Appointment', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0F766E), // A distinct color for booking
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                elevation: 0,
+              ),
+            ),
           ),
         ],
       ),

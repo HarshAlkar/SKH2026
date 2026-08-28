@@ -4,20 +4,19 @@ import '../../../providers/auth_provider.dart';
 import '../../../core/utils/helpers.dart';
 import '../../../routes/app_routes.dart';
 
-class AshaRegisterScreen extends StatefulWidget {
-  const AshaRegisterScreen({super.key});
+class PatientRegisterScreen extends StatefulWidget {
+  const PatientRegisterScreen({super.key});
 
   @override
-  State<AshaRegisterScreen> createState() => _AshaRegisterScreenState();
+  State<PatientRegisterScreen> createState() => _PatientRegisterScreenState();
 }
 
-class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
+class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   
   final _nameController = TextEditingController();
   final _emailPhoneController = TextEditingController();
   final _villageController = TextEditingController();
-  final _phcController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -30,7 +29,6 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
     _nameController.dispose();
     _emailPhoneController.dispose();
     _villageController.dispose();
-    _phcController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -61,15 +59,14 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
         'name': _nameController.text.trim(),
         'phone_number': _emailPhoneController.text.trim(),
         'password': _passwordController.text,
-        'role': 'asha_worker',
-        'assigned_village': _villageController.text.trim(),
-        'phc_center': _phcController.text.trim(),
+        'role': 'user',
+        'village': _villageController.text.trim(),
       };
       
       final success = await authProvider.register(registrationData);
       
       if (success && mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.ashaDashboard);
+        Navigator.pushReplacementNamed(context, AppRoutes.userDashboard);
       } else if (mounted) {
         Helpers.showSnackBar(
           context,
@@ -82,8 +79,8 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const primaryColor = Color(0xFF10B981); // Emerald Green for ASHA
-    const lightBlue = Color(0xFFECFDF5);
+    const primaryColor = Color(0xFF2A7DE1);
+    const lightBlue = Color(0xFFE8F1FF);
     const inputBgColor = Color(0xFFF5F7FA);
     const textDarkColor = Color(0xFF1E293B);
     const textSubColor = Color(0xFF64748B);
@@ -96,11 +93,11 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: primaryColor),
           onPressed: () {
-            Navigator.pushReplacementNamed(context, AppRoutes.ashaLogin);
+            Navigator.pushReplacementNamed(context, AppRoutes.userLogin);
           },
         ),
         title: const Text(
-          'ASHA Worker Registration',
+          'Patient Registration',
           style: TextStyle(
             color: textDarkColor,
             fontWeight: FontWeight.bold,
@@ -144,7 +141,7 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        "Register to manage village health data and assist local patients.",
+                        "Register yourself and your family to get seamless access to healthcare.",
                         style: TextStyle(
                           color: textSubColor,
                           fontSize: 14,
@@ -157,11 +154,11 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
                           height: 120,
                           width: double.infinity,
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
+                            color: Colors.blue.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Icon(
-                            Icons.health_and_safety,
+                            Icons.family_restroom,
                             size: 80,
                             color: primaryColor.withOpacity(0.6),
                           ),
@@ -175,7 +172,7 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
                 
                 // SECTION TITLE
                 const Text(
-                  "Create Worker Profile",
+                  "Create Your Profile",
                   style: TextStyle(
                     color: textDarkColor,
                     fontSize: 20,
@@ -224,28 +221,13 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
                         keyboardType: TextInputType.phone,
                       ),
                       
-                      const SizedBox(height: 32),
-                      
-                      // WORK INFO SECTION
-                      _buildSectionHeader("Assigned Area Information", Icons.location_on_outlined, primaryColor),
                       const SizedBox(height: 16),
-                      
+
                       _buildTextField(
                         controller: _villageController,
-                        label: "Assigned Village",
-                        hint: "Enter your assigned village",
+                        label: "Village / Location",
+                        hint: "Enter your village name",
                         icon: Icons.home_outlined,
-                        color: primaryColor,
-                        bgColor: inputBgColor,
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      _buildTextField(
-                        controller: _phcController,
-                        label: "PHC Center",
-                        hint: "Enter your Primary Health Center",
-                        icon: Icons.local_hospital_outlined,
                         color: primaryColor,
                         bgColor: inputBgColor,
                       ),
@@ -364,7 +346,7 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
                                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                                     )
                                   : const Text(
-                                      "Create Worker Account",
+                                      "Create Account",
                                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                                     ),
                             );

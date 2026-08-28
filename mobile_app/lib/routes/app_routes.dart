@@ -8,6 +8,12 @@ class AppRoutes {
   static const String ashaLogin = '/asha/login';
   static const String doctorLogin = '/doctor/login';
 
+  static const String userRegister = '/user/register';
+  static const String ashaRegister = '/asha/register';
+  static const String doctorRegister = '/doctor/register';
+  static const String doctorVerification = '/doctor-verification';
+  static const String ashaVerification = '/asha-verification';
+
   static const String userDashboard = '/user-dashboard';
   static const String ashaDashboard = '/asha-dashboard';
   static const String doctorDashboard = '/doctor-dashboard';
@@ -23,6 +29,8 @@ class AppRoutes {
   static const String consultDoctor = '/consult-doctor';
   static const String myPrescriptions = '/my-prescriptions';
   static const String healthTips = '/health-tips';
+  static const String bookAppointment = '/book-appointment';
+  static const String patientAppointments = '/my-appointments';
   static const String patientAlerts = '/user/alerts';
   static const String emergencyHelp = '/emergency-help';
   static const String settings = '/settings';

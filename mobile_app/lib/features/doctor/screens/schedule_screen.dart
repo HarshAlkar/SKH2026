@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../core/services/call_launcher.dart';
 import '../../../routes/app_routes.dart';
 import '../services/doctor_appointment_service.dart';
+import '../../../providers/auth_provider.dart';
 import 'patient_details_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
@@ -544,13 +546,22 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Widget _buildActionButtons(BuildContext context, DoctorAppointment appointment) {
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    final isVerified = user?.detail('verification_status', fallback: 'INCOMPLETE') == 'VERIFIED';
+
+    void showUnverifiedMessage() {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must complete your professional profile and be verified by admin before accepting appointments.')),
+      );
+    }
+
     switch (appointment.type) {
       case DoctorConsultationType.video:
         return SizedBox(
           width: double.infinity,
           height: 44,
           child: ElevatedButton.icon(
-            onPressed: () {
+            onPressed: isVerified ? () {
               final targetUserId = appointment.patientUserId?.toString() ?? appointment.patientId.toString();
               CallLauncher.start(
                 context: context,
@@ -560,11 +571,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 doctorId: appointment.doctorId,
                 patientId: appointment.patientId,
               );
-            },
+            } : showUnverifiedMessage,
             icon: const Icon(Icons.videocam, size: 18),
             label: const Text('Start Video Call', style: TextStyle(fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2A7DE1),
+              backgroundColor: isVerified ? const Color(0xFF2A7DE1) : Colors.grey,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -576,7 +587,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           width: double.infinity,
           height: 44,
           child: ElevatedButton.icon(
-            onPressed: () {
+            onPressed: isVerified ? () {
               final targetUserId = appointment.patientUserId?.toString() ?? appointment.patientId.toString();
               CallLauncher.start(
                 context: context,
@@ -586,11 +597,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 doctorId: appointment.doctorId,
                 patientId: appointment.patientId,
               );
-            },
+            } : showUnverifiedMessage,
             icon: const Icon(Icons.phone, size: 18),
             label: const Text('Start Audio Call', style: TextStyle(fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
+              backgroundColor: isVerified ? const Color(0xFF10B981) : Colors.grey,
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

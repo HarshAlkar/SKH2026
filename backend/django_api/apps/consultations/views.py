@@ -102,6 +102,11 @@ class ConsultationViewSet(viewsets.ModelViewSet):
                     {'error': 'Doctor profile not found'},
                     status=status.HTTP_404_NOT_FOUND,
                 )
+            if doctor.verification_status != 'VERIFIED':
+                return Response(
+                    {'error': 'Doctor profile must be verified to start a consultation.'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             if not patient and not asha:
                 return Response(
                     {'error': 'patient_id or asha_id is required'},
@@ -236,4 +241,12 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(appointment)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        if user.role == 'doctor':
+            doctor = getattr(user, 'doctor_profile', None) or Doctor.objects.filter(user=user).first()
+            if not doctor or doctor.verification_status != 'VERIFIED':
+                raise permissions.exceptions.PermissionDenied('Doctor profile must be verified to accept or modify appointments.')
+        serializer.save()
 

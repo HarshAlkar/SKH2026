@@ -119,6 +119,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     return Column(
       children: [
         const SyncStatusBanner(),
+        _buildVerificationBanner(),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _fetchStats,
@@ -806,6 +807,98 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             ),
             label: 'PROFILE',
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationBanner() {
+    final user = context.watch<AuthProvider>().user;
+    if (user == null || user.role != 'doctor') return const SizedBox.shrink();
+
+    final status = user.detail('verification_status', fallback: 'INCOMPLETE');
+    if (status == 'VERIFIED') return const SizedBox.shrink();
+
+    Color bgColor;
+    Color textColor;
+    String title;
+    String message;
+    IconData icon;
+
+    switch (status) {
+      case 'PENDING_VERIFICATION':
+        bgColor = const Color(0xFFFFF3CD);
+        textColor = const Color(0xFF856404);
+        title = 'VERIFICATION PENDING';
+        message = 'Your medical credentials are currently being reviewed.';
+        icon = Icons.hourglass_empty;
+        break;
+      case 'REJECTED':
+        bgColor = const Color(0xFFFFE9E9);
+        textColor = const Color(0xFFD92D20);
+        title = 'VERIFICATION REJECTED';
+        message = 'Reason: ${user.detail('rejection_reason', fallback: 'Please check your documents.')}';
+        icon = Icons.error_outline;
+        break;
+      case 'INCOMPLETE':
+      default:
+        bgColor = const Color(0xFFFFE9E9);
+        textColor = const Color(0xFFD92D20);
+        title = 'UNVERIFIED';
+        message = 'Complete your professional profile to unlock appointment and consultation features.';
+        icon = Icons.warning_amber_rounded;
+        break;
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(left: 20, right: 20, top: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: textColor.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: textColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: TextStyle(
+              color: textColor.withValues(alpha: 0.9),
+              fontSize: 13,
+            ),
+          ),
+          if (status == 'INCOMPLETE' || status == 'REJECTED') ...[
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {
+                _onItemTapped(4); // Navigate to Profile tab
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: textColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                minimumSize: const Size(0, 36),
+              ),
+              child: Text(status == 'REJECTED' ? 'Resubmit Documents' : 'Complete Profile'),
+            ),
+          ],
         ],
       ),
     );
