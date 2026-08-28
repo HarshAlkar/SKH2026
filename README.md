@@ -165,20 +165,5 @@ Our Peer-to-Peer implementation ensures speed and security:
 **Not offline:** live video/audio calls and live chat still need the Node signaling server and a working network.
 
 ---
-
-## 10. VitalReach 2.0 / SIH roadmap
-
-**Problem Statement:** [26133](docs/PS26133_TEAM_BRIEFING.md) — Accessibility and quality of public healthcare (Maharashtra).  
-**Team briefing (Have / Build / diagrams / talk script):** [`docs/PS26133_TEAM_BRIEFING.md`](docs/PS26133_TEAM_BRIEFING.md)  
-**Deep differentiator analysis:** [`docs/VITALREACH_2.0_SIH_2026_REPORT.md`](docs/VITALREACH_2.0_SIH_2026_REPORT.md)
-
-Priority differentiators:
-
-**Must:** Continuity-of-Care Graph · AI RED/YELLOW/GREEN + human escalation · Follow-up Failure Detection · Care Passport (consent QR)  
-**Should:** Smart Referral Router · Offline store→sync→conflict  
-**Later:** District capacity dashboard · full IVR / Marathi NLP · ABHA integration  
-
-Also planned: age/vitals as ML features; outbreak heatmap; live doctor schedule / pending consult requests.
-
 ---
 **VitalReach** — Continuity of care for the last mile.
