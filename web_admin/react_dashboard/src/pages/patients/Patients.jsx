@@ -11,6 +11,7 @@ import { DataTable } from '../../components/ui/DataTable';
 import { Badge } from '../../components/ui/Badge';
 import { Modal, Field, inputClass } from '../../components/ui/Modal';
 import { toast } from '../../components/ui/Toast';
+import ChangePasswordModal, { useChangePassword } from '../../components/users/ChangePasswordModal';
 
 const empty = {
   name: '',
@@ -21,6 +22,7 @@ const empty = {
   gender: 'Not Set',
   blood_group: '',
   medical_history: '',
+  assigned_asha: '',
 };
 
 export default function PatientsPage() {
@@ -28,12 +30,19 @@ export default function PatientsPage() {
   const location = useLocation();
   const [q, setQ] = useState(searchParams.get('q') || '');
   const [village, setVillage] = useState('');
+  const [ashaFilter, setAshaFilter] = useState('');
   const debouncedQ = useDebounce(q, 300);
   const fetchList = useCallback(
-    () => adminApi.patients({ ...(debouncedQ ? { q: debouncedQ } : {}), ...(village ? { village } : {}) }),
-    [debouncedQ, village],
+    () =>
+      adminApi.patients({
+        ...(debouncedQ ? { q: debouncedQ } : {}),
+        ...(village ? { village } : {}),
+        ...(ashaFilter === 'unassigned' ? { unassigned: true } : ashaFilter ? { assigned_asha: ashaFilter } : {}),
+      }),
+    [debouncedQ, village, ashaFilter],
   );
   const { rows, loading, error, reload } = useResource(fetchList);
+  const ashaList = useResource(useCallback(() => adminApi.ashaWorkers(), []));
   const villages = useMemo(() => [...new Set(rows.map((r) => r.village).filter(Boolean))].sort(), [rows]);
 
   useEffect(() => {
@@ -47,6 +56,7 @@ export default function PatientsPage() {
   const [edit, setEdit] = useState(null);
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
+  const password = useChangePassword();
 
   const save = async (e) => {
     e.preventDefault();
@@ -61,10 +71,14 @@ export default function PatientsPage() {
           blood_group: form.blood_group,
           medical_history: form.medical_history,
           is_active: form.is_active !== false,
+          assigned_asha: form.assigned_asha ? Number(form.assigned_asha) : null,
         });
         toast('Patient updated');
       } else {
-        await adminApi.createPatient(form);
+        await adminApi.createPatient({
+          ...form,
+          assigned_asha: form.assigned_asha ? Number(form.assigned_asha) : null,
+        });
         toast('Patient created');
       }
       setOpen(false);
@@ -91,7 +105,7 @@ export default function PatientsPage() {
     <div>
       <PageHeader
         title="Patient Management"
-        subtitle="Manage patient records, demographics, and clinical status on VitalReach."
+        subtitle="Manage patient records, assign them to ASHA workers, and keep village coverage in sync."
         actions={
           <div className="flex gap-2">
             <ExportButton
@@ -101,6 +115,7 @@ export default function PatientsPage() {
                 { key: 'name', header: 'Name' },
                 { key: 'phone_number', header: 'Phone' },
                 { key: 'village', header: 'Village' },
+                { key: 'assigned_asha_name', header: 'ASHA worker' },
                 { key: 'age', header: 'Age' },
                 { key: 'gender', header: 'Gender' },
               ]}
@@ -126,6 +141,16 @@ export default function PatientsPage() {
           onChange={setVillage}
           options={[['', 'All villages'], ...villages.map((v) => [v, v])]}
         />
+        <FilterSelect
+          label="ASHA worker"
+          value={ashaFilter}
+          onChange={setAshaFilter}
+          options={[
+            ['', 'All ASHA workers'],
+            ['unassigned', 'Unassigned'],
+            ...ashaList.rows.map((a) => [String(a.id), a.full_name || a.name || `ASHA-${a.id}`]),
+          ]}
+        />
       </FilterBar>
       <ErrorBanner error={error} onRetry={reload} />
       <DataTable
@@ -148,6 +173,19 @@ export default function PatientsPage() {
           },
           { key: 'phone_number', header: 'Phone' },
           { key: 'village', header: 'Village' },
+          {
+            key: 'assigned_asha',
+            header: 'ASHA worker',
+            render: (r) =>
+              r.assigned_asha_name ? (
+                <div>
+                  <p className="font-medium">{r.assigned_asha_name}</p>
+                  <p className="text-xs text-muted">{r.assigned_asha_village || r.village}</p>
+                </div>
+              ) : (
+                <span className="text-xs text-muted">Unassigned</span>
+              ),
+          },
           { key: 'age', header: 'Age' },
           { key: 'gender', header: 'Gender' },
           {
@@ -165,11 +203,31 @@ export default function PatientsPage() {
                   className="text-primary text-xs font-semibold"
                   onClick={() => {
                     setEdit(r);
-                    setForm({ ...empty, ...r, is_active: r.is_active });
+                    setForm({
+                      ...empty,
+                      ...r,
+                      is_active: r.is_active,
+                      assigned_asha: r.assigned_asha || '',
+                    });
                     setOpen(true);
                   }}
                 >
                   Edit
+                </button>
+                <button
+                  type="button"
+                  className="text-primary text-xs font-semibold"
+                  onClick={() =>
+                    password.setTarget({
+                      name: r.name,
+                      request: (pw) =>
+                        r.user_id
+                          ? adminApi.setUserPassword(r.user_id, pw)
+                          : adminApi.setPatientPassword(r.id, pw),
+                    })
+                  }
+                >
+                  Password
                 </button>
                 <button type="button" className="text-xs font-semibold text-muted" onClick={() => toggle(r)}>
                   {r.is_active ? 'Deactivate' : 'Activate'}
@@ -194,6 +252,28 @@ export default function PatientsPage() {
               </Field>
             </>
           ) : null}
+          <Field label="ASHA worker">
+            <select
+              className={inputClass}
+              value={form.assigned_asha || ''}
+              onChange={(e) => {
+                const ashaId = e.target.value;
+                const asha = ashaList.rows.find((a) => String(a.id) === String(ashaId));
+                setForm({
+                  ...form,
+                  assigned_asha: ashaId,
+                  village: asha?.assigned_village || asha?.village || form.village,
+                });
+              }}
+            >
+              <option value="">Unassigned</option>
+              {ashaList.rows.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.full_name || a.name} {a.assigned_village ? `· ${a.assigned_village}` : ''}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label="Village">
             <input className={inputClass} required value={form.village || ''} onChange={(e) => setForm({ ...form, village: e.target.value })} />
           </Field>
@@ -216,6 +296,14 @@ export default function PatientsPage() {
           </button>
         </form>
       </Modal>
+      <ChangePasswordModal
+        open={!!password.target}
+        title="Change patient password"
+        subtitle={password.target ? `Patient: ${password.target.name}` : ''}
+        onClose={() => password.setTarget(null)}
+        onSubmit={password.submit}
+        saving={password.saving}
+      />
     </div>
   );
 }

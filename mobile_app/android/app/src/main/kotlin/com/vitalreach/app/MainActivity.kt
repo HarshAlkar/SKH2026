@@ -1,4 +1,4 @@
-package com.graminhealth.gramin_health_connect
+package com.vitalreach.app
 
 import io.flutter.embedding.android.FlutterActivity
 

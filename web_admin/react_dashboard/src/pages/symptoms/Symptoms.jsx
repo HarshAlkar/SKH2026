@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Brain, AlertTriangle, Activity } from 'lucide-react';
+import { Brain, AlertTriangle, Activity, Sparkles } from 'lucide-react';
 import { adminApi } from '../../services/apiService';
 import { useResource } from '../../hooks/useResource';
 import { PageHeader, ErrorBanner } from '../../components/ui/PageHeader';
@@ -8,11 +8,14 @@ import ProgressBar from '../../components/ui/ProgressBar';
 import { DataTable } from '../../components/ui/DataTable';
 import { Badge, statusTone } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
+import { toast } from '../../components/ui/Toast';
 
 export default function SymptomsPage() {
   const fetchList = useCallback(() => adminApi.symptoms(), []);
   const { rows, loading, error, reload } = useResource(fetchList);
   const [detail, setDetail] = useState(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiReport, setAiReport] = useState('');
 
   const stats = useMemo(() => {
     const high = rows.filter((r) => ['high', 'severe'].includes(String(r.severity_level).toLowerCase())).length;
@@ -32,6 +35,37 @@ export default function SymptomsPage() {
       low: Math.round((low / total) * 100),
     };
   }, [rows.length, stats]);
+
+  const openDetail = (row) => {
+    setDetail(row);
+    setAiReport('');
+  };
+
+  const generateDetailReport = async () => {
+    if (!detail) return;
+    setAiBusy(true);
+    try {
+      const data = await adminApi.geminiReportAnalysis({
+        report_type: 'symptom',
+        focus: 'Explain this screening for a supervisor',
+        context: {
+          user_name: detail.user_name,
+          village: detail.village,
+          symptoms_text: detail.symptoms_text,
+          predicted_disease: detail.predicted_disease,
+          severity_level: detail.severity_level,
+          confidence: detail.confidence,
+          recommendations: detail.recommendations,
+        },
+      });
+      setAiReport(data.report || '');
+      toast('Gemini analysis ready');
+    } catch (e) {
+      toast(e.message, 'error');
+    } finally {
+      setAiBusy(false);
+    }
+  };
 
   return (
     <div>
@@ -81,7 +115,7 @@ export default function SymptomsPage() {
             key: 'a',
             header: '',
             render: (r) => (
-              <button type="button" className="text-xs font-semibold text-primary" onClick={() => setDetail(r)}>
+              <button type="button" className="text-xs font-semibold text-primary" onClick={() => openDetail(r)}>
                 Review
               </button>
             ),
@@ -119,6 +153,27 @@ export default function SymptomsPage() {
                 <p className="rounded-xl bg-slate-50 p-3">{detail.recommendations}</p>
               </div>
             ) : null}
+            <div className="border-t border-slate-100 pt-4">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <p className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-primary" />
+                  Gemini AI analysis
+                </p>
+                <button
+                  type="button"
+                  disabled={aiBusy}
+                  onClick={generateDetailReport}
+                  className="text-xs font-semibold rounded-lg bg-primary text-white px-3 py-1.5 disabled:opacity-50"
+                >
+                  {aiBusy ? 'Generating…' : 'Generate report'}
+                </button>
+              </div>
+              {aiReport ? (
+                <p className="rounded-xl bg-slate-50 p-3 whitespace-pre-wrap leading-relaxed">{aiReport}</p>
+              ) : (
+                <p className="text-xs text-muted">Ask Gemini how this screening looks and what to do next.</p>
+              )}
+            </div>
             <p className="text-xs text-muted">
               Analyzed {detail.created_at ? new Date(detail.created_at).toLocaleString() : '—'}
             </p>

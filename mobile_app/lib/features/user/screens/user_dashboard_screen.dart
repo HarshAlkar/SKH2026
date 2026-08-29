@@ -12,6 +12,7 @@ import '../../../core/sync/offline_api.dart';
 import '../../../core/widgets/sync_status_banner.dart';
 import '../../../core/widgets/signaling_status_chip.dart';
 import '../../../core/services/permission_dialog_service.dart';
+import '../../../l10n/l10n.dart';
 import 'asha_workers_screen.dart';
 
 class UserDashboardScreen extends StatefulWidget {
@@ -60,9 +61,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        title: const Text(
-          'VitalReach',
-          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+        title: Text(
+          context.l10n.appName,
+          style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         backgroundColor: Colors.white,
@@ -112,18 +113,18 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                       children: [
                         _buildSymptomCheckerCard(),
                         const SizedBox(height: 24),
-                        const Text(
-                          'Quick Actions',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        Text(
+                          context.l10n.quickActions,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 10),
                         _buildQuickActionsGrid(),
                         const SizedBox(height: 24),
                         if (_showReminder) _buildMedicineReminder(),
                         const SizedBox(height: 24),
-                        const Text(
-                          "Today's Health Tips",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                        Text(
+                          context.l10n.todaysHealthTips,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                         ),
                         const SizedBox(height: 16),
                         _buildHealthTipsList(),
@@ -144,7 +145,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
 
 
   Widget _buildAssignedAshaCard() {
-    final name = _assignedAsha?['name']?.toString() ?? 'ASHA Worker';
+    final name = _assignedAsha?['name']?.toString() ?? context.l10n.ashaWorker;
     final phone = _assignedAsha?['phone_number']?.toString() ?? '';
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
@@ -173,9 +174,9 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'ASHA workers in your village',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    Text(
+                      context.l10n.ashaInVillage,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                     Text(
                       name,
@@ -204,7 +205,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   Widget _buildWelcomeSection() {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        final name = auth.user?.name ?? 'User';
+        final name = auth.user?.name ?? context.l10n.patient;
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
@@ -219,13 +220,13 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Hello $name 👋',
+                context.l10n.helloUser(name),
                 style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'How are you feeling today?',
-                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              Text(
+                context.l10n.howFeelingToday,
+                style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -266,20 +267,20 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.heart_broken_outlined, color: Colors.white, size: 28),
-                  SizedBox(width: 12),
+                  const Icon(Icons.heart_broken_outlined, color: Colors.white, size: 28),
+                  const SizedBox(width: 12),
                   Text(
-                    'AI Symptom \nChecker',
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, height: 1.2),
+                    context.l10n.aiSymptomCheckerTitle,
+                    style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold, height: 1.2),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Check your symptoms and get \ninstant guidance.',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
+              Text(
+                context.l10n.checkSymptomsGuidance,
+                style: const TextStyle(color: Colors.white70, fontSize: 14),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -291,7 +292,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   elevation: 0,
                 ),
-                child: const Text('Check Symptoms', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(context.l10n.checkSymptoms, style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -301,62 +302,80 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   }
 
   Widget _buildQuickActionsGrid() {
-    return GridView.count(
-      crossAxisCount: 2,
+    return GridView(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.1,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        mainAxisExtent: 88,
+      ),
       children: [
-        _buildActionCard('One Health', Icons.spa_outlined, AppRoutes.oneHealthHub),
-        _buildActionCard('Medicine Tracker', Icons.medication_outlined, AppRoutes.medicineTracker),
-        _buildActionCard('Nearby Clinics', Icons.location_on_outlined, AppRoutes.nearbyClinics),
-        _buildActionCard('Book Appointment', Icons.video_camera_front_outlined, AppRoutes.bookAppointment),
-        _buildActionCard('My Appointments', Icons.event_available, AppRoutes.patientAppointments),
-        _buildActionCard('ASHA Workers', Icons.health_and_safety_outlined, AppRoutes.ashaWorkers),
-        _buildActionCard('My Prescriptions', Icons.description_outlined, AppRoutes.myPrescriptions),
-        _buildActionCard('Health Tips', Icons.lightbulb_outline, AppRoutes.healthTips),
-        _buildActionCard('Child check', Icons.child_care_outlined, AppRoutes.childDevelopment),
-        _buildActionCard('Livestock', Icons.pets_outlined, AppRoutes.livestockScreening),
+        _buildActionCard(context.l10n.verifyInfo, Icons.verified_user_outlined, AppRoutes.verifyHealthInfo),
+        _buildActionCard(context.l10n.oneHealth, Icons.spa_outlined, AppRoutes.oneHealthHub),
+        _buildActionCard(context.l10n.medicineTracker, Icons.medication_outlined, AppRoutes.medicineTracker),
+        _buildActionCard(context.l10n.nearbyClinics, Icons.location_on_outlined, AppRoutes.nearbyClinics),
+        _buildActionCard(context.l10n.bookAppointment, Icons.video_camera_front_outlined, AppRoutes.bookAppointment),
+        _buildActionCard(context.l10n.myAppointments, Icons.event_available, AppRoutes.patientAppointments),
+        _buildActionCard(context.l10n.ashaWorkers, Icons.health_and_safety_outlined, AppRoutes.ashaWorkers),
+        _buildActionCard(context.l10n.myPrescriptions, Icons.description_outlined, AppRoutes.myPrescriptions),
+        _buildActionCard(context.l10n.healthTips, Icons.lightbulb_outline, AppRoutes.healthTips),
+        _buildActionCard(context.l10n.childCheck, Icons.child_care_outlined, AppRoutes.childDevelopment),
+        _buildActionCard(context.l10n.livestock, Icons.pets_outlined, AppRoutes.livestockScreening),
       ],
     );
   }
 
   Widget _buildActionCard(String title, IconData icon, String route) {
-    return InkWell(
-      onTap: () => Navigator.pushNamed(context, route),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.pushNamed(context, route),
+        borderRadius: BorderRadius.circular(14),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE8EEF5)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
-              child: Icon(icon, color: AppColors.primary, size: 28),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 11.5,
+                    height: 1.2,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF1E293B)),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -392,12 +411,12 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Paracetamol reminder',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                Text(
+                  context.l10n.paracetamolReminder,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 Text(
-                  'Scheduled at 8:00 PM',
+                  context.l10n.scheduledAt8pm,
                   style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
                 ),
               ],
@@ -405,7 +424,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
           ),
           TextButton(
             onPressed: () => setState(() => _showReminder = false),
-            child: const Text('DISMISS', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
+            child: Text(context.l10n.dismiss, style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
           ),
         ],
       ),
@@ -418,11 +437,11 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
       child: ListView(
         scrollDirection: Axis.horizontal,
         children: [
-          _buildTipCard('Stay Hydrated', 'Drink at least 8 glasses of \nwater daily.', Icons.water_drop_outlined, const Color(0xFFE8F1FF)),
+          _buildTipCard(context.l10n.stayHydrated, context.l10n.stayHydratedDesc, Icons.water_drop_outlined, const Color(0xFFE8F1FF)),
           const SizedBox(width: 16),
-          _buildTipCard('Morning Walk', 'A 15-minute walk boosts \nyour energy.', Icons.directions_run_outlined, const Color(0xFFEFFFFA)),
+          _buildTipCard(context.l10n.morningWalk, context.l10n.morningWalkDesc, Icons.directions_run_outlined, const Color(0xFFEFFFFA)),
           const SizedBox(width: 16),
-          _buildTipCard('Sleep Well', 'Get 7-8 hours of quality sleep \nevery night.', Icons.bedtime_outlined, const Color(0xFFFFF7EF)),
+          _buildTipCard(context.l10n.sleepWell, context.l10n.sleepWellDesc, Icons.bedtime_outlined, const Color(0xFFFFF7EF)),
         ],
       ),
     );
@@ -468,17 +487,17 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
             child: const Icon(Icons.emergency_outlined, color: Colors.red, size: 28),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Emergency Help',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 18),
+                  context.l10n.emergencyHelp,
+                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 18),
                 ),
                 Text(
-                  'Immediate medical support',
-                  style: TextStyle(color: Colors.redAccent, fontSize: 13),
+                  context.l10n.immediateSupport,
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 13),
                 ),
               ],
             ),
@@ -491,7 +510,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               elevation: 0,
             ),
-            child: const Text('Call Emergency', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(context.l10n.callEmergency, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

@@ -50,8 +50,22 @@ export function AuthProvider({ children }) {
     return data.user;
   };
 
+  const replaceToken = (nextToken) => {
+    if (!nextToken) return;
+    persistSession(nextToken, getStoredUser() || user);
+    setToken(nextToken);
+  };
+
   const value = useMemo(
-    () => ({ user, token, ready, isAuthed: Boolean(token && user?.is_staff), login, logout }),
+    () => ({
+      user,
+      token,
+      ready,
+      isAuthed: Boolean(token && user?.is_staff),
+      login,
+      logout,
+      replaceToken,
+    }),
     [user, token, ready],
   );
 

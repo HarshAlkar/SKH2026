@@ -7,8 +7,10 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/l10n/language_id_service.dart';
+import '../../../core/services/locale_controller.dart';
 import '../../../core/services/permission_dialog_service.dart';
-import '../../../core/services/settings_store.dart';
+import '../../../l10n/l10n.dart';
 import '../../../routes/app_routes.dart';
 import '../../../providers/symptom_provider.dart';
 import '../../ai_health_chat/models/screening_chat_context.dart';
@@ -58,146 +60,101 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
   String _localeId = 'en-IN';
   List<stt.LocaleName> _availableLocales = [];
 
-  final Map<String, Map<String, dynamic>> _translations = {
-    'English': {
-      'title': 'AI Symptom Checker',
-      'subtitle': 'How do you feel?',
-      'desc': 'Our AI helps identify potential health concerns',
-      'common': 'COMMON SYMPTOMS',
-      'voice_desc': 'Or describe symptoms by voice',
-      'tap_voice': 'Tap for Voice Input',
-      'listening': 'Listening... Please speak now',
-      'analyze': 'Analyze Symptoms',
-      'analyzing': 'Analyzing...',
-      'tab_symptoms': 'Symptoms',
-      'tab_skin': 'Skin photo',
-      'skin_desc': 'Take or choose a clear photo of the affected skin',
-      'take_photo': 'Take Photo',
-      'pick_gallery': 'Choose from Gallery',
-      'analyze_skin': 'Analyze Skin',
-      'retake': 'Retake',
-      'use_photo': 'Use Photo',
-      'camera_denied':
-          'Camera permission was denied. You can still choose a photo from Gallery.',
-      'skin_symptoms': 'Or select skin symptoms from dataset',
-      'skin_disclaimer':
-          'AI-assisted skin screening only. Screening confidence is not a confirmed diagnosis. Professional evaluation recommended.',
-      'result_title': 'AI SKIN SCREENING',
-      'ask_ai': 'Ask AI about this',
-      'consult': 'Contact Doctor',
-      'notify': 'Contact ASHA',
-      'notified': 'ASHA notified',
-      'disclaimer':
-          'AI-assisted screening only. This is not a medical or veterinary diagnosis.',
-      'possible_condition': 'Possible condition (screening)',
-      'confidence': 'AI confidence',
-      'select_first':
-          'Please select at least one symptom or describe what you are experiencing.',
-      'describe_title': 'Describe your symptoms',
-      'describe_hint':
-          'Example: Fever for 3 days, headache and vomiting',
-      'detected': 'Symptoms detected',
-      'voice_note':
-          'Voice transcription may require connectivity. Typed text works offline.',
-      'insufficient':
-          "We couldn't confidently identify enough symptoms from your description.",
-      'insufficient_hint':
-          'Please add more details or select symptoms from the list.',
-      'ai_source': 'AI source',
-      'analysis_failed': 'Analysis failed',
-      'speech_denied': 'Speech recognition not available or permission denied',
-      'skin_first': 'Take a skin photo or select skin symptoms',
-      'low': 'Low',
-      'moderate': 'Moderate',
-      'high': 'High',
-      'error_init': 'Speech recognition not available',
-    },
-    'Hindi': {
-      'title': 'AI लक्षण जाँचकर्ता',
-      'subtitle': 'आप कैसा महसूस कर रहे हैं?',
-      'desc': 'हमारा AI स्वास्थ्य संबंधी चिंताओं को पहचानने में मदद करता है',
-      'common': 'सामान्य लक्षण',
-      'voice_desc': 'या आवाज द्वारा लक्षणों का वर्णन करें',
-      'tap_voice': 'वॉयस इनपुट के लिए टैप करें',
-      'listening': 'सुन रहा हूँ... कृपया अभी बोलें',
-      'analyze': 'लक्षणों का विश्लेषण करें',
-      'analyzing': 'विश्लेषण कर रहा है...',
-      'tab_symptoms': 'लक्षण',
-      'tab_skin': 'त्वचा फोटो',
-      'skin_desc': 'प्रभावित त्वचा की साफ तस्वीर लें या चुनें',
-      'take_photo': 'फोटो लें',
-      'pick_gallery': 'गैलरी से चुनें',
-      'analyze_skin': 'त्वचा का विश्लेषण करें',
-      'retake': 'फिर से लें',
-      'use_photo': 'फोटो उपयोग करें',
-      'camera_denied':
-          'कैमरा अनुमति नहीं मिली। आप गैलरी से फोटो चुन सकते हैं।',
-      'skin_symptoms': 'या त्वचा के लक्षण चुनें',
-      'skin_disclaimer':
-          'यह केवल स्क्रीनिंग है, निदान नहीं। फोटो CNN से और लक्षण डेटासेट से विश्लेषित होते हैं (जैसे फंगल संक्रमण, मुँहासे)।',
-      'result_title': 'AI त्वचा स्क्रीनिंग',
-      'ask_ai': 'इसके बारे में AI से पूछें',
-      'consult': 'डॉक्टर से संपर्क',
-      'notify': 'ASHA से संपर्क',
-      'notified': 'ASHA को सूचित किया गया',
-      'disclaimer':
-          'स्क्रीनिंग से जोखिम का संकेत — योग्य स्वास्थ्य पेशेवर से सलाह लें। यह चिकित्सा निदान नहीं है।',
-      'possible_condition': 'संभावित स्थिति (स्क्रीनिंग)',
-      'confidence': 'विश्वास',
-      'select_first': 'कृपया लक्षण चुनें या आवाज़ का उपयोग करें',
-      'analysis_failed': 'विश्लेषण असफल रहा',
-      'speech_denied': 'वाक् पहचान उपलब्ध नहीं है या अनुमति नहीं मिली',
-      'skin_first': 'त्वचा की तस्वीर लें या त्वचा के लक्षण चुनें',
-      'low': 'कम',
-      'moderate': 'मध्यम',
-      'high': 'उच्च',
-      'error_init': 'वाक् पहचान उपलब्ध नहीं है',
-    },
-    'Marathi': {
-      'title': 'AI लक्षण तपासणी',
-      'subtitle': 'तुम्हाला कसे वाटते?',
-      'desc': 'आमचे AI आरोग्य चिंता ओळखण्यात मदत करते',
-      'common': 'सामान्य लक्षणे',
-      'voice_desc': 'किंवा आवाजाने लक्षणे सांगा',
-      'tap_voice': 'व्हॉइस इनपुटसाठी टॅप करा',
-      'listening': 'ऐकत आहे... कृपया बोला',
-      'analyze': 'लक्षणे तपासा',
-      'analyzing': 'तपासत आहे...',
-      'tab_symptoms': 'लक्षणे',
-      'tab_skin': 'त्वचा फोटो',
-      'skin_desc': 'प्रभावित त्वचेचा स्पष्ट फोटो घ्या',
-      'take_photo': 'फोटो घ्या',
-      'pick_gallery': 'गॅलरीतून निवडा',
-      'analyze_skin': 'त्वचा तपासा',
-      'retake': 'पुन्हा घ्या',
-      'use_photo': 'फोटो वापरा',
-      'camera_denied':
-          'कॅमेरा परवानगी नाही. तुम्ही गॅलरीतून फोटो निवडू शकता.',
-      'skin_symptoms': 'किंवा त्वचा लक्षणे निवडा',
-      'skin_disclaimer': 'फक्त स्क्रीनिंग — निदान नाही.',
-      'result_title': 'AI त्वचा स्क्रीनिंग',
-      'ask_ai': 'याबद्दल AI ला विचारा',
-      'consult': 'डॉक्टरांशी संपर्क',
-      'notify': 'आशेशी संपर्क',
-      'notified': 'आशाला कळवले',
-      'disclaimer':
-          'स्क्रीनिंगमुळे धोका दिसतो — पात्र आरोग्य तज्ज्ञांचा सल्ला घ्या. हे वैद्यकीय निदान नाही.',
-      'possible_condition': 'संभाव्य स्थिती (स्क्रीनिंग)',
-      'confidence': 'विश्वास',
-      'select_first': 'कृपया लक्षणे निवडा किंवा आवाज वापरा',
-      'analysis_failed': 'तपास अयशस्वी',
-      'speech_denied': 'आवाज ओळख उपलब्ध नाही',
-      'skin_first': 'त्वचा फोटो घ्या किंवा लक्षणे निवडा',
-      'low': 'कमी',
-      'moderate': 'मध्यम',
-      'high': 'उच्च',
-      'error_init': 'आवाज ओळख उपलब्ध नाही',
-    },
-  };
+  String _getTxt(String key) {
+    final l = context.l10n;
+    switch (key) {
+      case 'title':
+        return l.aiSymptomChecker;
+      case 'subtitle':
+        return l.symptomHowFeel;
+      case 'desc':
+        return l.symptomDesc;
+      case 'common':
+        return l.commonSymptoms;
+      case 'voice_desc':
+        return l.voiceDesc;
+      case 'tap_voice':
+        return l.tapVoice;
+      case 'listening':
+        return l.listeningSpeak;
+      case 'analyze':
+        return l.analyzeSymptoms;
+      case 'analyzing':
+        return l.analyzing;
+      case 'tab_symptoms':
+        return l.tabSymptoms;
+      case 'tab_skin':
+        return l.tabSkin;
+      case 'skin_desc':
+        return l.skinDesc;
+      case 'take_photo':
+        return l.takePhoto;
+      case 'pick_gallery':
+        return l.pickGallery;
+      case 'analyze_skin':
+        return l.analyzeSkin;
+      case 'retake':
+        return l.retake;
+      case 'use_photo':
+        return l.usePhoto;
+      case 'camera_denied':
+        return l.cameraDenied;
+      case 'skin_symptoms':
+        return l.skinSymptoms;
+      case 'skin_disclaimer':
+        return l.skinDisclaimer;
+      case 'result_title':
+        return l.resultTitleSkin;
+      case 'ask_ai':
+        return l.askAi;
+      case 'consult':
+        return l.contactDoctor;
+      case 'notify':
+        return l.contactAsha;
+      case 'notified':
+        return l.ashaNotified;
+      case 'disclaimer':
+        return l.screeningDisclaimer;
+      case 'possible_condition':
+        return l.possibleCondition;
+      case 'confidence':
+        return l.aiConfidence;
+      case 'select_first':
+        return l.selectFirst;
+      case 'describe_title':
+        return l.describeTitle;
+      case 'describe_hint':
+        return l.describeHint;
+      case 'detected':
+        return l.symptomsDetected;
+      case 'voice_note':
+        return l.voiceNote;
+      case 'insufficient':
+        return l.insufficient;
+      case 'insufficient_hint':
+        return l.insufficientHint;
+      case 'ai_source':
+        return l.aiSource;
+      case 'analysis_failed':
+        return l.analysisFailed;
+      case 'speech_denied':
+        return l.speechDenied;
+      case 'skin_first':
+        return l.skinFirst;
+      case 'low':
+        return l.severityLow;
+      case 'moderate':
+        return l.severityModerate;
+      case 'high':
+        return l.severityHigh;
+      case 'error_init':
+        return l.speechUnavailable;
+      default:
+        return key;
+    }
+  }
 
-  String _getTxt(String key) => _translations[_selectedLanguage]?[key] ?? key;
-  String _symptomLabel(SymptomOption option) =>
-      option.labelFor(_selectedLanguage == 'Hindi' ? 'hi' : 'en');
+  String _symptomLabel(SymptomOption option) => option.labelFor(_langCode());
 
   @override
   void initState() {
@@ -235,25 +192,36 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
   }
 
   void _applyStoredLanguage() {
-    final hindi = SettingsStore.instance.isHindi;
-    final marathi = SettingsStore.instance.isMarathi;
-    _selectedLanguage = marathi ? 'Marathi' : (hindi ? 'Hindi' : 'English');
-    _localeId = hindi || marathi ? 'hi-IN' : 'en-IN';
+    final code = LocaleController.instance.languageCode;
+    _selectedLanguage =
+        code == 'mr' ? 'Marathi' : (code == 'hi' ? 'Hindi' : 'English');
+    _localeId = _speechLocaleFor(_selectedLanguage);
+  }
+
+  String _speechLocaleFor(String lang) {
+    if (lang == 'Marathi') {
+      final mr = _availableLocales.where(
+        (l) => l.localeId.toLowerCase().startsWith('mr'),
+      );
+      if (mr.isNotEmpty) return mr.first.localeId;
+      final hi = _availableLocales.where((l) => l.localeId.contains('hi'));
+      return hi.isNotEmpty ? hi.first.localeId : 'hi-IN';
+    }
+    if (lang == 'Hindi') {
+      final hi = _availableLocales.where((l) => l.localeId.contains('hi'));
+      return hi.isNotEmpty ? hi.first.localeId : 'hi-IN';
+    }
+    final en = _availableLocales.where((l) => l.localeId.contains('en'));
+    return en.isNotEmpty ? en.first.localeId : 'en-IN';
   }
 
   Future<void> _setLanguage(String lang) async {
     setState(() {
       _selectedLanguage = lang;
-      if (lang == 'Hindi' || lang == 'Marathi') {
-        final hiLocale = _availableLocales.where((l) => l.localeId.contains('hi'));
-        _localeId = hiLocale.isNotEmpty ? hiLocale.first.localeId : 'hi-IN';
-      } else {
-        final enLocale = _availableLocales.where((l) => l.localeId.contains('en'));
-        _localeId = enLocale.isNotEmpty ? enLocale.first.localeId : 'en-IN';
-      }
+      _localeId = _speechLocaleFor(lang);
     });
     final code = lang == 'Hindi' ? 'hi' : (lang == 'Marathi' ? 'mr' : 'en');
-    await SettingsStore.instance.setLanguage(code);
+    await LocaleController.instance.setLanguage(code);
   }
 
   void _initSpeech() async {
@@ -436,12 +404,18 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
         if (freeText.isNotEmpty) freeText,
       ].where((s) => s.trim().isNotEmpty).join('. ');
 
+      var language = _langCode();
+      if (freeText.isNotEmpty) {
+        language = await LanguageIdService.instance.detect(
+          freeText,
+          fallback: language,
+        );
+      }
+
       await symptomProvider.analyzeSymptoms(
         symptomsText: input,
         recognizedText: _voiceText,
-        language: _selectedLanguage == 'Hindi'
-            ? 'hi'
-            : (_selectedLanguage == 'Marathi' ? 'mr' : 'en'),
+        language: language,
         selectedTokens: merged,
       );
 
@@ -572,9 +546,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     try {
       await Provider.of<SymptomProvider>(context, listen: false).analyzeSkin(
         _skinImage,
-        language: _selectedLanguage == 'Hindi'
-            ? 'hi'
-            : (_selectedLanguage == 'Marathi' ? 'mr' : 'en'),
+        language: _langCode(),
         skinSymptomTokens: List<String>.from(_selectedSkinSymptoms),
       );
       if (!mounted) return;

@@ -24,6 +24,13 @@ def find_asha_for_village(village):
     ).first()
 
 
+def find_asha_for_patient_user(patient_user):
+    profile = getattr(patient_user, 'patient_profile', None) if patient_user else None
+    if profile is not None and profile.assigned_asha_id:
+        return profile.assigned_asha
+    return find_asha_for_village(getattr(patient_user, 'village', None))
+
+
 def notify_village_care_team(patient_user, disease, severity, dedupe_minutes=30):
     """Create (or reuse) an AlertNotification for the patient's village ASHA and a doctor."""
     if patient_user is None:
@@ -43,7 +50,7 @@ def notify_village_care_team(patient_user, disease, severity, dedupe_minutes=30)
         return existing, False
 
     village = getattr(patient_user, "village", None)
-    asha = find_asha_for_village(village)
+    asha = find_asha_for_patient_user(patient_user)
 
     doctor = Doctor.objects.filter(is_available=True).first() or Doctor.objects.first()
     notification = AlertNotification.objects.create(
@@ -91,7 +98,7 @@ def notify_patient_prescription(prescription, dedupe_minutes=5):
         return existing, False
 
     village = getattr(patient_user, "village", None)
-    asha = find_asha_for_village(village)
+    asha = find_asha_for_patient_user(patient_user)
     notification = AlertNotification.objects.create(
         patient=patient_user,
         doctor=doctor,
@@ -122,7 +129,7 @@ def notify_livestock_care_team(owner_user, condition, severity, species='', dedu
         return existing, False
 
     village = getattr(owner_user, "village", None)
-    asha = find_asha_for_village(village)
+    asha = find_asha_for_patient_user(patient_user)
     vet = (
         Doctor.objects.filter(is_veterinarian=True, is_available=True).first()
         or Doctor.objects.filter(is_veterinarian=True).first()

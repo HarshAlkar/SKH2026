@@ -5,6 +5,7 @@ import '../../../routes/app_routes.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/utils/helpers.dart';
+import '../../../l10n/l10n.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -64,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen>
       } else if (mounted) {
         Helpers.showSnackBar(
           context,
-          authProvider.error ?? 'Login failed. Please check your credentials.',
+          authProvider.error ?? context.l10n.loginFailed,
           isError: true,
         );
       }
@@ -73,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   Future<void> _handleOtpLogin() async {
     if (_phoneController.text.length != 10) {
-      Helpers.showSnackBar(context, 'Please enter a valid 10-digit phone number', isError: true);
+      Helpers.showSnackBar(context, context.l10n.invalidPhone, isError: true);
       return;
     }
 
@@ -94,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen>
     } else if (mounted) {
       Helpers.showSnackBar(
         context,
-        authProvider.error ?? 'Failed to send OTP. Is your phone number registered?',
+        authProvider.error ?? context.l10n.otpSendFailed,
         isError: true,
       );
     }
@@ -180,9 +181,9 @@ class _LoginScreenState extends State<LoginScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Phone Number',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        Text(
+          context.l10n.phoneNumber,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -190,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen>
           keyboardType: TextInputType.number,
           validator: (value) => Validators.validatePhone(value),
           decoration: InputDecoration(
-            hintText: 'Enter 10-digit mobile number',
+            hintText: context.l10n.enterPhoneHint,
             prefixIcon: const Icon(
               Icons.phone_outlined,
               color: AppColors.textSecondary,
@@ -211,16 +212,16 @@ class _LoginScreenState extends State<LoginScreen>
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Password',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            Text(
+              context.l10n.password,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
             ),
             GestureDetector(
               onTap: () =>
                   Navigator.pushNamed(context, AppRoutes.forgotPassword),
-              child: const Text(
-                'Forgot?',
-                style: TextStyle(
+              child: Text(
+                context.l10n.forgot,
+                style: const TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
                 ),
@@ -234,7 +235,7 @@ class _LoginScreenState extends State<LoginScreen>
           obscureText: _obscurePassword,
           validator: (value) => Validators.validatePassword(value),
           decoration: InputDecoration(
-            hintText: 'Enter your password',
+            hintText: context.l10n.enterPasswordHint,
             prefixIcon: const Icon(
               Icons.lock_outline,
               color: AppColors.textSecondary,
@@ -281,24 +282,24 @@ class _LoginScreenState extends State<LoginScreen>
               ),
             ),
             const SizedBox(width: 8),
-            const Text(
-              'Remember me',
-              style: TextStyle(color: AppColors.textSecondary),
+            Text(
+              context.l10n.rememberMe,
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
         ),
         GestureDetector(
           onTap: _handleOtpLogin,
-          child: const Row(
+          child: Row(
             children: [
               Text(
-                'Login with OTP',
-                style: TextStyle(
+                context.l10n.loginWithOtp,
+                style: const TextStyle(
                   color: AppColors.secondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              Icon(Icons.arrow_forward, size: 16, color: AppColors.secondary),
+              const Icon(Icons.arrow_forward, size: 16, color: AppColors.secondary),
             ],
           ),
         ),
@@ -330,18 +331,18 @@ class _LoginScreenState extends State<LoginScreen>
                       strokeWidth: 2,
                     ),
                   )
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Login',
-                        style: TextStyle(
+                        context.l10n.login,
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Icon(Icons.login_outlined),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.login_outlined),
                     ],
                   ),
           ),
@@ -354,15 +355,15 @@ class _LoginScreenState extends State<LoginScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Text(
-          'New user? ',
-          style: TextStyle(color: AppColors.textSecondary),
+        Text(
+          context.l10n.newUser,
+          style: const TextStyle(color: AppColors.textSecondary),
         ),
         GestureDetector(
           onTap: () => Navigator.pushNamed(context, AppRoutes.register),
-          child: const Text(
-            'Create Account',
-            style: TextStyle(
+          child: Text(
+            context.l10n.createAccount,
+            style: const TextStyle(
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
             ),

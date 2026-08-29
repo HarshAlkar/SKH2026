@@ -3,8 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/services/locale_controller.dart';
 import '../../../core/sync/offline_api.dart';
 import '../../../core/widgets/sync_status_banner.dart';
+import '../../../core/widgets/simulate_blackout_button.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../routes/app_routes.dart';
 import '../../ai_health_chat/models/screening_chat_context.dart';
@@ -47,6 +49,9 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
   String _species = 'CATTLE';
   bool _loading = false;
   Map<String, dynamic>? _result;
+  bool _heldInVault = false;
+  List<Map<String, dynamic>> _history = [];
+  bool _historyLoading = false;
   List<Map<String, dynamic>> _cases = [];
   final Set<String> _selectedSigns = {};
 
@@ -180,6 +185,30 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
   void initState() {
     super.initState();
     _loadCases();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    setState(() => _historyLoading = true);
+    try {
+      final raw = await _offline.get('/one-health/screenings/?domain=ANIMAL');
+      final list = raw is List
+          ? raw
+          : (raw is Map && raw['results'] is List)
+              ? raw['results'] as List
+              : <dynamic>[];
+      if (!mounted) return;
+      setState(() {
+        _history = list
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+        _historyLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _historyLoading = false);
+    }
   }
 
   @override
@@ -282,6 +311,7 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
     setState(() {
       _loading = true;
       _result = null;
+      _heldInVault = false;
     });
 
     final clientId =
@@ -308,32 +338,35 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
             'symptoms': text,
             'species': _species,
             'client_id': clientId,
-            'language': 'en',
+            'language': LocaleController.instance.languageCode,
           },
           timeout: const Duration(seconds: 12),
         );
         if (response is Map && response.isNotEmpty) {
-          final onlineSev = (response['severity'] ?? '').toString();
-          if (_sevRank(onlineSev) > _sevRank((result['severity'] ?? '').toString())) {
-            result = Map<String, dynamic>.from(response);
-            result['source'] = 'server_override_${result['source'] ?? 'ml'}';
+          // Prefer server fields but keep held behaviour
+          result = Map<String, dynamic>.from(result);
+          if (response['held_in_temp_vault'] == true) {
+            result['held_in_temp_vault'] = true;
           }
         }
       } catch (_) {}
 
       if (!mounted) return;
+      // Same as doctor Rx: do NOT show answer yet — TEMP vault until admin restore
       setState(() {
-        _result = result;
+        _result = null;
+        _heldInVault = true;
         _loading = false;
       });
-
-      final sev = EscalationPolicy.normalize((result['severity'] ?? '').toString());
-      if (sev == 'Critical' || sev == 'High') {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _escalateVet();
-        });
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Held in TEMP vault — history fills after admin Restore',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      await _loadHistory();
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -538,6 +571,9 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF1E293B),
         elevation: 0,
+        actions: const [
+          SimulateBlackoutButton(compact: true),
+        ],
       ),
       body: Column(
         children: [
@@ -546,6 +582,11 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: SimulateBlackoutButton(),
+                ),
+                const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -714,10 +755,141 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
                     ),
                   ),
                 ),
+                if (_heldInVault) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFFDBA74)),
+                    ),
+                    child: const Text(
+                      'Held in TEMP vault (admin only).\n'
+                      'Answer will appear in Screening history after admin Restore.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF9A3412),
+                        height: 1.4,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
                 if (_result != null) ...[
                   const SizedBox(height: 24),
                   _buildResultCard(_result!),
                 ],
+                const SizedBox(height: 28),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Screening history',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: _historyLoading ? null : _loadHistory,
+                      icon: _historyLoading
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.refresh, size: 16),
+                      label: const Text('Refresh'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Only released results show here (after admin Restore).',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+                const SizedBox(height: 10),
+                if (_history.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: const Text(
+                      'No released screenings yet.\n'
+                      'Run screening → admin Restore → refresh here.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xFF64748B), height: 1.4),
+                    ),
+                  )
+                else
+                  ..._history.map((h) {
+                    final title =
+                        (h['possible_condition'] ?? 'Screening').toString();
+                    final sev = (h['severity_level'] ?? '').toString();
+                    final advice = (h['advice'] ?? '').toString();
+                    final when = (h['created_at'] ?? '').toString();
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Severity: $sev',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFB45309),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (advice.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              advice,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF475569),
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                          if (when.isNotEmpty) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              when,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }),
+                const SizedBox(height: 24),
               ],
             ),
           ),

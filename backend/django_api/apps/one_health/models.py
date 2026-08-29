@@ -38,6 +38,12 @@ class ScreeningEvent(models.Model):
         ('HUMAN', 'Human'),
         ('ANIMAL', 'Animal'),
     )
+    STATUS_RELEASED = 'released'
+    STATUS_HELD = 'held'  # TEMP vault — not in user history until admin restore
+    STATUS_CHOICES = (
+        (STATUS_RELEASED, 'Released to history'),
+        (STATUS_HELD, 'Held in TEMP vault'),
+    )
 
     domain = models.CharField(max_length=10, choices=DOMAIN_CHOICES, default='HUMAN')
     user = models.ForeignKey(
@@ -60,6 +66,12 @@ class ScreeningEvent(models.Model):
     advice = models.TextField(blank=True)
     result_json = models.JSONField(default=dict, blank=True)
     client_id = models.CharField(max_length=64, blank=True, db_index=True)
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_RELEASED,
+        db_index=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
+import 'core/services/locale_controller.dart';
+import 'l10n/l10n.dart';
 import 'routes/app_routes.dart';
 import 'routes/route_generator.dart';
 import 'providers/auth_provider.dart';
@@ -20,6 +22,7 @@ class VitalReachApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: LocaleController.instance),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PatientProvider()),
         ChangeNotifierProvider(create: (_) => SymptomProvider()),
@@ -29,13 +32,20 @@ class VitalReachApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: SyncStatus.instance),
         ChangeNotifierProvider.value(value: EmergencyComms.instance),
       ],
-      child: MaterialApp(
-        title: 'VitalReach',
-        navigatorKey: navigatorKey,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        initialRoute: AppRoutes.splash,
-        onGenerateRoute: RouteGenerator.generateRoute,
+      child: Consumer<LocaleController>(
+        builder: (context, localeController, _) {
+          return MaterialApp(
+            title: 'VitalReach',
+            navigatorKey: navigatorKey,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            locale: localeController.locale,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            initialRoute: AppRoutes.splash,
+            onGenerateRoute: RouteGenerator.generateRoute,
+          );
+        },
       ),
     );
   }

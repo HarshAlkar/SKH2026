@@ -20,6 +20,7 @@ import '../features/user/screens/symptom_checker_screen.dart';
 import '../features/one_health/screens/one_health_hub_screen.dart';
 import '../features/one_health/screens/livestock_screening_screen.dart';
 import '../features/one_health/screens/child_development_screen.dart';
+import '../features/trustshield/screens/verify_health_information_screen.dart';
 import '../features/user/screens/doctor_consult_screen.dart';
 import '../features/user/screens/medicine_tracker_screen.dart';
 import '../features/user/screens/add_medicine_screen.dart';
@@ -107,6 +108,9 @@ class RouteGenerator {
         return _fadeRoute(const LivestockScreeningScreen());
       case AppRoutes.childDevelopment:
         return _fadeRoute(const ChildDevelopmentScreen());
+      case AppRoutes.verifyHealthInfo:
+      case AppRoutes.trustShieldDemo:
+        return _fadeRoute(const VerifyHealthInformationScreen());
       case AppRoutes.medicineTracker:
         return _fadeRoute(const MedicineTrackerScreen());
       case AppRoutes.addMedicine:

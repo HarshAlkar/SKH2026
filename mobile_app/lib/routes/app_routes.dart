@@ -22,6 +22,8 @@ class AppRoutes {
   static const String oneHealthHub = '/one-health';
   static const String livestockScreening = '/livestock-screening';
   static const String childDevelopment = '/child-development';
+  static const String verifyHealthInfo = '/verify-health-information';
+  static const String trustShieldDemo = '/trustshield-demo';
   static const String medicineTracker = '/medicine-tracker';
   static const String addMedicine = '/add-medicine';
   static const String medicineCall = '/medicine-call';

@@ -33,6 +33,9 @@ def user_can_access_patient(actor, patient):
         return patient_user_id == actor.id
 
     if role == 'asha_worker':
+        asha = getattr(actor, 'asha_profile', None)
+        if asha and getattr(patient, 'assigned_asha_id', None) == asha.id:
+            return True
         return patient_in_asha_village(patient, actor)
 
     if role == 'doctor':
@@ -83,12 +86,16 @@ def patients_queryset_for(actor):
         return Patient.objects.filter(user=actor)
 
     if role == 'asha_worker':
+        asha = getattr(actor, 'asha_profile', None)
         village = asha_assigned_village(actor)
-        if not village:
+        query = Q()
+        if asha is not None:
+            query |= Q(assigned_asha=asha)
+        if village:
+            query |= Q(assigned_asha__isnull=True, user__village__iexact=village)
+        if not query:
             return Patient.objects.none()
-        return Patient.objects.filter(
-            Q(user__village__iexact=village)
-        )
+        return Patient.objects.filter(query).distinct()
 
     if role == 'doctor':
         from apps.consultations.models import Appointment

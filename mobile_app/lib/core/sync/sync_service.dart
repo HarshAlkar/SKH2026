@@ -9,6 +9,7 @@ import '../services/api_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/storage_service.dart';
 import '../security/secure_session_store.dart';
+import 'blackout_recovery.dart';
 import 'local_store.dart';
 import 'pending_upload_store.dart';
 import 'sync_status.dart';
@@ -29,6 +30,11 @@ class SyncService {
     if (_started) return;
     _started = true;
     SyncStatus.instance.setOnline(await _connectivity.isConnected());
+    try {
+      await BlackoutRecovery.instance.ensureHealthy();
+    } catch (e) {
+      debugPrint('BlackoutRecovery.ensureHealthy failed: $e');
+    }
     await refreshPending();
     _sub = _connectivity.connectivityStream.listen((results) {
       final online = ConnectivityService.isOnline(results);
@@ -57,6 +63,7 @@ class SyncService {
     SyncStatus.instance.setSyncing(true);
     String? lastError;
     try {
+      await BlackoutRecovery.instance.ensureHealthy();
       final items = await _store.pending();
       for (final row in items) {
         final id = row['id'] as int;

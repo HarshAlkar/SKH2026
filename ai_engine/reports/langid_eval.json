@@ -1,0 +1,12 @@
+{
+  "title": "Indian language identification (EN/HI/MR)",
+  "dataset": "processvenue/indian-language-identification (filtered) + bootstrap",
+  "n_samples": 29948,
+  "n_kaggle": 29912,
+  "accuracy": 0.9170283806343906,
+  "tflite": true,
+  "artifacts": {
+    "labels": "C:\\Users\\HARSH\\OneDrive\\Desktop\\HARSH\\SKH\\SKH2026\\ai_engine\\models\\langid_labels.json",
+    "tflite": "C:\\Users\\HARSH\\OneDrive\\Desktop\\HARSH\\SKH\\SKH2026\\ai_engine\\models\\langid.tflite"
+  }
+}

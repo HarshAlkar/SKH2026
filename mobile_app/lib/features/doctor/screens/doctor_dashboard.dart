@@ -17,6 +17,7 @@ import '../../../core/services/permission_dialog_service.dart';
 import '../../../core/widgets/sync_status_banner.dart';
 import '../../../core/widgets/signaling_status_chip.dart';
 import '../../../routes/app_routes.dart';
+import '../../../l10n/l10n.dart';
 import '../../profile/widgets/profile_avatar.dart';
 
 class DoctorDashboard extends StatefulWidget {
@@ -91,7 +92,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       if (mounted) {
         setState(() {
           _statsError =
-              'Could not load data from ${AppConfig.displayHost}. Log out and log in again.';
+              context.l10n.couldNotLoadData(AppConfig.displayHost);
           _isLoading = false;
         });
       }
@@ -179,11 +180,11 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                       children: [
                         _buildWelcomeSection(),
                         const SizedBox(height: 32),
-                        _buildSectionTitle('PERFORMANCE SUMMARY'),
+                        _buildSectionTitle(context.l10n.performanceSummary),
                         const SizedBox(height: 16),
                         _buildPerformanceGrid(),
                         const SizedBox(height: 32),
-                        _buildSectionTitle('QUICK ACTIONS'),
+                        _buildSectionTitle(context.l10n.quickActionsCaps),
                         const SizedBox(height: 16),
                         _buildQuickActions(),
                         const SizedBox(height: 32),
@@ -207,7 +208,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       elevation: 0,
       centerTitle: true,
       title: Text(
-        'Doctor Dashboard',
+        context.l10n.doctorDashboard,
         style: TextStyle(
           color: textPrimary,
           fontSize: 18,

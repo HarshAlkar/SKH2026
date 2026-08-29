@@ -146,10 +146,10 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
           SnackBar(
             content: Text(
               result.synced
-                  ? 'Prescription Saved & Sent Successfully'
+                  ? 'Held in TEMP vault — patient gets it after admin Restore'
                   : 'Saved locally — will upload when internet returns.',
             ),
-            backgroundColor: result.synced ? Colors.green : Colors.orange,
+            backgroundColor: result.synced ? Colors.orange : Colors.orange,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -161,8 +161,10 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Prescription Saved & Sent Successfully'),
-          backgroundColor: Colors.green,
+          content: Text(
+            'Held in TEMP vault — patient gets it after admin Restore (Blackout)',
+          ),
+          backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -292,8 +294,10 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Prescription uploaded successfully.'),
-            backgroundColor: Colors.green,
+            content: Text(
+              'Held in TEMP vault — patient gets it after admin Restore',
+            ),
+            backgroundColor: Colors.orange,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -330,10 +334,10 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
           SnackBar(
             content: Text(
               result.synced
-                  ? 'Prescription uploaded successfully.'
+                  ? 'Held in TEMP vault — patient gets it after admin Restore'
                   : 'Saved locally — will upload when internet returns.',
             ),
-            backgroundColor: result.synced ? Colors.green : Colors.orange,
+            backgroundColor: result.synced ? Colors.orange : Colors.orange,
             behavior: SnackBarBehavior.floating,
           ),
         );

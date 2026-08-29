@@ -48,6 +48,14 @@ class OneHealthHubScreen extends StatelessWidget {
             color: const Color(0xFF0F766E),
             onTap: () => Navigator.pushNamed(context, AppRoutes.childDevelopment),
           ),
+          const SizedBox(height: 14),
+          _HubCard(
+            title: 'Verify Health Information',
+            subtitle: 'TrustShield — check WhatsApp health claims',
+            icon: Icons.verified_user_outlined,
+            color: const Color(0xFF2563EB),
+            onTap: () => Navigator.pushNamed(context, AppRoutes.verifyHealthInfo),
+          ),
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../core/utils/helpers.dart';
+import '../../../core/widgets/village_dropdown_field.dart';
 import '../../../routes/app_routes.dart';
 
 class AshaRegisterScreen extends StatefulWidget {
@@ -16,11 +17,11 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
   
   final _nameController = TextEditingController();
   final _emailPhoneController = TextEditingController();
-  final _villageController = TextEditingController();
   final _phcController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  String? _selectedVillage;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeTerms = false;
@@ -29,7 +30,6 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
   void dispose() {
     _nameController.dispose();
     _emailPhoneController.dispose();
-    _villageController.dispose();
     _phcController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -62,7 +62,8 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
         'phone_number': _emailPhoneController.text.trim(),
         'password': _passwordController.text,
         'role': 'asha_worker',
-        'assigned_village': _villageController.text.trim(),
+        'village': _selectedVillage?.trim() ?? '',
+        'assigned_village': _selectedVillage?.trim() ?? '',
         'phc_center': _phcController.text.trim(),
       };
       
@@ -230,13 +231,14 @@ class _AshaRegisterScreenState extends State<AshaRegisterScreen> {
                       _buildSectionHeader("Assigned Area Information", Icons.location_on_outlined, primaryColor),
                       const SizedBox(height: 16),
                       
-                      _buildTextField(
-                        controller: _villageController,
+                      VillageDropdownField(
+                        value: _selectedVillage,
                         label: "Assigned Village",
-                        hint: "Enter your assigned village",
+                        hint: "Select your assigned village",
+                        accentColor: primaryColor,
+                        fillColor: inputBgColor,
                         icon: Icons.home_outlined,
-                        color: primaryColor,
-                        bgColor: inputBgColor,
+                        onChanged: (val) => setState(() => _selectedVillage = val),
                       ),
                       
                       const SizedBox(height: 16),

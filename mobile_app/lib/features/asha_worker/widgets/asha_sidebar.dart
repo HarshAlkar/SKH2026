@@ -5,6 +5,7 @@ import '../../../core/utils/logout_helper.dart';
 import '../../../providers/auth_provider.dart';
 import '../../profile/widgets/profile_avatar.dart';
 import '../../../core/emergency_comms/widgets/offline_emergency_status.dart';
+import '../../../l10n/l10n.dart';
 
 class AshaSidebar extends StatelessWidget {
   const AshaSidebar({super.key});
@@ -14,8 +15,9 @@ class AshaSidebar extends StatelessWidget {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         final user = auth.user;
-        final name = user?.name ?? 'Asha Worker';
-        final village = user?.village ?? 'Assigned Village';
+        final l10n = context.l10n;
+        final name = user?.name ?? l10n.ashaWorker;
+        final village = user?.village ?? l10n.assignedVillage;
 
         return Drawer(
           child: Column(
@@ -44,7 +46,7 @@ class AshaSidebar extends StatelessWidget {
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                     ),
                     const SizedBox(height: 4),
-                    Text('Village: $village', style: const TextStyle(color: Colors.green, fontSize: 14)),
+                    Text(l10n.villageLabel(village), style: const TextStyle(color: Colors.green, fontSize: 14)),
                   ],
                 ),
               ),
@@ -52,30 +54,30 @@ class AshaSidebar extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                   children: [
-                    _buildNavItem(context, 'Dashboard', Icons.dashboard_outlined, AppRoutes.ashaDashboard),
-                    _buildNavItem(context, 'Village Patients', Icons.people_outline, AppRoutes.villagePatients),
-                    _buildNavItem(context, 'Call / Chat', Icons.call_outlined, AppRoutes.ashaCall),
-                    _buildNavItem(context, 'Messages', Icons.chat_outlined, AppRoutes.chatInbox),
-                    _buildNavItem(context, 'Call History', Icons.history, AppRoutes.callHistory),
-                    _buildNavItem(context, 'Risk Alerts', Icons.notification_important_outlined, AppRoutes.riskAlerts),
-                    _buildNavItem(context, 'Health Reports', Icons.bar_chart, AppRoutes.villageHealthReport),
-                    _buildNavItem(context, 'Register Patient', Icons.person_add_alt_1_outlined, AppRoutes.registerPatient),
-                    _buildNavItem(context, 'Village Visits', Icons.home_outlined, AppRoutes.villageVisits),
-                    _buildNavItem(context, 'Update Stock', Icons.inventory_2_outlined, AppRoutes.updateStock),
-                    _buildNavItem(context, 'Consult Doctor', Icons.chat_bubble_outline, AppRoutes.registeredDoctors),
-                    _buildNavItem(context, 'Health Records', Icons.folder_open_outlined, AppRoutes.healthRecords),
-                    _buildNavItem(context, 'Emergency Referral', Icons.emergency_share, AppRoutes.emergencyReferral),
-                    _buildNavItem(context, 'Referral History', Icons.history, AppRoutes.referralHistory),
+                    _buildNavItem(context, l10n.dashboard, Icons.dashboard_outlined, AppRoutes.ashaDashboard),
+                    _buildNavItem(context, l10n.villagePatients, Icons.people_outline, AppRoutes.villagePatients),
+                    _buildNavItem(context, l10n.callChat, Icons.call_outlined, AppRoutes.ashaCall),
+                    _buildNavItem(context, l10n.messages, Icons.chat_outlined, AppRoutes.chatInbox),
+                    _buildNavItem(context, l10n.callHistory, Icons.history, AppRoutes.callHistory),
+                    _buildNavItem(context, l10n.riskAlerts, Icons.notification_important_outlined, AppRoutes.riskAlerts),
+                    _buildNavItem(context, l10n.healthReports, Icons.bar_chart, AppRoutes.villageHealthReport),
+                    _buildNavItem(context, l10n.registerPatient, Icons.person_add_alt_1_outlined, AppRoutes.registerPatient),
+                    _buildNavItem(context, l10n.villageVisits, Icons.home_outlined, AppRoutes.villageVisits),
+                    _buildNavItem(context, l10n.updateStock, Icons.inventory_2_outlined, AppRoutes.updateStock),
+                    _buildNavItem(context, l10n.consultDoctor, Icons.chat_bubble_outline, AppRoutes.registeredDoctors),
+                    _buildNavItem(context, l10n.healthRecords, Icons.folder_open_outlined, AppRoutes.healthRecords),
+                    _buildNavItem(context, l10n.emergencyReferral, Icons.emergency_share, AppRoutes.emergencyReferral),
+                    _buildNavItem(context, l10n.referralHistory, Icons.history, AppRoutes.referralHistory),
                     const Divider(height: 32),
-                    _buildNavItem(context, 'Profile', Icons.person_outline, AppRoutes.profile),
-                    _buildNavItem(context, 'Settings', Icons.settings_outlined, AppRoutes.ashaSettings),
+                    _buildNavItem(context, l10n.profile, Icons.person_outline, AppRoutes.profile),
+                    _buildNavItem(context, l10n.settings, Icons.settings_outlined, AppRoutes.ashaSettings),
                   ],
                 ),
               ),
               const OfflineEmergencyStatusTile(),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.redAccent),
-                title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
+                title: Text(l10n.logout, style: const TextStyle(color: Colors.redAccent)),
                 onTap: () async {
                   Navigator.pop(context);
                   await LogoutHelper.logout(context);

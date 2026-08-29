@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { adminApi } from '../../services/apiService';
 import { PageHeader, ErrorBanner } from '../../components/ui/PageHeader';
 import StatCard from '../../components/ui/StatCard';
-import { Users, Stethoscope, AlertCircle, Video, Brain, MapPin } from 'lucide-react';
+import { Users, Stethoscope, AlertCircle, Video, Brain, MapPin, Sparkles } from 'lucide-react';
+import { toast } from '../../components/ui/Toast';
 
 const PAGE_LINKS = [
   { to: '/patients', label: 'Patients', key: 'patients', icon: Users, color: 'bg-primary' },
@@ -17,6 +18,9 @@ const PAGE_LINKS = [
 export default function ReportsPage() {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiReport, setAiReport] = useState('');
+  const [aiMeta, setAiMeta] = useState(null);
 
   const load = useCallback(async () => {
     setError('');
@@ -30,6 +34,42 @@ export default function ReportsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const generateAiReport = async () => {
+    if (!stats) {
+      toast('Load stats first', 'error');
+      return;
+    }
+    setAiBusy(true);
+    setError('');
+    try {
+      const data = await adminApi.geminiReportAnalysis({
+        report_type: 'network',
+        focus: 'Supervisor weekly briefing with evidence',
+        context: {
+          patients: stats.patients,
+          doctors: stats.doctors,
+          asha_workers: stats.asha_workers,
+          pending_consultations: stats.pending_consultations,
+          emergency_alerts: stats.emergency_alerts,
+          prescriptions: stats.prescriptions,
+          symptom_analyses: stats.symptom_analyses,
+          human_screenings: stats.human_screenings,
+          animal_screenings: stats.animal_screenings,
+          visits: stats.visits,
+          pending_verifications: stats.pending_verifications,
+        },
+      });
+      setAiReport(data.report || '');
+      setAiMeta({ model: data.model, disclaimer: data.disclaimer });
+      toast('Gemini report ready');
+    } catch (e) {
+      setError(e.message);
+      toast(e.message, 'error');
+    } finally {
+      setAiBusy(false);
+    }
+  };
 
   const extraItems = [
     ['ASHA workers', stats?.asha_workers, '/asha-workers'],
@@ -48,7 +88,7 @@ export default function ReportsPage() {
           </Link>
         ))}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         {extraItems.map(([label, value, to]) => (
           <Link key={label} to={to} className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm hover:shadow-md transition-shadow block">
             <p className="text-sm text-muted">{label}</p>
@@ -56,6 +96,38 @@ export default function ReportsPage() {
             <p className="text-xs text-primary mt-2 font-medium">Open page →</p>
           </Link>
         ))}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <p className="text-sm font-semibold text-ink flex items-center gap-2">
+              <Sparkles size={16} className="text-primary" />
+              AI Analysis (Gemini)
+            </p>
+            <p className="text-xs text-muted mt-1">
+              Generate a supervisor briefing from live network stats — with evidence bullets.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={aiBusy || !stats}
+            onClick={generateAiReport}
+            className="rounded-xl bg-primary text-white text-sm font-semibold px-4 py-2 disabled:opacity-50"
+          >
+            {aiBusy ? 'Generating…' : 'Generate Gemini report'}
+          </button>
+        </div>
+        {aiReport ? (
+          <div className="rounded-xl bg-slate-50 border border-slate-100 p-4 whitespace-pre-wrap text-sm leading-relaxed text-ink">
+            {aiReport}
+            {aiMeta?.disclaimer ? (
+              <p className="text-xs text-muted mt-4 italic">{aiMeta.disclaimer}{aiMeta.model ? ` · ${aiMeta.model}` : ''}</p>
+            ) : null}
+          </div>
+        ) : (
+          <p className="text-sm text-muted">No AI report yet. Click generate after stats load.</p>
+        )}
       </div>
     </div>
   );

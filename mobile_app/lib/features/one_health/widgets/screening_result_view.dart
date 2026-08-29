@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/locale_controller.dart';
 import '../escalation_policy.dart';
 import '../screening_disclaimer.dart';
 import '../screening_health_steps.dart';
@@ -114,7 +115,7 @@ class ScreeningResultView extends StatelessWidget {
             EscalationPolicy.whenToSeekHelp(severity: band, domain: domain));
     final disc = disclaimer ??
         ScreeningDisclaimer.text(
-          language: 'en',
+          language: LocaleController.instance.languageCode,
           isAnimal: domain == ScreeningDomain.livestock,
         );
     final banner = _isUnresolved

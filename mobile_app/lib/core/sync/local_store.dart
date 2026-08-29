@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
-import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../security/secure_payload_crypto.dart';
+import 'blackout_recovery.dart';
+import 'shadow_store.dart';
 
 class LocalStore {
   static final LocalStore instance = LocalStore._();
@@ -11,12 +14,67 @@ class LocalStore {
 
   Database? _db;
   final _crypto = SecurePayloadCrypto.instance;
+  final _shadow = ShadowStore.instance;
+  bool _opening = false;
 
   Future<Database> get database async {
-    if (_db != null) return _db!;
-    final dbPath = await getDatabasesPath();
-    _db = await openDatabase(
-      join(dbPath, 'vitalreach.db'),
+    if (_db != null) {
+      if (await _isHealthy(_db!)) return _db!;
+      await _closeAndDropPrimary();
+      return _openWithRecovery();
+    }
+    return _openWithRecovery();
+  }
+
+  Future<Database> _openWithRecovery() async {
+    if (_opening) {
+      while (_opening) {
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+      }
+      if (_db != null) return _db!;
+    }
+    _opening = true;
+    try {
+      final path = await BlackoutRecovery.primaryDbPath();
+      final exists = await File(path).exists();
+      if (exists) {
+        try {
+          final db = await _openPrimary(path);
+          if (await _isHealthy(db)) {
+            _db = db;
+            return _db!;
+          }
+          await db.close();
+          await deleteDatabase(path);
+        } catch (e) {
+          debugPrint('LocalStore: primary open failed: $e');
+          try {
+            await deleteDatabase(path);
+          } catch (_) {}
+        }
+      }
+
+      // Missing or corrupt primary: rebuild from shadow when it has data.
+      final shadowOutbox = await _shadow.allOutbox();
+      final shadowCache = await _shadow.allCache();
+      if (shadowOutbox.isNotEmpty || shadowCache.isNotEmpty) {
+        // Avoid nested open while recovering.
+        _opening = false;
+        await BlackoutRecovery.instance.recoverAfterCorruption();
+        if (_db != null) return _db!;
+        _opening = true;
+      }
+
+      _db = await _openPrimary(path);
+      return _db!;
+    } finally {
+      _opening = false;
+    }
+  }
+
+  Future<Database> _openPrimary(String path) {
+    return openDatabase(
+      path,
       version: 3,
       onCreate: (db, _) async {
         await _createV1Tables(db);
@@ -32,6 +90,43 @@ class LocalStore {
         }
       },
     );
+  }
+
+  Future<bool> _isHealthy(Database db) async {
+    try {
+      final check = await db.rawQuery('PRAGMA integrity_check');
+      final ok = check.isNotEmpty && '${check.first.values.first}' == 'ok';
+      if (!ok) return false;
+      await db.rawQuery('SELECT COUNT(*) FROM outbox');
+      await db.rawQuery('SELECT COUNT(*) FROM cache_entries');
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _closeAndDropPrimary() async {
+    try {
+      await _db?.close();
+    } catch (_) {}
+    _db = null;
+    try {
+      await deleteDatabase(await BlackoutRecovery.primaryDbPath());
+    } catch (e) {
+      debugPrint('LocalStore: delete primary failed: $e');
+    }
+  }
+
+  /// Demo / recovery: close and delete vitalreach.db (shadow untouched).
+  Future<void> destroyPrimaryDatabase() async {
+    await _closeAndDropPrimary();
+  }
+
+  /// Create a fresh primary schema and keep the handle open (for restore).
+  Future<Database> recreateEmptyPrimary() async {
+    await _closeAndDropPrimary();
+    final path = await BlackoutRecovery.primaryDbPath();
+    _db = await _openPrimary(path);
     return _db!;
   }
 
@@ -110,7 +205,8 @@ class LocalStore {
             '${DateTime.now().microsecondsSinceEpoch}-${method.hashCode.abs()}';
     }
     final encryptedBody = await _crypto.encryptJson(enriched);
-    return db.insert('outbox', {
+    final createdAt = DateTime.now().toIso8601String();
+    final id = await db.insert('outbox', {
       'method': method.toUpperCase(),
       'path': path,
       'body': encryptedBody,
@@ -119,13 +215,34 @@ class LocalStore {
       'fields_json': fields == null ? null : jsonEncode(fields),
       'status': 'pending',
       'retries': 0,
-      'created_at': DateTime.now().toIso8601String(),
+      'created_at': createdAt,
     });
+    try {
+      await _shadow.upsertOutbox({
+        'id': id,
+        'method': method.toUpperCase(),
+        'path': path,
+        'body': encryptedBody,
+        'file_path': filePath,
+        'file_field': fileField,
+        'fields_json': fields == null ? null : jsonEncode(fields),
+        'status': 'pending',
+        'retries': 0,
+        'last_error': null,
+        'created_at': createdAt,
+      });
+    } catch (e) {
+      debugPrint('ShadowStore outbox mirror failed: $e');
+    }
+    return id;
   }
 
   Future<void> deleteOutboxRow(int id) async {
     final db = await database;
     await db.delete('outbox', where: 'id = ?', whereArgs: [id]);
+    try {
+      await _shadow.deleteOutbox(id);
+    } catch (_) {}
   }
 
   Future<List<Map<String, dynamic>>> pending() async {
@@ -166,6 +283,7 @@ class LocalStore {
       where: 'id = ?',
       whereArgs: [id],
     );
+    await _mirrorOutboxStatus(id);
   }
 
   Future<void> markRetry(int id, String error) async {
@@ -183,20 +301,45 @@ class LocalStore {
       where: 'id = ?',
       whereArgs: [id],
     );
+    await _mirrorOutboxStatus(id);
+  }
+
+  Future<void> _mirrorOutboxStatus(int id) async {
+    try {
+      final db = await database;
+      final rows = await db.query('outbox', where: 'id = ?', whereArgs: [id], limit: 1);
+      if (rows.isEmpty) {
+        await _shadow.deleteOutbox(id);
+        return;
+      }
+      await _shadow.upsertOutbox(Map<String, dynamic>.from(rows.first));
+    } catch (e) {
+      debugPrint('ShadowStore status mirror failed: $e');
+    }
   }
 
   Future<void> putCache(String key, dynamic payload) async {
     final db = await database;
     final encrypted = await _crypto.encryptJson(payload);
+    final updatedAt = DateTime.now().toIso8601String();
     await db.insert(
       'cache_entries',
       {
         'cache_key': key,
         'payload': encrypted ?? '',
-        'updated_at': DateTime.now().toIso8601String(),
+        'updated_at': updatedAt,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+    try {
+      await _shadow.upsertCache(
+        cacheKey: key,
+        payload: encrypted ?? '',
+        updatedAt: updatedAt,
+      );
+    } catch (e) {
+      debugPrint('ShadowStore cache mirror failed: $e');
+    }
   }
 
   Future<dynamic> getCache(String key) async {

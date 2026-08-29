@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import VoiceSymptomInput, SymptomAnalysis
-from .i18n import localize_analysis
+from .i18n import INDIC_SYNONYMS, localize_analysis, map_indic_tokens
 from apps.alerts.notify import notify_village_care_team
 from django.conf import settings
 import sys
@@ -59,28 +59,7 @@ class SymptomAnalysisView(APIView):
         from rest_framework.throttling import ScopedRateThrottle
         return [ScopedRateThrottle()]
 
-    HINDI_MAPPING = {
-        'बुखार': 'fever',
-        'खांसी': 'cough',
-        'सिरदर्द': 'headache',
-        'उल्टी': 'vomiting',
-        'दर्द': 'pain',
-        'थकान': 'fatigue',
-        'बदन': 'body',
-        'खुजली': 'itching',
-        'चकत्ते': 'rash',
-        'छींक': 'sneezing',
-        'जुकाम': 'cold',
-        'कफ': 'cough',
-        'सांस': 'breath',
-        'चक्कर': 'dizziness',
-        'घबराहट': 'anxiety',
-        'कब्ज': 'constipation',
-        'दस्त': 'diarrhoea',
-        'पीलिया': 'jaundice',
-        'पसीना': 'sweating',
-        'कमजोरी': 'weakness',
-    }
+    HINDI_MAPPING = INDIC_SYNONYMS
 
     def post(self, request):
         user = request.user
@@ -99,14 +78,7 @@ class SymptomAnalysisView(APIView):
         import re
         # Support Unicode words for Hindi
         words = re.findall(r'[\w\u0900-\u097F]+', symptoms_text.lower())
-        
-        # Translate Hindi words to English for the AI engine
-        symptoms_list = []
-        for word in words:
-            if word in self.HINDI_MAPPING:
-                symptoms_list.append(self.HINDI_MAPPING[word])
-            else:
-                symptoms_list.append(word)
+        symptoms_list = map_indic_tokens(words)
         
         # 3. AI Prediction
         _ensure_project_root() 

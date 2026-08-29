@@ -1,5 +1,5 @@
 from django.contrib.auth import authenticate
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.authtoken.models import Token
@@ -8,9 +8,12 @@ from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.common.authentication import rotate_token
+from apps.security_audit.audit import log_security_event
+
 from apps.users.models import User
 from apps.users.views import normalize_identifier
-from apps.patients.models import Patient
+from apps.patients.models import Patient, assign_patient_to_asha
 from apps.doctors.models import Doctor
 from apps.asha_workers.models import ASHAWorker, VillageVisit
 from apps.consultations.models import Consultation
@@ -42,6 +45,7 @@ from .serializers import (
     AdminUserSerializer,
     AdminUserWriteSerializer,
     AdminCreateUserSerializer,
+    AdminSetPasswordSerializer,
     AdminPatientSerializer,
     AdminDoctorSerializer,
     AdminAshaSerializer,
@@ -274,9 +278,46 @@ def _parse_coords_from_text(text):
     return None, None
 
 
+def _admin_set_user_password(request, user):
+    """Staff can set any module account password and revoke existing sessions."""
+    serializer = AdminSetPasswordSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    new_password = serializer.validated_data['new_password']
+
+    if user.is_superuser and not request.user.is_superuser:
+        return Response(
+            {'error': 'You cannot change a superuser password.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    user.set_password(new_password)
+    user.save(update_fields=['password'])
+    token = rotate_token(user)
+    log_security_event(
+        request,
+        action='admin_set_password',
+        object_type='User',
+        object_id=user.pk,
+        metadata={'role': user.role, 'target_username': user.username},
+    )
+    payload = {
+        'status': 'Password updated.',
+        'user_id': user.pk,
+        'sessions_revoked': True,
+    }
+    if user.pk == request.user.pk:
+        payload['token'] = token.key
+    return Response(payload)
+
+
 class AdminUserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
-    queryset = User.objects.all().order_by('-created_at')
+    queryset = User.objects.select_related(
+        'patient_profile',
+        'doctor_profile',
+        'asha_profile',
+        'medical_staff_profile__facility',
+    ).all().order_by('-created_at')
     http_method_names = ['get', 'post', 'patch', 'head', 'options']
 
     def get_serializer_class(self):
@@ -291,6 +332,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         role = self.request.query_params.get('role')
         village = self.request.query_params.get('village')
         active = self.request.query_params.get('is_active')
+        staff = self.request.query_params.get('is_staff')
         q = (self.request.query_params.get('q') or '').strip()
         if role:
             qs = qs.filter(role=role)
@@ -298,6 +340,8 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             qs = qs.filter(village__icontains=village)
         if active in ('true', 'false', '1', '0'):
             qs = qs.filter(is_active=active in ('true', '1'))
+        if staff in ('true', 'false', '1', '0'):
+            qs = qs.filter(is_staff=staff in ('true', '1'))
         if q:
             qs = qs.filter(
                 Q(name__icontains=q)
@@ -316,19 +360,29 @@ class AdminUserViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
+    @action(detail=True, methods=['post'], url_path='set-password')
+    def set_password(self, request, pk=None):
+        return _admin_set_user_password(request, self.get_object())
+
 
 class AdminPatientViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     serializer_class = AdminPatientSerializer
-    queryset = Patient.objects.select_related('user').all().order_by('-id')
+    queryset = Patient.objects.select_related('user', 'assigned_asha__user').all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'head', 'options']
 
     def get_queryset(self):
         qs = super().get_queryset()
         q = (self.request.query_params.get('q') or '').strip()
         village = self.request.query_params.get('village')
+        asha_id = (self.request.query_params.get('assigned_asha') or '').strip()
+        unassigned = (self.request.query_params.get('unassigned') or '').strip().lower()
         if village:
             qs = qs.filter(user__village__icontains=village)
+        if asha_id:
+            qs = qs.filter(assigned_asha_id=asha_id)
+        if unassigned in ('1', 'true', 'yes'):
+            qs = qs.filter(assigned_asha__isnull=True)
         if q:
             qs = qs.filter(
                 Q(user__name__icontains=q)
@@ -343,10 +397,19 @@ class AdminPatientViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         patient = user.patient_profile
+        asha_id = request.data.get('assigned_asha')
+        if asha_id and not patient.assigned_asha_id:
+            asha = ASHAWorker.objects.filter(pk=asha_id).first()
+            if asha:
+                assign_patient_to_asha(patient, asha)
         return Response(
             AdminPatientSerializer(patient).data,
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=True, methods=['post'], url_path='set-password')
+    def set_password(self, request, pk=None):
+        return _admin_set_user_password(request, self.get_object().user)
 
 
 class AdminDoctorViewSet(viewsets.ModelViewSet):
@@ -407,11 +470,17 @@ class AdminDoctorViewSet(viewsets.ModelViewSet):
         doctor.save()
         return Response({'status': 'Doctor verification rejected.'})
 
+    @action(detail=True, methods=['post'], url_path='set-password')
+    def set_password(self, request, pk=None):
+        return _admin_set_user_password(request, self.get_object().user)
+
 
 class AdminAshaViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     serializer_class = AdminAshaSerializer
-    queryset = ASHAWorker.objects.select_related('user').prefetch_related('documents').all().order_by('-id')
+    queryset = ASHAWorker.objects.select_related('user').prefetch_related('documents').annotate(
+        assigned_patient_count=Count('assigned_patients'),
+    ).all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'head', 'options']
 
     def get_serializer_context(self):
@@ -460,6 +529,32 @@ class AdminAshaViewSet(viewsets.ModelViewSet):
         asha.rejection_reason = reason
         asha.save()
         return Response({'status': 'ASHA worker verification rejected.'})
+
+    @action(detail=True, methods=['post'], url_path='set-password')
+    def set_password(self, request, pk=None):
+        return _admin_set_user_password(request, self.get_object().user)
+
+    @action(detail=True, methods=['get'])
+    def patients(self, request, pk=None):
+        asha = self.get_object()
+        rows = Patient.objects.select_related('user', 'assigned_asha__user').filter(assigned_asha=asha)
+        return Response(AdminPatientSerializer(rows, many=True).data)
+
+    @action(detail=True, methods=['post'], url_path='assign-patients')
+    def assign_patients(self, request, pk=None):
+        asha = self.get_object()
+        ids = request.data.get('patient_ids') or []
+        if not isinstance(ids, list) or not ids:
+            return Response({'error': 'patient_ids must be a non-empty list'}, status=status.HTTP_400_BAD_REQUEST)
+        patients = Patient.objects.select_related('user').filter(id__in=ids)
+        for patient in patients:
+            assign_patient_to_asha(patient, asha)
+        rows = Patient.objects.select_related('user', 'assigned_asha__user').filter(assigned_asha=asha)
+        return Response({
+            'status': f'{patients.count()} patients assigned to this ASHA worker.',
+            'count': patients.count(),
+            'patients': AdminPatientSerializer(rows, many=True).data,
+        })
 
 
 class AdminConsultationViewSet(viewsets.ModelViewSet):

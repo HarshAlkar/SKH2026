@@ -5,7 +5,6 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from apps.alerts.notify import notify_village_care_team, notify_livestock_care_team
 from apps.common.ownership import strip_client_identity_fields, validate_client_timestamp
 from apps.doctors.models import Doctor
 from apps.security_audit.audit import log_security_event
@@ -32,9 +31,9 @@ class ScreeningEventSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'domain', 'user', 'livestock_case', 'input_type', 'input_text',
             'possible_condition', 'severity_level', 'confidence', 'advice',
-            'result_json', 'client_id', 'created_at',
+            'result_json', 'client_id', 'status', 'created_at',
         ]
-        read_only_fields = ['user', 'created_at']
+        read_only_fields = ['user', 'created_at', 'status']
 
 
 class LivestockCaseViewSet(viewsets.ModelViewSet):
@@ -57,7 +56,11 @@ class ScreeningEventViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'head', 'options']
 
     def get_queryset(self):
-        qs = ScreeningEvent.objects.filter(user=self.request.user)
+        # Users only see released history (held stays in TEMP vault until admin restore)
+        qs = ScreeningEvent.objects.filter(
+            user=self.request.user,
+            status=ScreeningEvent.STATUS_RELEASED,
+        )
         domain = self.request.query_params.get('domain')
         if domain:
             qs = qs.filter(domain=domain.upper())
@@ -90,15 +93,38 @@ class ScreeningEventViewSet(viewsets.ModelViewSet):
             if not LivestockCase.objects.filter(pk=case_id, owner=request.user).exists():
                 data.pop('livestock_case', None)
 
+        domain = (data.get('domain') or 'HUMAN').upper()
+        # Livestock (and optionally all) go to TEMP vault first — not history until restore
+        hold = domain == 'ANIMAL'
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
-        event = serializer.save(user=request.user)
+        event = serializer.save(
+            user=request.user,
+            status=ScreeningEvent.STATUS_HELD if hold else ScreeningEvent.STATUS_RELEASED,
+        )
         log_security_event(
             request, action='screening_create',
             object_type='ScreeningEvent', object_id=event.pk,
-            metadata={'domain': event.domain, 'client_id': client_id or None},
+            metadata={
+                'domain': event.domain,
+                'client_id': client_id or None,
+                'held_in_temp_vault': hold,
+            },
         )
-        return Response(ScreeningEventSerializer(event).data, status=status.HTTP_201_CREATED)
+        try:
+            from apps.blackout.service import snapshot_screenings
+            snapshot_screenings(reason='screening_held' if hold else 'screening_create')
+        except Exception:
+            pass
+        payload = ScreeningEventSerializer(event).data
+        if hold:
+            payload['held_in_temp_vault'] = True
+            payload['message'] = (
+                'Livestock screening held in TEMP vault. '
+                'It will appear in history after admin Restore.'
+            )
+        return Response(payload, status=status.HTTP_201_CREATED)
 
 
 class AnimalScreeningView(APIView):
@@ -129,7 +155,7 @@ class AnimalScreeningView(APIView):
                     'top_predictions': (existing.result_json or {}).get('top_predictions', []),
                 })
 
-        result = screen_animal_symptoms(symptoms, species=species)
+        result = screen_animal_symptoms(symptoms, species=species, language=language)
         case = None
         if case_id:
             case = LivestockCase.objects.filter(pk=case_id, owner=request.user).first()
@@ -146,30 +172,34 @@ class AnimalScreeningView(APIView):
             advice=result['advice'],
             result_json=result,
             client_id=client_id,
+            status=ScreeningEvent.STATUS_HELD,
         )
 
-        alert_sent = False
-        if result['severity'] in ('High', 'Critical'):
-            _, alert_sent = notify_livestock_care_team(
-                request.user,
-                result['possible_condition'],
-                result['severity'],
-                species=species,
-            )
+        # No care-team alert until admin releases from TEMP vault.
+        try:
+            from apps.blackout.service import snapshot_screenings
+            snapshot_screenings(reason='animal_screening_held')
+        except Exception:
+            pass
 
         return Response({
             'screening_id': event.id,
             'domain': 'ANIMAL',
             'possible_condition': result['possible_condition'],
             'disease': result['possible_condition'],
-            'disease_display': result['possible_condition'],
+            'disease_display': result.get('disease_display') or result['possible_condition'],
             'severity': result['severity'],
-            'severity_display': result['severity'],
+            'severity_display': result.get('severity_display') or result['severity'],
             'confidence': result['confidence'],
             'advice': result['advice'],
             'disclaimer': result['disclaimer'],
-            'alert_sent': alert_sent,
-            'language': language,
+            'alert_sent': False,
+            'held_in_temp_vault': True,
+            'message': (
+                'Held in TEMP vault. Result appears in livestock history '
+                'after admin Restore.'
+            ),
+            'language': result.get('language') or language,
             'species': species,
             'top_predictions': result.get('top_predictions', []),
             'livestock_case_id': case.id if case else None,

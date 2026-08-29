@@ -6,6 +6,7 @@ import Dashboard from '../pages/dashboard/Dashboard';
 import PatientsPage from '../pages/patients/Patients';
 import DoctorsPage from '../pages/doctors/Doctors';
 import AshaPage from '../pages/asha/AshaWorkers';
+import UsersPage from '../pages/users/Users';
 import ConsultationsPage from '../pages/consultations/Consultations';
 import PrescriptionsPage from '../pages/prescriptions/Prescriptions';
 import AlertsPage from '../pages/alerts/Alerts';
@@ -16,6 +17,8 @@ import VisitsPage from '../pages/visits/Visits';
 import SymptomsPage from '../pages/symptoms/Symptoms';
 import ChatPage from '../pages/chat/Chat';
 import ReportsPage from '../pages/reports/Reports';
+import BlackoutPage from '../pages/blackout/Blackout';
+import TrustShieldPage from '../pages/trustshield/TrustShield';
 
 function Guard({ children }) {
   const { ready, isAuthed } = useAuth();
@@ -43,7 +46,7 @@ export default function AppRoutes() {
       >
         <Route path="/" element={<Dashboard />} />
         <Route path="/patients" element={<PatientsPage />} />
-        <Route path="/users" element={<Navigate to="/patients" replace />} />
+        <Route path="/users" element={<UsersPage />} />
         <Route path="/doctors" element={<DoctorsPage />} />
         <Route path="/asha-workers" element={<AshaPage />} />
         <Route path="/consultations" element={<ConsultationsPage />} />
@@ -54,6 +57,8 @@ export default function AppRoutes() {
         <Route path="/medicines" element={<MedicinesPage />} />
         <Route path="/visits" element={<VisitsPage />} />
         <Route path="/symptoms" element={<SymptomsPage />} />
+        <Route path="/blackout" element={<BlackoutPage />} />
+        <Route path="/trustshield" element={<TrustShieldPage />} />
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/reports" element={<ReportsPage />} />
       </Route>

@@ -8,8 +8,11 @@ class UserAdmin(DjangoUserAdmin):
     fieldsets = DjangoUserAdmin.fieldsets + (
         ("VitalReach", {"fields": ("role", "phone_number", "village", "name", "photo")}),
     )
-    list_display = ("username", "name", "phone_number", "role", "is_active")
-    list_filter = ("role", "is_active")
+    add_fieldsets = DjangoUserAdmin.add_fieldsets + (
+        ("VitalReach", {"fields": ("role", "phone_number", "village", "name")}),
+    )
+    list_display = ("username", "name", "phone_number", "role", "is_staff", "is_active")
+    list_filter = ("role", "is_active", "is_staff")
     search_fields = ("username", "name", "phone_number", "email")
 
 

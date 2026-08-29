@@ -190,6 +190,8 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
   }
 
   Widget _buildDoctorCard(Map<String, dynamic> doctor) {
+    final photoUrl = 'https://i.pravatar.cc/150?u=${doctor['id']}';
+    final hasPhoto = photoUrl.isNotEmpty;
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(16),
@@ -214,9 +216,11 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
                 children: [
                   CircleAvatar(
                     radius: 35,
-                    backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=${doctor['id']}'),
+                    backgroundImage: hasPhoto ? NetworkImage(photoUrl) : null,
                     backgroundColor: AppColors.lightBlue,
-                    child: const Icon(Icons.person, size: 40, color: AppColors.primary),
+                    child: hasPhoto
+                        ? null
+                        : const Icon(Icons.person, size: 40, color: AppColors.primary),
                   ),
                   if (doctor['is_available'] ?? true)
                     Positioned(

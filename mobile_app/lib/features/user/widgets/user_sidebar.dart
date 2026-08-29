@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../l10n/l10n.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/utils/logout_helper.dart';
 import '../../../providers/auth_provider.dart';
@@ -14,8 +15,9 @@ class UserSidebar extends StatelessWidget {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         final user = auth.user;
-        final name = user?.name ?? 'Guest';
-        final village = user?.village ?? 'Unknown';
+        final l10n = context.l10n;
+        final name = user?.name ?? l10n.guest;
+        final village = user?.village ?? l10n.unknown;
 
         return Drawer(
           child: Column(
@@ -44,7 +46,7 @@ class UserSidebar extends StatelessWidget {
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                     ),
                     const SizedBox(height: 4),
-                    Text('Village: $village', style: const TextStyle(color: AppColors.primary, fontSize: 14)),
+                    Text(l10n.villageLabel(village), style: const TextStyle(color: AppColors.primary, fontSize: 14)),
                   ],
                 ),
               ),
@@ -52,27 +54,27 @@ class UserSidebar extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                   children: [
-                    _buildNavItem(context, 'Dashboard', Icons.grid_view_outlined, AppRoutes.userDashboard),
-                    _buildNavItem(context, 'AI Symptom Checker', Icons.health_and_safety_outlined, AppRoutes.symptomChecker),
-                    _buildNavItem(context, 'Medicine Tracker', Icons.medication_outlined, AppRoutes.medicineTracker),
-                    _buildNavItem(context, 'Medicine Availability', Icons.local_pharmacy_outlined, AppRoutes.medicineAvailability),
-                    _buildNavItem(context, 'Nearby Clinics', Icons.location_on_outlined, AppRoutes.nearbyClinics),
-                    _buildNavItem(context, 'Consult Doctor', Icons.video_call_outlined, AppRoutes.consultDoctor),
-                    _buildNavItem(context, 'ASHA Workers', Icons.health_and_safety_outlined, AppRoutes.ashaWorkers),
-                    _buildNavItem(context, 'Messages', Icons.chat_outlined, AppRoutes.chatInbox),
-                    _buildNavItem(context, 'Call History', Icons.history, AppRoutes.callHistory),
-                    _buildNavItem(context, 'My Prescriptions', Icons.description_outlined, AppRoutes.myPrescriptions),
-                    _buildNavItem(context, 'Health Tips', Icons.favorite_border_outlined, AppRoutes.healthTips),
-                    _buildNavItem(context, 'Emergency Help', Icons.emergency_outlined, AppRoutes.emergencyHelp, isEmergency: true),
+                    _buildNavItem(context, l10n.dashboard, Icons.grid_view_outlined, AppRoutes.userDashboard),
+                    _buildNavItem(context, l10n.aiSymptomChecker, Icons.health_and_safety_outlined, AppRoutes.symptomChecker),
+                    _buildNavItem(context, l10n.medicineTracker, Icons.medication_outlined, AppRoutes.medicineTracker),
+                    _buildNavItem(context, l10n.medicineAvailability, Icons.local_pharmacy_outlined, AppRoutes.medicineAvailability),
+                    _buildNavItem(context, l10n.nearbyClinics, Icons.location_on_outlined, AppRoutes.nearbyClinics),
+                    _buildNavItem(context, l10n.consultDoctor, Icons.video_call_outlined, AppRoutes.consultDoctor),
+                    _buildNavItem(context, l10n.ashaWorkers, Icons.health_and_safety_outlined, AppRoutes.ashaWorkers),
+                    _buildNavItem(context, l10n.messages, Icons.chat_outlined, AppRoutes.chatInbox),
+                    _buildNavItem(context, l10n.callHistory, Icons.history, AppRoutes.callHistory),
+                    _buildNavItem(context, l10n.myPrescriptions, Icons.description_outlined, AppRoutes.myPrescriptions),
+                    _buildNavItem(context, l10n.healthTips, Icons.favorite_border_outlined, AppRoutes.healthTips),
+                    _buildNavItem(context, l10n.emergencyHelp, Icons.emergency_outlined, AppRoutes.emergencyHelp, isEmergency: true),
                     const Divider(height: 32),
-                    _buildNavItem(context, 'Profile', Icons.person_outline, AppRoutes.profile),
-                    _buildNavItem(context, 'Settings', Icons.settings_outlined, AppRoutes.settings),
+                    _buildNavItem(context, l10n.profile, Icons.person_outline, AppRoutes.profile),
+                    _buildNavItem(context, l10n.settings, Icons.settings_outlined, AppRoutes.settings),
                   ],
                 ),
               ),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.redAccent),
-                title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
+                title: Text(l10n.logout, style: const TextStyle(color: Colors.redAccent)),
                 onTap: () async {
                   Navigator.pop(context);
                   await LogoutHelper.logout(context);

@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from apps.patients.models import Patient
 from apps.alerts.models import AlertNotification
+from apps.common.ownership import patients_queryset_for
 from .models import ASHAWorker, VillageVisit, ASHADocument
 from .serializers import VillageVisitSerializer, ASHAWorkerSerializer, ASHADocumentSerializer
 
@@ -142,7 +143,7 @@ class ASHAWorkerDashboardView(APIView):
             return Response({'error': 'ASHA profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
         village = asha.assigned_village
-        total_patients = Patient.objects.filter(user__village__iexact=village).count()
+        total_patients = patients_queryset_for(request.user).count()
         pending_visits = VillageVisit.objects.filter(asha_worker=asha, status='PENDING').count()
         alerts = AlertNotification.objects.filter(asha_worker=asha)
         high_risk = alerts.filter(severity__in=['High', 'Critical']).count()

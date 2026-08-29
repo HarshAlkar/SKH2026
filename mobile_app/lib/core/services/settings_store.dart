@@ -28,8 +28,10 @@ class SettingsStore {
   Future<void> setEmergencyGatewayHost(String value) =>
       StorageService.saveStringSync(_emergencyGatewayKey, value);
 
+  /// Marathi falls back to Hindi when [mr] is omitted (shared Devanagari copy).
   String t(String en, String hi, [String? mr]) {
-    if (isMarathi && mr != null) return mr;
-    return isHindi ? hi : en;
+    if (isMarathi) return mr ?? hi;
+    if (isHindi) return hi;
+    return en;
   }
 }

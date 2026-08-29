@@ -88,6 +88,7 @@ X_FRAME_OPTIONS = 'DENY'
 EXPOSE_OTP_FOR_DEV = os.environ.get('EXPOSE_OTP_FOR_DEV', '0').lower() in ('1', 'true', 'yes')
 TOKEN_TTL_HOURS = int(os.environ.get('TOKEN_TTL_HOURS', '72'))
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '').strip()
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-3.5-flash').strip() or 'gemini-3.5-flash'
 GOOGLE_PLACES_API_KEY = os.environ.get('GOOGLE_PLACES_API_KEY', '').strip()
 NEARBY_RADIUS_M = int(os.environ.get('NEARBY_RADIUS_M', '5000'))
 SYNC_TIMESTAMP_MAX_SKEW_DAYS = int(os.environ.get('SYNC_TIMESTAMP_MAX_SKEW_DAYS', '30'))
@@ -123,6 +124,8 @@ INSTALLED_APPS = [
     'apps.security_audit.apps.SecurityAuditConfig',
     'apps.ai_proxy.apps.AiProxyConfig',
     'apps.places_proxy.apps.PlacesProxyConfig',
+    'apps.blackout.apps.BlackoutConfig',
+    'apps.trustshield.apps.TrustshieldConfig',
     'rest_framework.authtoken',
 ]
 

@@ -137,6 +137,37 @@ class SymptomDatasetService {
     'skin_peeling': 'Skin Peeling',
   };
 
+  static const _symptomLabelsMr = {
+    'fatigue': 'थकवा',
+    'vomiting': 'उलटी',
+    'high_fever': 'तीव्र ताप',
+    'loss_of_appetite': 'भूक न लागणे',
+    'nausea': 'मळमळ',
+    'headache': 'डोकेदुखी',
+    'abdominal_pain': 'पोटदुखी',
+    'yellowish_skin': 'पिवळी त्वचा',
+    'yellowing_of_eyes': 'डोळे पिवळे होणे',
+    'chills': 'थंडी वाजणे',
+    'skin_rash': 'पुरळ',
+    'malaise': 'अस्वस्थता',
+    'chest_pain': 'छातीत दुखणे',
+    'joint_pain': 'सांधेदुखी',
+    'itching': 'खाज',
+    'sweating': 'घाम',
+    'dark_urine': 'गडद लघवी',
+    'cough': 'खोकला',
+    'diarrhoea': 'जुलाब',
+    'irritability': 'चिडचिडेपणा',
+    'fever': 'ताप',
+    'continuous_sneezing': 'शिंका',
+    'breathlessness': 'श्वास लागणे',
+    'nodal_skin_eruptions': 'त्वचेवरील फोड',
+    'dischromic_patches': 'रंग बदलणारे डाग',
+    'blister': 'फोड',
+    'pus_filled_pimples': 'पू असलेले फोड',
+    'skin_peeling': 'त्वचा सोलणे',
+  };
+
   static const _symptomLabelsHi = {
     'fatigue': 'थकान',
     'vomiting': 'उल्टी',
@@ -189,6 +220,7 @@ class SymptomDatasetService {
         token: token,
         labelEn: _symptomLabelsEn[token] ?? _titleCase(token),
         labelHi: _symptomLabelsHi[token] ?? _titleCase(token),
+        labelMr: _symptomLabelsMr[token] ?? _symptomLabelsHi[token] ?? _titleCase(token),
       );
     }).toList();
   }
@@ -201,6 +233,7 @@ class SymptomDatasetService {
         token: token,
         labelEn: _symptomLabelsEn[token] ?? _titleCase(token),
         labelHi: _symptomLabelsHi[token] ?? _titleCase(token),
+        labelMr: _symptomLabelsMr[token] ?? _symptomLabelsHi[token] ?? _titleCase(token),
       );
     }).toList();
   }
@@ -277,7 +310,11 @@ class SymptomDatasetService {
       'message':
           'On-device ML was unavailable; this ranked list uses symptom matching only — '
           'not model probabilities. AI-assisted screening only. This is not a medical diagnosis.',
-      'language': language.startsWith('hi') ? 'hi' : 'en',
+      'language': language.toLowerCase().startsWith('mr')
+          ? 'mr'
+          : language.toLowerCase().startsWith('hi')
+              ? 'hi'
+              : 'en',
     };
   }
 
@@ -418,7 +455,11 @@ class SymptomDatasetService {
         'result_state': 'SUCCESS_FALLBACK',
         'advice': _adviceFor(disease, language: language),
         'disclaimer': _disclaimer(language),
-        'language': language.startsWith('hi') ? 'hi' : 'en',
+        'language': language.toLowerCase().startsWith('mr')
+          ? 'mr'
+          : language.toLowerCase().startsWith('hi')
+              ? 'hi'
+              : 'en',
       };
     } else {
       disease = 'Not enough recognizable symptoms';
@@ -445,7 +486,11 @@ class SymptomDatasetService {
       'message':
           'Screening could not classify reliably from the symptoms provided. '
           'Please add more detail and try again. This is not a diagnosis.',
-      'language': language.startsWith('hi') ? 'hi' : 'en',
+      'language': language.toLowerCase().startsWith('mr')
+          ? 'mr'
+          : language.toLowerCase().startsWith('hi')
+              ? 'hi'
+              : 'en',
     };
   }
 
@@ -458,21 +503,33 @@ class SymptomDatasetService {
   }
 
   String _adviceFor(String disease, {required String language}) {
-    final hindi = language.startsWith('hi');
-    if (disease == 'Undetermined' || disease == 'Possible viral illness') {
-      return hindi
-          ? 'ये लक्षण आम हैं। आराम करें, तरल पदार्थ लें, और बिगड़ने पर डॉक्टर से मिलें।'
-          : 'These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.';
+    final lang = language.toLowerCase();
+    final undetermined =
+        disease == 'Undetermined' || disease == 'Possible viral illness';
+    if (lang.startsWith('mr')) {
+      return undetermined
+          ? 'ही लक्षणे सामान्य आहेत. विश्रांती घ्या, द्रव प्या आणि बिघडल्यास डॉक्टरांना भेटा.'
+          : 'पुरेसे पाणी प्या आणि विश्रांती घ्या. लक्षणांकडे लक्ष द्या.';
     }
-    return hindi
-        ? 'पर्याप्त पानी पिएँ और आराम करें। लक्षणों पर नज़र रखें।'
+    if (lang.startsWith('hi')) {
+      return undetermined
+          ? 'ये लक्षण आम हैं। आराम करें, तरल पदार्थ लें, और बिगड़ने पर डॉक्टर से मिलें।'
+          : 'पर्याप्त पानी पिएँ और आराम करें। लक्षणों पर नज़र रखें।';
+    }
+    return undetermined
+        ? 'These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.'
         : 'Maintain hydration and rest. Monitor symptoms carefully.';
   }
 
   String _disclaimer(String language) {
-    return language.startsWith('hi')
-        ? 'यह केवल स्क्रीनिंग सुझाव है, चिकित्सा निदान नहीं।'
-        : 'This is a screening suggestion, not a medical diagnosis.';
+    final lang = language.toLowerCase();
+    if (lang.startsWith('mr')) {
+      return 'स्क्रीनिंगमुळे धोका दिसतो — पात्र आरोग्य तज्ज्ञांचा सल्ला घ्या. हे वैद्यकीय निदान नाही.';
+    }
+    if (lang.startsWith('hi')) {
+      return 'यह केवल स्क्रीनिंग सुझाव है, चिकित्सा निदान नहीं।';
+    }
+    return 'This is a screening suggestion, not a medical diagnosis.';
   }
 
   String _titleCase(String token) {
@@ -491,14 +548,22 @@ class SymptomOption {
     required this.token,
     required this.labelEn,
     required this.labelHi,
+    this.labelMr = '',
   });
 
   final String token;
   final String labelEn;
   final String labelHi;
+  final String labelMr;
 
-  String labelFor(String language) =>
-      language.toLowerCase().startsWith('hi') ? labelHi : labelEn;
+  String labelFor(String language) {
+    final lang = language.toLowerCase();
+    if (lang.startsWith('mr')) {
+      return labelMr.isNotEmpty ? labelMr : labelHi;
+    }
+    if (lang.startsWith('hi')) return labelHi;
+    return labelEn;
+  }
 }
 
 class _DiseaseRow {

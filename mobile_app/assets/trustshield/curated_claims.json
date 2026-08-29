@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "label": "VitalReach curated medical knowledge (hackathon demo)",
+  "entries": [
+    {
+      "id": "dengue_antibiotics",
+      "keywords": ["antibiotic", "antibiotics", "dengue", "cure dengue", "dengue in two days", "dengue 2 days"],
+      "match_mode": "all_groups",
+      "keyword_groups": [["antibiotic", "antibiotics"], ["dengue"]],
+      "status": "MISLEADING",
+      "riskLevel": "HIGH",
+      "confidence": 0.94,
+      "claim_normalized": "Antibiotics cure dengue",
+      "explanation": "Available trusted medical information does not support antibiotics as a treatment for dengue itself. Dengue is viral; antibiotics treat bacterial infections.",
+      "recommendedAction": "Do not self-medicate with antibiotics for suspected dengue. Seek professional medical assessment. Use fluids and follow clinician advice for warning signs.",
+      "correctedGuidance": "Health information check from VitalReach:\n\nThe forwarded claim that antibiotics cure dengue could be misleading and harmful.\nPlease do not self-medicate based on this message.\nFor suspected dengue or high fever, consult a qualified healthcare professional.",
+      "sources": [
+        {
+          "name": "VitalReach curated dengue guidance",
+          "type": "CURATED_MEDICAL_KNOWLEDGE",
+          "reference": "local://trustshield/dengue_antibiotics"
+        }
+      ]
+    },
+    {
+      "id": "diabetes_household_cure",
+      "keywords": ["diabetes", "cure diabetes", "guaranteed cure", "household", "bleach", "kerosene", "urine therapy"],
+      "match_mode": "all_groups",
+      "keyword_groups": [["diabetes"], ["cure", "guaranteed", "bleach", "kerosene", "urine"]],
+      "status": "MISLEADING",
+      "riskLevel": "HIGH",
+      "confidence": 0.97,
+      "claim_normalized": "A household substance is a guaranteed cure for diabetes",
+      "explanation": "No trusted evidence supports household substances as a guaranteed cure for diabetes. Such advice can cause serious harm.",
+      "recommendedAction": "Do not use household substances as treatment. Continue prescribed care and consult a qualified clinician for diabetes management.",
+      "correctedGuidance": "Health information check from VitalReach:\n\nClaims of a guaranteed household cure for diabetes conflict with trusted medical information and may be dangerous.\nDo not follow this advice.\nPlease consult a qualified healthcare professional for diabetes care.",
+      "sources": [
+        {
+          "name": "VitalReach curated diabetes safety guidance",
+          "type": "CURATED_MEDICAL_KNOWLEDGE",
+          "reference": "local://trustshield/diabetes_household_cure"
+        }
+      ]
+    },
+    {
+      "id": "drinking_water_health",
+      "keywords": ["drink water", "drinking water", "drinkin water", "water is good", "water good for health", "hydration", "stay hydrated"],
+      "match_mode": "all_groups",
+      "keyword_groups": [["water", "hydrat"], ["drink", "drinking", "drinkin", "health", "healthy", "good"]],
+      "status": "VERIFIED",
+      "riskLevel": "LOW",
+      "confidence": 0.93,
+      "claim_normalized": "Drinking water is good for health",
+      "explanation": "Trusted public-health guidance supports adequate water intake for hydration and general health. This is everyday wellness advice, not a cure for disease.",
+      "recommendedAction": "Continue drinking clean, safe water regularly. Seek care if you have severe dehydration, persistent vomiting, or cannot keep fluids down.",
+      "correctedGuidance": "",
+      "sources": [
+        {
+          "name": "VitalReach approved hydration guidance",
+          "type": "APPROVED_GUIDANCE",
+          "reference": "local://trustshield/drinking_water_health"
+        }
+      ]
+    },
+    {
+      "id": "handwash_infection",
+      "keywords": ["handwash", "hand wash", "wash hands", "soap", "reduce infection", "prevent infection"],
+      "match_mode": "all_groups",
+      "keyword_groups": [["hand", "soap"], ["infection", "germ", "hygiene"]],
+      "status": "VERIFIED",
+      "riskLevel": "LOW",
+      "confidence": 0.9,
+      "claim_normalized": "Washing hands with soap helps reduce infection risk",
+      "explanation": "Trusted hygiene guidance supports handwashing with soap as a way to reduce the spread of many infections.",
+      "recommendedAction": "Continue regular handwashing with soap, especially before meals and after toilet use.",
+      "correctedGuidance": "",
+      "sources": [
+        {
+          "name": "VitalReach approved hygiene guidance",
+          "type": "APPROVED_GUIDANCE",
+          "reference": "local://trustshield/handwash_infection"
+        }
+      ]
+    },
+    {
+      "id": "ors_dehydration",
+      "keywords": ["ors", "oral rehydration", "dehydration", "diarrhoea", "diarrhea"],
+      "match_mode": "all_groups",
+      "keyword_groups": [["ors", "rehydration"], ["diarrhoea", "diarrhea", "dehydration"]],
+      "status": "VERIFIED",
+      "riskLevel": "LOW",
+      "confidence": 0.91,
+      "claim_normalized": "ORS helps with dehydration from diarrhoea",
+      "explanation": "Trusted guidance supports oral rehydration solution (ORS) for managing dehydration related to diarrhoea, alongside clinical care when warning signs appear.",
+      "recommendedAction": "Use ORS as advised for dehydration risk. Seek care urgently for blood in stool, persistent vomiting, or severe weakness.",
+      "correctedGuidance": "",
+      "sources": [
+        {
+          "name": "VitalReach approved ORS guidance",
+          "type": "APPROVED_GUIDANCE",
+          "reference": "local://trustshield/ors_dehydration"
+        }
+      ]
+    },
+    {
+      "id": "livestock_antibiotic_all",
+      "keywords": ["antibiotic", "antibiotics", "all cattle", "every cow", "milk drop", "livestock"],
+      "match_mode": "all_groups",
+      "keyword_groups": [["antibiotic", "antibiotics"], ["cattle", "cow", "livestock", "buffalo"]],
+      "status": "MISLEADING",
+      "riskLevel": "HIGH",
+      "confidence": 0.92,
+      "claim_normalized": "Give antibiotics to all cattle for milk drop",
+      "explanation": "Blanket antibiotic use without veterinary diagnosis is not supported by trusted guidance and can harm animals and increase resistance.",
+      "recommendedAction": "Do not give antibiotics to the whole herd based on a forwarded tip. Consult a qualified veterinarian.",
+      "correctedGuidance": "Health information check from VitalReach:\n\nA forwarded tip to give antibiotics to all cattle for milk drop may be misleading and harmful.\nDo not treat the whole herd without veterinary advice.\nPlease consult a qualified veterinarian.",
+      "sources": [
+        {
+          "name": "VitalReach livestock stewardship guidance",
+          "type": "CURATED_MEDICAL_KNOWLEDGE",
+          "reference": "local://trustshield/livestock_antibiotic_all"
+        }
+      ]
+    }
+  ]
+}

@@ -39,7 +39,7 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
   @override
   void initState() {
     super.initState();
-    _initLocationAndFetch();
+    _initLocationAndFetch(forceRefresh: true);
   }
 
   @override
@@ -90,8 +90,8 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
 
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 20),
+          accuracy: LocationAccuracy.best,
+          timeLimit: Duration(seconds: 25),
         ),
       );
       if (!mounted) return;
@@ -112,6 +112,7 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
         _errorMessage = result.error;
         _offlineBanner = result.offline || result.state == NearbyLoadState.offlineCached;
       });
+      _fitMapToResults(position, result.places);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -128,6 +129,39 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
       CameraUpdate.newLatLngZoom(
         LatLng(position.latitude, position.longitude),
         13.5,
+      ),
+    );
+  }
+
+  bool _looksLikeEmulatorDefault(Position p) {
+    // Classic Android emulator default near Googleplex, Mountain View.
+    return (p.latitude - 37.421998).abs() < 0.02 &&
+        (p.longitude + 122.084).abs() < 0.02;
+  }
+
+  void _fitMapToResults(Position user, List<NearbyPlace> places) {
+    if (_mapController == null) return;
+    if (places.isEmpty) {
+      _animateToUser(user);
+      return;
+    }
+    var minLat = user.latitude;
+    var maxLat = user.latitude;
+    var minLng = user.longitude;
+    var maxLng = user.longitude;
+    for (final p in places.take(12)) {
+      minLat = minLat < p.lat ? minLat : p.lat;
+      maxLat = maxLat > p.lat ? maxLat : p.lat;
+      minLng = minLng < p.lng ? minLng : p.lng;
+      maxLng = maxLng > p.lng ? maxLng : p.lng;
+    }
+    _mapController!.animateCamera(
+      CameraUpdate.newLatLngBounds(
+        LatLngBounds(
+          southwest: LatLng(minLat, minLng),
+          northeast: LatLng(maxLat, maxLng),
+        ),
+        56,
       ),
     );
   }
@@ -303,6 +337,27 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+          if (_currentPosition != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.my_location, size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Searching near ${_currentPosition!.latitude.toStringAsFixed(4)}, '
+                      '${_currentPosition!.longitude.toStringAsFixed(4)}'
+                      '${_looksLikeEmulatorDefault(_currentPosition!) ? ' (emulator default — set a real GPS)' : ''}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           if (showMap)

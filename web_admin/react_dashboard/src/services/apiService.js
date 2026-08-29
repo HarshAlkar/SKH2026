@@ -63,22 +63,33 @@ export const adminApi = {
   users: (params) => unwrap(api.get('/admin/users/', { params })),
   createUser: (body) => unwrap(api.post('/admin/users/', body)),
   patchUser: (id, body) => unwrap(api.patch(`/admin/users/${id}/`, body)),
+  setUserPassword: (id, new_password) =>
+    unwrap(api.post(`/admin/users/${id}/set-password/`, { new_password })),
 
   patients: (params) => unwrap(api.get('/admin/patients/', { params })),
   createPatient: (body) => unwrap(api.post('/admin/patients/', body)),
   patchPatient: (id, body) => unwrap(api.patch(`/admin/patients/${id}/`, body)),
+  setPatientPassword: (id, new_password) =>
+    unwrap(api.post(`/admin/patients/${id}/set-password/`, { new_password })),
 
   doctors: (params) => unwrap(api.get('/admin/doctors/', { params })),
   createDoctor: (body) => unwrap(api.post('/admin/doctors/', body)),
   patchDoctor: (id, body) => unwrap(api.patch(`/admin/doctors/${id}/`, body)),
   approveDoctor: (id) => unwrap(api.post(`/admin/doctors/${id}/approve/`)),
   rejectDoctor: (id, reason) => unwrap(api.post(`/admin/doctors/${id}/reject/`, { reason })),
+  setDoctorPassword: (id, new_password) =>
+    unwrap(api.post(`/admin/doctors/${id}/set-password/`, { new_password })),
 
   ashaWorkers: (params) => unwrap(api.get('/admin/asha-workers/', { params })),
   createAsha: (body) => unwrap(api.post('/admin/asha-workers/', body)),
   patchAsha: (id, body) => unwrap(api.patch(`/admin/asha-workers/${id}/`, body)),
   approveAsha: (id) => unwrap(api.post(`/admin/asha-workers/${id}/approve/`)),
   rejectAsha: (id, reason) => unwrap(api.post(`/admin/asha-workers/${id}/reject/`, { reason })),
+  setAshaPassword: (id, new_password) =>
+    unwrap(api.post(`/admin/asha-workers/${id}/set-password/`, { new_password })),
+  ashaPatients: (id) => unwrap(api.get(`/admin/asha-workers/${id}/patients/`)),
+  assignAshaPatients: (id, patient_ids) =>
+    unwrap(api.post(`/admin/asha-workers/${id}/assign-patients/`, { patient_ids })),
 
   consultations: (params) => unwrap(api.get('/admin/consultations/', { params })),
   patchConsultation: (id, body) => unwrap(api.patch(`/admin/consultations/${id}/`, body)),
@@ -121,6 +132,19 @@ export const adminApi = {
   symptoms: () => unwrap(api.get('/admin/symptoms/')),
   chats: () => unwrap(api.get('/admin/chat/')),
   chatMessages: (id) => unwrap(api.get(`/admin/chat/${id}/messages/`)),
+
+  geminiReportAnalysis: (body) => unwrap(api.post('/ai/admin-report/', body)),
+  geminiChat: (body) => unwrap(api.post('/ai/gemini-chat/', body)),
+
+  blackoutStatus: () => unwrap(api.get('/blackout/status/')),
+  blackoutSnapshot: () => unwrap(api.post('/blackout/snapshot/', {})),
+  blackoutWipe: () => unwrap(api.post('/blackout/wipe/', {})),
+  blackoutRecover: () => unwrap(api.post('/blackout/recover/', {})),
+  blackoutSimulate: () => unwrap(api.post('/blackout/simulate/', {})),
+
+  trustshieldVerify: (claim) =>
+    unwrap(api.post('/trustshield/verify/', { claim, context: 'healthcare' })),
+  trustshieldReports: () => unwrap(api.get('/trustshield/report/')),
 };
 
 export const persistSession = (token, user) => {

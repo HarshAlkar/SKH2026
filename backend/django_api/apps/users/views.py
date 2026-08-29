@@ -12,7 +12,7 @@ from .models import User, OTPVerification
 from .sms import send_otp_sms
 from apps.doctors.models import Doctor, DoctorDocument
 from apps.asha_workers.models import ASHAWorker, ASHADocument
-from apps.patients.models import Patient
+from apps.patients.models import Patient, assign_patient_to_asha
 from apps.inventory.models import MedicalStaffProfile, HealthcareFacility
 from apps.common.authentication import rotate_token
 from apps.common.uploads import validate_image_upload, safe_upload_name
@@ -118,14 +118,21 @@ class UserSerializer(serializers.ModelSerializer):
                 details["documents"] = _document_payload(profile.documents.all(), request)
             return details
         if obj.role == "user" and hasattr(obj, "patient_profile"):
+            profile = obj.patient_profile
+            asha = profile.assigned_asha
+            asha_user = getattr(asha, 'user', None) if asha else None
             return {
-                "patient_id": obj.patient_profile.id,
+                "patient_id": profile.id,
                 "user_id": obj.id,
-                "age": obj.patient_profile.age,
-                "gender": obj.patient_profile.gender,
-                "address": obj.patient_profile.address,
-                "blood_group": obj.patient_profile.blood_group,
-                "medical_history": obj.patient_profile.medical_history,
+                "age": profile.age,
+                "gender": profile.gender,
+                "address": profile.address,
+                "blood_group": profile.blood_group,
+                "medical_history": profile.medical_history,
+                "assigned_asha_id": asha.id if asha else None,
+                "assigned_asha_name": (
+                    (asha_user.name or asha_user.username) if asha_user else None
+                ),
             }
         if obj.role == "medical_staff" and hasattr(obj, "medical_staff_profile"):
             profile = obj.medical_staff_profile
@@ -160,6 +167,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     medical_history = serializers.CharField(required=False, allow_blank=True)
     facility_id = serializers.IntegerField(required=False, allow_null=True)
     designation = serializers.CharField(required=False, allow_blank=True)
+    assigned_asha = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -186,6 +194,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             "medical_history",
             "facility_id",
             "designation",
+            "assigned_asha",
         ]
 
     def validate_phone_number(self, value):
@@ -243,6 +252,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         medical_history = validated_data.pop("medical_history", None)
         facility_id = validated_data.pop("facility_id", None)
         designation = validated_data.pop("designation", None)
+        assigned_asha_id = validated_data.pop("assigned_asha", None)
 
         if not validated_data.get("username"):
             validated_data["username"] = validated_data.get("phone_number")
@@ -293,6 +303,18 @@ class RegisterSerializer(serializers.ModelSerializer):
                 address=user.village or "Not Set",
                 medical_history=(medical_history or "").strip(),
             )
+            patient = user.patient_profile
+            asha = None
+            request = self.context.get("request")
+            if (
+                request is not None
+                and getattr(getattr(request, "user", None), "role", None) == "asha_worker"
+            ):
+                asha = getattr(request.user, "asha_profile", None)
+            elif assigned_asha_id:
+                asha = ASHAWorker.objects.filter(pk=assigned_asha_id).first()
+            if asha:
+                assign_patient_to_asha(patient, asha)
 
         return user
 
@@ -455,13 +477,21 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.action == "get_patients":
             qs = User.objects.filter(role="user")
             if user.role == "asha_worker":
+                asha = getattr(user, "asha_profile", None)
                 village = ""
-                if hasattr(user, "asha_profile") and user.asha_profile:
-                    village = user.asha_profile.assigned_village or user.village or ""
+                if asha is not None:
+                    village = asha.assigned_village or user.village or ""
                 else:
                     village = user.village or ""
+                query = Q()
+                if asha is not None:
+                    query |= Q(patient_profile__assigned_asha=asha)
                 if village:
-                    qs = qs.filter(village__iexact=village)
+                    query |= Q(patient_profile__assigned_asha__isnull=True, village__iexact=village)
+                if query:
+                    qs = qs.filter(query)
+                else:
+                    qs = qs.none()
             return qs.distinct()
         if self.action == "list":
             role = self.request.query_params.get("role")

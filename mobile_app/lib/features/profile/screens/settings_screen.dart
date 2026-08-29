@@ -5,6 +5,7 @@ import '../../../core/config/app_config.dart';
 import '../../../core/emergency_comms/emergency_comms.dart';
 import '../../../core/emergency_comms/emergency_comms_config.dart';
 import '../../../core/emergency_comms/emergency_mode.dart';
+import '../../../core/services/locale_controller.dart';
 import '../../../core/services/settings_store.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/logout_helper.dart';
@@ -34,7 +35,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late EmergencyMode _emergencyMode;
 
   final _store = SettingsStore.instance;
-  String t(String en, String hi) => _store.t(en, hi);
+  String t(String en, String hi, [String? mr]) => _store.t(en, hi, mr);
+
+  Future<void> _changeLanguage(String? code) async {
+    if (code == null) return;
+    await LocaleController.instance.setLanguage(code);
+    if (!mounted) return;
+    setState(() => _language = code);
+  }
 
   @override
   void initState() {
@@ -277,27 +285,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ]),
           const SizedBox(height: 20),
-          _label(t('LANGUAGE', 'भाषा')),
+          _label(t('LANGUAGE', 'भाषा', 'भाषा')),
           _card([
             RadioListTile<String>(
               title: const Text('English'),
               value: 'en',
               groupValue: _language,
-              onChanged: (v) async {
-                if (v == null) return;
-                await _store.setLanguage(v);
-                setState(() => _language = v);
-              },
+              onChanged: (v) => _changeLanguage(v),
             ),
             RadioListTile<String>(
               title: const Text('हिन्दी'),
               value: 'hi',
               groupValue: _language,
-              onChanged: (v) async {
-                if (v == null) return;
-                await _store.setLanguage(v);
-                setState(() => _language = v);
-              },
+              onChanged: (v) => _changeLanguage(v),
+            ),
+            RadioListTile<String>(
+              title: const Text('मराठी'),
+              value: 'mr',
+              groupValue: _language,
+              onChanged: (v) => _changeLanguage(v),
             ),
           ]),
           const SizedBox(height: 20),

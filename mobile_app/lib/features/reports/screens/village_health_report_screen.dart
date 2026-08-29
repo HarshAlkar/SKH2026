@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/api_service.dart';
+import '../../ai_health_chat/services/gemini_health_chat_service.dart';
 import '../../asha_worker/widgets/asha_sidebar.dart';
 import '../widgets/stat_card.dart';
 
@@ -22,6 +23,9 @@ class _VillageHealthReportScreenState extends State<VillageHealthReportScreen> {
   int _totalAlerts = 0;
   int _highRisk = 0;
   List<Map<String, dynamic>> _diseases = [];
+  bool _aiBusy = false;
+  String? _aiReport;
+  String? _aiError;
 
   @override
   void initState() {
@@ -54,10 +58,43 @@ class _VillageHealthReportScreenState extends State<VillageHealthReportScreen> {
         _highRisk = _asInt(summary is Map ? summary['high_risk'] : 0);
         _diseases = diseases;
         _loading = false;
+        _aiReport = null;
+        _aiError = null;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _generateAiReport() async {
+    setState(() {
+      _aiBusy = true;
+      _aiError = null;
+    });
+    try {
+      final report = await GeminiHealthChatService.instance.generateReportAnalysis(
+        reportType: 'village',
+        focus: 'Village health situation for ASHA supervisor',
+        context: {
+          'village': _village,
+          'total_patients': _totalPatients,
+          'total_alerts': _totalAlerts,
+          'high_risk': _highRisk,
+          'diseases': _diseases,
+        },
+      );
+      if (!mounted) return;
+      setState(() {
+        _aiReport = report;
+        _aiBusy = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _aiBusy = false;
+        _aiError = e.toString().replaceFirst('Bad state: ', '');
+      });
     }
   }
 
@@ -225,6 +262,43 @@ class _VillageHealthReportScreenState extends State<VillageHealthReportScreen> {
                                         );
                                       }).toList(),
                                     ),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildSectionContainer(
+                              title: 'AI Analysis (Gemini)',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'Gemini explains the village picture and suggests ASHA actions with evidence.',
+                                    style: TextStyle(color: Colors.grey[600], height: 1.4, fontSize: 13),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  FilledButton.icon(
+                                    onPressed: _aiBusy ? null : _generateAiReport,
+                                    icon: _aiBusy
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                          )
+                                        : const Icon(Icons.auto_awesome),
+                                    label: Text(_aiBusy ? 'Generating…' : 'Generate Gemini report'),
+                                    style: FilledButton.styleFrom(backgroundColor: primaryColor),
+                                  ),
+                                  if (_aiError != null) ...[
+                                    const SizedBox(height: 12),
+                                    Text(_aiError!, style: const TextStyle(color: Color(0xFF9F1239), fontSize: 13)),
+                                  ],
+                                  if (_aiReport != null) ...[
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      _aiReport!,
+                                      style: const TextStyle(height: 1.45, fontSize: 14, color: Color(0xFF1E293B)),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
                           ],
                         ),

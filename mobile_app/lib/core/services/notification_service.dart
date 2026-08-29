@@ -6,6 +6,7 @@ import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import '../../routes/app_routes.dart';
 import '../../main.dart';
+import 'locale_controller.dart';
 import 'settings_store.dart';
 
 class NotificationService {
@@ -283,7 +284,7 @@ class NotificationService {
 
   Future<void> _speak(String text) async {
     try {
-      await flutterTts.setLanguage(SettingsStore.instance.isHindi ? 'hi-IN' : 'en-IN');
+      await flutterTts.setLanguage(LocaleController.instance.ttsLocaleId);
       await flutterTts.setPitch(1.0);
       await flutterTts.setSpeechRate(0.5);
       await flutterTts.speak(text);

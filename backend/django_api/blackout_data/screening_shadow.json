@@ -1,0 +1,3153 @@
+{
+  "saved_at": "2026-08-29T18:57:22.713371+00:00",
+  "reason": "api",
+  "count": 86,
+  "rows": [
+    {
+      "id": 1388,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fever, not eating, skin lesions",
+      "possible_condition": "Fever / systemic illness (screening)",
+      "severity_level": "High",
+      "confidence": 0.57,
+      "advice": "Provide shade and water. Monitor appetite. Consult a veterinarian if fever persists.",
+      "result_json": {
+        "possible_condition": "Fever / systemic illness (screening)",
+        "disease": "Fever / systemic illness (screening)",
+        "severity": "High",
+        "confidence": 0.57,
+        "advice": "Provide shade and water. Monitor appetite. Consult a veterinarian if fever persists.",
+        "disclaimer": "Screening indicates possible risk \u2014 consult a qualified veterinarian. This is not a veterinary diagnosis.",
+        "domain": "ANIMAL",
+        "species": "POULTRY",
+        "top_predictions": [
+          {
+            "disease": "Fever / systemic illness (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Skin / ectoparasite concern (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Reduced appetite / weakness (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ]
+      },
+      "client_id": "animal-1787994602697-5348",
+      "created_at": "2026-08-29T18:51:58.322717+00:00"
+    },
+    {
+      "id": 1389,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, lameness, cough",
+      "possible_condition": "Possible FMD-like signs (screening)",
+      "severity_level": "High",
+      "confidence": 0.57,
+      "advice": "Isolate from other animals. Do not move livestock. Notify veterinarian / AH department.",
+      "result_json": {
+        "possible_condition": "Possible FMD-like signs (screening)",
+        "disease": "Possible FMD-like signs (screening)",
+        "severity": "High",
+        "confidence": 0.57,
+        "advice": "Isolate from other animals. Do not move livestock. Notify veterinarian / AH department.",
+        "disclaimer": "Screening indicates possible risk \u2014 consult a qualified veterinarian. This is not a veterinary diagnosis.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "top_predictions": [
+          {
+            "disease": "Possible FMD-like signs (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Respiratory infection signs (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Reduced appetite / weakness (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ]
+      },
+      "client_id": "animal-1787994697701-3815",
+      "created_at": "2026-08-29T18:51:58.325730+00:00"
+    },
+    {
+      "id": 1390,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "nausea, loss_of_appetite, yellowish_skin, Nausea, Loss of Appetite, Yellowish Skin",
+      "possible_condition": "Hepatitis C",
+      "severity_level": "High",
+      "confidence": 0.6,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Hepatitis C",
+        "severity": "High",
+        "confidence": 0.6,
+        "top_predictions": [
+          {
+            "disease": "Hepatitis C",
+            "confidence": 0.6,
+            "severity": "High"
+          },
+          {
+            "disease": "Chronic cholestasis",
+            "confidence": 0.5,
+            "severity": "Low"
+          },
+          {
+            "disease": "Hepatitis D",
+            "confidence": 0.375,
+            "severity": "High"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788002121213-4335"
+      },
+      "client_id": "human-1788002121213-4335",
+      "created_at": "2026-08-29T18:51:58.326978+00:00"
+    },
+    {
+      "id": 1391,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "high_fever, chest_pain, sweating, High Fever, Chest Pain, Sweating",
+      "possible_condition": "Heart attack",
+      "severity_level": "Critical",
+      "confidence": 0.667,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Heart attack",
+        "severity": "Critical",
+        "confidence": 0.667,
+        "top_predictions": [
+          {
+            "disease": "Heart attack",
+            "confidence": 0.667,
+            "severity": "Critical"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788002280174-3852"
+      },
+      "client_id": "human-1788002280174-3852",
+      "created_at": "2026-08-29T18:51:58.328272+00:00"
+    },
+    {
+      "id": 1392,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fever, diarrhea, mastitis",
+      "possible_condition": "Significant livestock signs (screening)",
+      "severity_level": "High",
+      "confidence": 0.7,
+      "advice": "Isolate if contagious signs. Consult a veterinarian today.",
+      "result_json": {
+        "possible_condition": "Significant livestock signs (screening)",
+        "disease_display": "Significant livestock signs (screening)",
+        "severity": "High",
+        "confidence": 0.7,
+        "advice": "Isolate if contagious signs. Consult a veterinarian today.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "client_id": "animal-1788002413200-8249"
+      },
+      "client_id": "animal-1788002413200-8249",
+      "created_at": "2026-08-29T18:51:58.329525+00:00"
+    },
+    {
+      "id": 1393,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fever, diarrhea, mastitis",
+      "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.57,
+      "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+      "result_json": {
+        "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+        "disease": "Suspected hemorrhagic enteritis (screening)",
+        "severity": "Critical",
+        "confidence": 0.57,
+        "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "top_predictions": [
+          {
+            "disease": "Suspected hemorrhagic enteritis (screening)",
+            "severity": "Critical",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Possible mastitis (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Fever / systemic illness (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "Moderate",
+          "confidence": 0.34,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Suspected hemorrhagic enteritis (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788002412978-7598",
+      "created_at": "2026-08-29T18:51:58.330965+00:00"
+    },
+    {
+      "id": 1394,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fever, diarrhea, mastitis",
+      "possible_condition": "Significant livestock signs (screening)",
+      "severity_level": "High",
+      "confidence": 0.7,
+      "advice": "Isolate if contagious signs. Consult a veterinarian today.",
+      "result_json": {
+        "possible_condition": "Significant livestock signs (screening)",
+        "disease_display": "Significant livestock signs (screening)",
+        "severity": "High",
+        "confidence": 0.7,
+        "advice": "Isolate if contagious signs. Consult a veterinarian today.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "client_id": "animal-1788002572079-5419"
+      },
+      "client_id": "animal-1788002572079-5419",
+      "created_at": "2026-08-29T18:51:58.332349+00:00"
+    },
+    {
+      "id": 1395,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fever, diarrhea, mastitis",
+      "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.57,
+      "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+      "result_json": {
+        "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+        "disease": "Suspected hemorrhagic enteritis (screening)",
+        "severity": "Critical",
+        "confidence": 0.57,
+        "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "top_predictions": [
+          {
+            "disease": "Suspected hemorrhagic enteritis (screening)",
+            "severity": "Critical",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Possible mastitis (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Fever / systemic illness (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "Moderate",
+          "confidence": 0.34,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Suspected hemorrhagic enteritis (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788002572077-2235",
+      "created_at": "2026-08-29T18:51:58.333734+00:00"
+    },
+    {
+      "id": 1396,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "high_fever, cough, chest_pain, High Fever, Cough, Chest Pain",
+      "possible_condition": "GERD",
+      "severity_level": "Moderate",
+      "confidence": 0.4,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "GERD",
+        "severity": "Moderate",
+        "confidence": 0.4,
+        "top_predictions": [
+          {
+            "disease": "GERD",
+            "confidence": 0.4,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788003435862-987"
+      },
+      "client_id": "human-1788003435862-987",
+      "created_at": "2026-08-29T18:51:58.335102+00:00"
+    },
+    {
+      "id": 1397,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fatigue, vomiting, high_fever, Fatigue, Vomiting, High Fever",
+      "possible_condition": "Jaundice",
+      "severity_level": "High",
+      "confidence": 0.429,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Jaundice",
+        "severity": "High",
+        "confidence": 0.429,
+        "top_predictions": [
+          {
+            "disease": "Jaundice",
+            "confidence": 0.429,
+            "severity": "High"
+          },
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788004617709-7187"
+      },
+      "client_id": "human-1788004617709-7187",
+      "created_at": "2026-08-29T18:51:58.336628+00:00"
+    },
+    {
+      "id": 1398,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fatigue, vomiting, high_fever, Fatigue, Vomiting, High Fever",
+      "possible_condition": "Jaundice",
+      "severity_level": "High",
+      "confidence": 0.429,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Jaundice",
+        "severity": "High",
+        "confidence": 0.429,
+        "top_predictions": [
+          {
+            "disease": "Jaundice",
+            "confidence": 0.429,
+            "severity": "High"
+          },
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788004621084-980"
+      },
+      "client_id": "human-1788004621084-980",
+      "created_at": "2026-08-29T18:51:58.338119+00:00"
+    },
+    {
+      "id": 1399,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fatigue, vomiting, chills, yellowing_of_eyes, Fatigue, Vomiting, Chills, Yellowing of Eyes",
+      "possible_condition": "Hepatitis C",
+      "severity_level": "High",
+      "confidence": 0.4,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Hepatitis C",
+        "severity": "High",
+        "confidence": 0.4,
+        "top_predictions": [
+          {
+            "disease": "Hepatitis C",
+            "confidence": 0.4,
+            "severity": "High"
+          },
+          {
+            "disease": "Hepatitis D",
+            "confidence": 0.375,
+            "severity": "High"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005089646-5021"
+      },
+      "client_id": "human-1788005089646-5021",
+      "created_at": "2026-08-29T18:51:58.339453+00:00"
+    },
+    {
+      "id": 1400,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "joint_pain, itching, sweating, dark_urine, Joint Pain, Itching, Sweating, Dark Urine",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Undetermined",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005106196-1860"
+      },
+      "client_id": "human-1788005106196-1860",
+      "created_at": "2026-08-29T18:51:58.340659+00:00"
+    },
+    {
+      "id": 1401,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, malaise, skin_rash, Cough, Malaise, Skin Rash",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Undetermined",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005124162-9317"
+      },
+      "client_id": "human-1788005124162-9317",
+      "created_at": "2026-08-29T18:51:58.341543+00:00"
+    },
+    {
+      "id": 1402,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, malaise, skin_rash, vomiting, fatigue, high_fever, loss_of_appetite, Cough, Malaise, Skin Rash, Vomiting, Fatigue, High Fever, Loss of Appetite",
+      "possible_condition": "Bronchial Asthma",
+      "severity_level": "Moderate",
+      "confidence": 0.6,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Bronchial Asthma",
+        "severity": "Moderate",
+        "confidence": 0.6,
+        "top_predictions": [
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.6,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Chicken pox",
+            "confidence": 0.5,
+            "severity": "Low"
+          },
+          {
+            "disease": "Impetigo",
+            "confidence": 0.5,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005131585-7461"
+      },
+      "client_id": "human-1788005131585-7461",
+      "created_at": "2026-08-29T18:51:58.342624+00:00"
+    },
+    {
+      "id": 1403,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, dark_urine, sweating, itching, Cough, Dark Urine, Sweating, Itching",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Undetermined",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005141884-2127"
+      },
+      "client_id": "human-1788005141884-2127",
+      "created_at": "2026-08-29T18:51:58.343591+00:00"
+    },
+    {
+      "id": 1404,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "abdominal_pain, yellowing_of_eyes, yellowish_skin, Abdominal Pain, Yellowing of Eyes, Yellowish Skin",
+      "possible_condition": "Chronic cholestasis",
+      "severity_level": "Low",
+      "confidence": 0.5,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Chronic cholestasis",
+        "severity": "Low",
+        "confidence": 0.5,
+        "top_predictions": [
+          {
+            "disease": "Chronic cholestasis",
+            "confidence": 0.5,
+            "severity": "Low"
+          },
+          {
+            "disease": "Hepatitis C",
+            "confidence": 0.4,
+            "severity": "High"
+          },
+          {
+            "disease": "Hepatitis D",
+            "confidence": 0.375,
+            "severity": "High"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005150549-1671"
+      },
+      "client_id": "human-1788005150549-1671",
+      "created_at": "2026-08-29T18:51:58.344726+00:00"
+    },
+    {
+      "id": 1405,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "itching, joint_pain, dark_urine, chest_pain, Itching, Joint Pain, Dark Urine, Chest Pain",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Undetermined",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005161890-6628"
+      },
+      "client_id": "human-1788005161890-6628",
+      "created_at": "2026-08-29T18:51:58.345722+00:00"
+    },
+    {
+      "id": 1406,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, dark_urine, itching, sweating, Cough, Dark Urine, Itching, Sweating",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Undetermined",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005171083-6878"
+      },
+      "client_id": "human-1788005171083-6878",
+      "created_at": "2026-08-29T18:51:58.346745+00:00"
+    },
+    {
+      "id": 1407,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "itching, skin_rash",
+      "possible_condition": "Fungal infection",
+      "severity_level": "Moderate",
+      "confidence": 0.667,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Fungal infection",
+        "severity": "Moderate",
+        "confidence": 0.667,
+        "top_predictions": [
+          {
+            "disease": "Fungal infection",
+            "confidence": 0.667,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Drug Reaction",
+            "confidence": 0.5,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005621525-4584"
+      },
+      "client_id": "human-1788005621525-4584",
+      "created_at": "2026-08-29T18:51:58.347904+00:00"
+    },
+    {
+      "id": 1408,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "skin_peeling, yellowing_of_eyes",
+      "possible_condition": "Undetermined skin condition",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Undetermined skin condition",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined skin condition",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005653404-5961"
+      },
+      "client_id": "human-1788005653404-5961",
+      "created_at": "2026-08-29T18:51:58.348883+00:00"
+    },
+    {
+      "id": 1409,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "skin_peeling",
+      "possible_condition": "Undetermined skin condition",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Undetermined skin condition",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined skin condition",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005657761-2378"
+      },
+      "client_id": "human-1788005657761-2378",
+      "created_at": "2026-08-29T18:51:58.350151+00:00"
+    },
+    {
+      "id": 1410,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "skin_peeling, patches_in_throat",
+      "possible_condition": "Undetermined skin condition",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Undetermined skin condition",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined skin condition",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005661412-3157"
+      },
+      "client_id": "human-1788005661412-3157",
+      "created_at": "2026-08-29T18:51:58.351362+00:00"
+    },
+    {
+      "id": 1411,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "patches_in_throat, inflammatory_nails",
+      "possible_condition": "Undetermined skin condition",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Undetermined skin condition",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined skin condition",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005664947-5608"
+      },
+      "client_id": "human-1788005664947-5608",
+      "created_at": "2026-08-29T18:51:58.352721+00:00"
+    },
+    {
+      "id": 1412,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "patches_in_throat, inflammatory_nails, small_dents_in_nails",
+      "possible_condition": "Psoriasis",
+      "severity_level": "Moderate",
+      "confidence": 0.4,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Psoriasis",
+        "severity": "Moderate",
+        "confidence": 0.4,
+        "top_predictions": [
+          {
+            "disease": "Psoriasis",
+            "confidence": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005667156-9937"
+      },
+      "client_id": "human-1788005667156-9937",
+      "created_at": "2026-08-29T18:51:58.354046+00:00"
+    },
+    {
+      "id": 1413,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "inflammatory_nails, small_dents_in_nails",
+      "possible_condition": "Psoriasis",
+      "severity_level": "Moderate",
+      "confidence": 0.4,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Psoriasis",
+        "severity": "Moderate",
+        "confidence": 0.4,
+        "top_predictions": [
+          {
+            "disease": "Psoriasis",
+            "confidence": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005670762-6770"
+      },
+      "client_id": "human-1788005670762-6770",
+      "created_at": "2026-08-29T18:51:58.355475+00:00"
+    },
+    {
+      "id": 1414,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "inflammatory_nails, small_dents_in_nails, patches_in_throat, silver_like_dusting",
+      "possible_condition": "Psoriasis",
+      "severity_level": "Moderate",
+      "confidence": 0.6,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Psoriasis",
+        "severity": "Moderate",
+        "confidence": 0.6,
+        "top_predictions": [
+          {
+            "disease": "Psoriasis",
+            "confidence": 0.6,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005675505-6964"
+      },
+      "client_id": "human-1788005675505-6964",
+      "created_at": "2026-08-29T18:51:58.357108+00:00"
+    },
+    {
+      "id": 1415,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "inflammatory_nails, small_dents_in_nails, patches_in_throat, silver_like_dusting, skin_peeling",
+      "possible_condition": "Psoriasis",
+      "severity_level": "Moderate",
+      "confidence": 0.8,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Psoriasis",
+        "severity": "Moderate",
+        "confidence": 0.8,
+        "top_predictions": [
+          {
+            "disease": "Psoriasis",
+            "confidence": 0.8,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005679027-993"
+      },
+      "client_id": "human-1788005679027-993",
+      "created_at": "2026-08-29T18:51:58.358248+00:00"
+    },
+    {
+      "id": 1416,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "inflammatory_nails, small_dents_in_nails, patches_in_throat, silver_like_dusting",
+      "possible_condition": "Psoriasis",
+      "severity_level": "Moderate",
+      "confidence": 0.6,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Psoriasis",
+        "severity": "Moderate",
+        "confidence": 0.6,
+        "top_predictions": [
+          {
+            "disease": "Psoriasis",
+            "confidence": 0.6,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005682976-8346"
+      },
+      "client_id": "human-1788005682976-8346",
+      "created_at": "2026-08-29T18:51:58.359318+00:00"
+    },
+    {
+      "id": 1417,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "inflammatory_nails, small_dents_in_nails, patches_in_throat",
+      "possible_condition": "Psoriasis",
+      "severity_level": "Moderate",
+      "confidence": 0.4,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Psoriasis",
+        "severity": "Moderate",
+        "confidence": 0.4,
+        "top_predictions": [
+          {
+            "disease": "Psoriasis",
+            "confidence": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005685960-8614"
+      },
+      "client_id": "human-1788005685960-8614",
+      "created_at": "2026-08-29T18:51:58.360701+00:00"
+    },
+    {
+      "id": 1418,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "inflammatory_nails, patches_in_throat",
+      "possible_condition": "Undetermined skin condition",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Undetermined skin condition",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined skin condition",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005689362-5242"
+      },
+      "client_id": "human-1788005689362-5242",
+      "created_at": "2026-08-29T18:51:58.361917+00:00"
+    },
+    {
+      "id": 1419,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "patches_in_throat",
+      "possible_condition": "Undetermined skin condition",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Undetermined skin condition",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined skin condition",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005695051-5067"
+      },
+      "client_id": "human-1788005695051-5067",
+      "created_at": "2026-08-29T18:51:58.362979+00:00"
+    },
+    {
+      "id": 1420,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "patches_in_throat, pus_filled_pimples, blister",
+      "possible_condition": "Undetermined skin condition",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Undetermined skin condition",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined skin condition",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005699636-8703"
+      },
+      "client_id": "human-1788005699636-8703",
+      "created_at": "2026-08-29T18:51:58.364159+00:00"
+    },
+    {
+      "id": 1421,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "pus_filled_pimples, blister",
+      "possible_condition": "Undetermined skin condition",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Undetermined skin condition",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined skin condition",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005702907-4101"
+      },
+      "client_id": "human-1788005702907-4101",
+      "created_at": "2026-08-29T18:51:58.365535+00:00"
+    },
+    {
+      "id": 1422,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "pus_filled_pimples, blister, yellowish_skin",
+      "possible_condition": "Undetermined skin condition",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Undetermined skin condition",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined skin condition",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005753153-590"
+      },
+      "client_id": "human-1788005753153-590",
+      "created_at": "2026-08-29T18:51:58.366700+00:00"
+    },
+    {
+      "id": 1423,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "blister, yellowish_skin",
+      "possible_condition": "Undetermined skin condition",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Undetermined skin condition",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined skin condition",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005757442-2896"
+      },
+      "client_id": "human-1788005757442-2896",
+      "created_at": "2026-08-29T18:51:58.367771+00:00"
+    },
+    {
+      "id": 1424,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "yellowish_skin, yellowing_of_eyes",
+      "possible_condition": "Undetermined skin condition",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Undetermined skin condition",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined skin condition",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005762384-8781"
+      },
+      "client_id": "human-1788005762384-8781",
+      "created_at": "2026-08-29T18:51:58.369301+00:00"
+    },
+    {
+      "id": 1425,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "yellowish_skin, yellowing_of_eyes, itching, nodal_skin_eruptions",
+      "possible_condition": "Fungal infection",
+      "severity_level": "Moderate",
+      "confidence": 0.667,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Fungal infection",
+        "severity": "Moderate",
+        "confidence": 0.667,
+        "top_predictions": [
+          {
+            "disease": "Fungal infection",
+            "confidence": 0.667,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005767625-5510"
+      },
+      "client_id": "human-1788005767625-5510",
+      "created_at": "2026-08-29T18:51:58.370246+00:00"
+    },
+    {
+      "id": 1426,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "yellowish_skin, itching, nodal_skin_eruptions, dischromic_patches",
+      "possible_condition": "Fungal infection",
+      "severity_level": "Moderate",
+      "confidence": 1.0,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Fungal infection",
+        "severity": "Moderate",
+        "confidence": 1.0,
+        "top_predictions": [
+          {
+            "disease": "Fungal infection",
+            "confidence": 1.0,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788005776453-5532"
+      },
+      "client_id": "human-1788005776453-5532",
+      "created_at": "2026-08-29T18:51:58.371106+00:00"
+    },
+    {
+      "id": 1427,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fatigue, vomiting, Fatigue, Vomiting",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Undetermined",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788006196503-9261"
+      },
+      "client_id": "human-1788006196503-9261",
+      "created_at": "2026-08-29T18:51:58.372060+00:00"
+    },
+    {
+      "id": 1428,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "high_fever, vomiting, nausea, High Fever, Vomiting, Nausea",
+      "possible_condition": "Malaria",
+      "severity_level": "High",
+      "confidence": 0.429,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Malaria",
+        "severity": "High",
+        "confidence": 0.429,
+        "top_predictions": [
+          {
+            "disease": "Malaria",
+            "confidence": 0.429,
+            "severity": "High"
+          },
+          {
+            "disease": "(vertigo) Paroymsal  Positional Vertigo",
+            "confidence": 0.4,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788006267062-8450"
+      },
+      "client_id": "human-1788006267062-8450",
+      "created_at": "2026-08-29T18:51:58.373008+00:00"
+    },
+    {
+      "id": 1429,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fatigue, vomiting, high_fever, Fatigue, Vomiting, High Fever",
+      "possible_condition": "Jaundice",
+      "severity_level": "High",
+      "confidence": 0.429,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Jaundice",
+        "severity": "High",
+        "confidence": 0.429,
+        "top_predictions": [
+          {
+            "disease": "Jaundice",
+            "confidence": 0.429,
+            "severity": "High"
+          },
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788006321011-6582"
+      },
+      "client_id": "human-1788006321011-6582",
+      "created_at": "2026-08-29T18:51:58.374126+00:00"
+    },
+    {
+      "id": 1430,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "vomiting, high_fever, nausea, Vomiting, High Fever, Nausea",
+      "possible_condition": "Malaria",
+      "severity_level": "High",
+      "confidence": 0.429,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Malaria",
+        "severity": "High",
+        "confidence": 0.429,
+        "top_predictions": [
+          {
+            "disease": "Malaria",
+            "confidence": 0.429,
+            "severity": "High"
+          },
+          {
+            "disease": "(vertigo) Paroymsal  Positional Vertigo",
+            "confidence": 0.4,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788011556376-5713"
+      },
+      "client_id": "human-1788011556376-5713",
+      "created_at": "2026-08-29T18:51:58.374927+00:00"
+    },
+    {
+      "id": 1431,
+      "domain": "ANIMAL",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fever, not eating, lameness",
+      "possible_condition": "Significant livestock signs (screening)",
+      "severity_level": "High",
+      "confidence": 0.7,
+      "advice": "Isolate if contagious signs. Consult a veterinarian today.",
+      "result_json": {
+        "possible_condition": "Significant livestock signs (screening)",
+        "disease_display": "Significant livestock signs (screening)",
+        "severity": "High",
+        "confidence": 0.7,
+        "advice": "Isolate if contagious signs. Consult a veterinarian today.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "client_id": "animal-1788011644126-5829"
+      },
+      "client_id": "animal-1788011644126-5829",
+      "created_at": "2026-08-29T18:51:58.375935+00:00"
+    },
+    {
+      "id": 1432,
+      "domain": "ANIMAL",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fever, not eating, lameness",
+      "possible_condition": "Possible FMD-like signs (screening)",
+      "severity_level": "High",
+      "confidence": 0.57,
+      "advice": "Isolate from other animals. Do not move livestock. Notify veterinarian / AH department.",
+      "result_json": {
+        "possible_condition": "Possible FMD-like signs (screening)",
+        "disease": "Possible FMD-like signs (screening)",
+        "severity": "High",
+        "confidence": 0.57,
+        "advice": "Isolate from other animals. Do not move livestock. Notify veterinarian / AH department.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "top_predictions": [
+          {
+            "disease": "Possible FMD-like signs (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Fever / systemic illness (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Reduced appetite / weakness (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Digestive / GI illness signs",
+          "severity": "Moderate",
+          "confidence": 0.315,
+          "family": "Gastrointestinal"
+        },
+        "message": "Livestock screening indicates elevated risk for Possible FMD-like signs (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788011644117-535",
+      "created_at": "2026-08-29T18:51:58.376937+00:00"
+    },
+    {
+      "id": 1433,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "vomiting, fever, 16 day vomiting",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Undetermined",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788016587750-7518"
+      },
+      "client_id": "human-1788016587750-7518",
+      "created_at": "2026-08-29T18:51:58.377929+00:00"
+    },
+    {
+      "id": 1434,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "she is not eating anything",
+      "possible_condition": "Non-specific livestock signs (screening)",
+      "severity_level": "Low",
+      "confidence": 0.35,
+      "advice": "Monitor feed, water, and activity. Escalate to a veterinarian if signs worsen.",
+      "result_json": {
+        "possible_condition": "Non-specific livestock signs (screening)",
+        "disease_display": "Non-specific livestock signs (screening)",
+        "severity": "Low",
+        "confidence": 0.35,
+        "advice": "Monitor feed, water, and activity. Escalate to a veterinarian if signs worsen.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "source": "rules_local",
+        "client_id": "animal-1788016811572-1811"
+      },
+      "client_id": "animal-1788016811572-1811",
+      "created_at": "2026-08-29T18:51:58.378866+00:00"
+    },
+    {
+      "id": 1435,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "she is not eating anything",
+      "possible_condition": "Non-specific illness signs",
+      "severity_level": "Moderate",
+      "confidence": 0.265,
+      "advice": "Improve husbandry (shade, water, hygiene). Seek vet advice if worsening.",
+      "result_json": {
+        "possible_condition": "Non-specific illness signs",
+        "disease": "Non-specific illness signs",
+        "severity": "Moderate",
+        "confidence": 0.265,
+        "advice": "Improve husbandry (shade, water, hygiene). Seek vet advice if worsening.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "top_predictions": [
+          {
+            "disease": "Non-specific illness signs",
+            "severity": "Moderate",
+            "confidence": 0.265
+          },
+          {
+            "disease": "Digestive / GI illness signs",
+            "severity": "Moderate",
+            "confidence": 0.235
+          },
+          {
+            "disease": "Udder / mastitis concern",
+            "severity": "High",
+            "confidence": 0.225
+          }
+        ],
+        "family": "Other",
+        "source": "livestock_ml",
+        "message": "Livestock screening indicates elevated risk for Non-specific illness signs. This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788016811499-3439",
+      "created_at": "2026-08-29T18:51:58.379834+00:00"
+    },
+    {
+      "id": 1436,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "she is not eating anything, fever, cough",
+      "possible_condition": "Significant livestock signs (screening)",
+      "severity_level": "High",
+      "confidence": 0.7,
+      "advice": "Isolate if contagious signs. Consult a veterinarian today.",
+      "result_json": {
+        "possible_condition": "Significant livestock signs (screening)",
+        "disease_display": "Significant livestock signs (screening)",
+        "severity": "High",
+        "confidence": 0.7,
+        "advice": "Isolate if contagious signs. Consult a veterinarian today.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "source": "rules_local",
+        "client_id": "animal-1788016859827-8476"
+      },
+      "client_id": "animal-1788016859827-8476",
+      "created_at": "2026-08-29T18:51:58.380775+00:00"
+    },
+    {
+      "id": 1437,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "she is not eating anything, fever, cough",
+      "possible_condition": "Fever / systemic illness (screening)",
+      "severity_level": "High",
+      "confidence": 0.57,
+      "advice": "Provide shade and water. Monitor appetite. Consult a veterinarian if fever persists.",
+      "result_json": {
+        "possible_condition": "Fever / systemic illness (screening)",
+        "disease": "Fever / systemic illness (screening)",
+        "severity": "High",
+        "confidence": 0.57,
+        "advice": "Provide shade and water. Monitor appetite. Consult a veterinarian if fever persists.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "top_predictions": [
+          {
+            "disease": "Fever / systemic illness (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Respiratory infection signs (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Reduced appetite / weakness (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "Moderate",
+          "confidence": 0.27,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Fever / systemic illness (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788016859827-812",
+      "created_at": "2026-08-29T18:51:58.381762+00:00"
+    },
+    {
+      "id": 1438,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "itching, skin_rash",
+      "possible_condition": "Fungal infection",
+      "severity_level": "Moderate",
+      "confidence": 0.622,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Fungal infection",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 0.622,
+        "top_predictions": [
+          {
+            "disease": "Fungal infection",
+            "confidence": 0.622,
+            "match_coverage": 0.667,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Drug Reaction",
+            "confidence": 0.378,
+            "match_coverage": 0.5,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "score_type": "symptom_match_fallback",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788017120404-2515"
+      },
+      "client_id": "human-1788017120404-2515",
+      "created_at": "2026-08-29T18:51:58.382716+00:00"
+    },
+    {
+      "id": 1439,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fatigue, high_fever, loss_of_appetite, Fatigue, High Fever, Loss of Appetite",
+      "possible_condition": "Bronchial Asthma",
+      "severity_level": "Moderate",
+      "confidence": 0.5,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Bronchial Asthma",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 0.5,
+        "top_predictions": [
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.5,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Hepatitis C",
+            "confidence": 0.5,
+            "match_coverage": 0.4,
+            "severity": "High"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788017868519-9908"
+      },
+      "client_id": "human-1788017868519-9908",
+      "created_at": "2026-08-29T18:51:58.383709+00:00"
+    },
+    {
+      "id": 1440,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fatigue, vomiting, high_fever, Fatigue, Vomiting, High Fever",
+      "possible_condition": "Jaundice",
+      "severity_level": "High",
+      "confidence": 0.521,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Jaundice",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "High",
+        "confidence": 0.521,
+        "top_predictions": [
+          {
+            "disease": "Jaundice",
+            "confidence": 0.521,
+            "match_coverage": 0.429,
+            "severity": "High"
+          },
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.479,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788017940013-6293"
+      },
+      "client_id": "human-1788017940013-6293",
+      "created_at": "2026-08-29T18:51:58.384936+00:00"
+    },
+    {
+      "id": 1441,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "nausea, loss_of_appetite, headache, chest_pain, Nausea, Loss of Appetite, Headache, Chest Pain",
+      "possible_condition": "Hypertension",
+      "severity_level": "Moderate",
+      "confidence": 0.403,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Hypertension",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 0.403,
+        "top_predictions": [
+          {
+            "disease": "Hypertension",
+            "confidence": 0.403,
+            "match_coverage": 0.5,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Hepatitis C",
+            "confidence": 0.299,
+            "match_coverage": 0.4,
+            "severity": "High"
+          },
+          {
+            "disease": "(vertigo) Paroymsal  Positional Vertigo",
+            "confidence": 0.299,
+            "match_coverage": 0.4,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788017952948-4134"
+      },
+      "client_id": "human-1788017952948-4134",
+      "created_at": "2026-08-29T18:51:58.386254+00:00"
+    },
+    {
+      "id": 1442,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "chest_pain, Chest Pain",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Undetermined",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788017967537-2615"
+      },
+      "client_id": "human-1788017967537-2615",
+      "created_at": "2026-08-29T18:51:58.387430+00:00"
+    },
+    {
+      "id": 1443,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "chest_pain, vomiting, Chest Pain. fever, vomiting",
+      "possible_condition": "Heart attack",
+      "severity_level": "Critical",
+      "confidence": 0.69,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Heart attack",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Critical",
+        "confidence": 0.69,
+        "top_predictions": [
+          {
+            "disease": "Heart attack",
+            "confidence": 0.69,
+            "match_coverage": 0.667,
+            "severity": "Critical"
+          },
+          {
+            "disease": "GERD",
+            "confidence": 0.31,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788018045194-2757"
+      },
+      "client_id": "human-1788018045194-2757",
+      "created_at": "2026-08-29T18:51:58.388309+00:00"
+    },
+    {
+      "id": 1444,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "high_fever, headache, High Fever, Headache",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Undetermined",
+        "severity": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788018074351-9300"
+      },
+      "client_id": "human-1788018074351-9300",
+      "created_at": "2026-08-29T18:51:58.389362+00:00"
+    },
+    {
+      "id": 1445,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "high_fever, headache, vomiting, High Fever, Headache, Vomiting",
+      "possible_condition": "Paralysis (brain hemorrhage)",
+      "severity_level": "Critical",
+      "confidence": 0.516,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Paralysis (brain hemorrhage)",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Critical",
+        "confidence": 0.516,
+        "top_predictions": [
+          {
+            "disease": "Paralysis (brain hemorrhage)",
+            "confidence": 0.516,
+            "match_coverage": 0.667,
+            "severity": "Critical"
+          },
+          {
+            "disease": "Malaria",
+            "confidence": 0.252,
+            "match_coverage": 0.429,
+            "severity": "High"
+          },
+          {
+            "disease": "(vertigo) Paroymsal  Positional Vertigo",
+            "confidence": 0.232,
+            "match_coverage": 0.4,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788018091063-5590"
+      },
+      "client_id": "human-1788018091063-5590",
+      "created_at": "2026-08-29T18:51:58.390655+00:00"
+    },
+    {
+      "id": 1446,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fever",
+      "possible_condition": "Significant livestock signs (screening)",
+      "severity_level": "High",
+      "confidence": 0.7,
+      "advice": "Isolate if contagious signs. Consult a veterinarian today.",
+      "result_json": {
+        "possible_condition": "Significant livestock signs (screening)",
+        "disease_display": "Significant livestock signs (screening)",
+        "severity": "High",
+        "confidence": 0.7,
+        "advice": "Isolate if contagious signs. Consult a veterinarian today.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "source": "rules_local",
+        "client_id": "animal-1788021972276-4848"
+      },
+      "client_id": "animal-1788021972276-4848",
+      "created_at": "2026-08-29T18:51:58.391648+00:00"
+    },
+    {
+      "id": 1447,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fever",
+      "possible_condition": "Fever / systemic illness (screening)",
+      "severity_level": "High",
+      "confidence": 0.57,
+      "advice": "Provide shade and water. Monitor appetite. Consult a veterinarian if fever persists.",
+      "result_json": {
+        "possible_condition": "Fever / systemic illness (screening)",
+        "disease": "Fever / systemic illness (screening)",
+        "severity": "High",
+        "confidence": 0.57,
+        "advice": "Provide shade and water. Monitor appetite. Consult a veterinarian if fever persists.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "top_predictions": [
+          {
+            "disease": "Fever / systemic illness (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "Moderate",
+          "confidence": 0.275,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Fever / systemic illness (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788021972206-9170",
+      "created_at": "2026-08-29T18:51:58.392795+00:00"
+    },
+    {
+      "id": 1448,
+      "domain": "HUMAN",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fatigue, vomiting, high_fever, Fatigue, Vomiting. fever, vomiting have from w2 days",
+      "possible_condition": "Jaundice",
+      "severity_level": "High",
+      "confidence": 0.521,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Jaundice",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "High",
+        "confidence": 0.521,
+        "top_predictions": [
+          {
+            "disease": "Jaundice",
+            "confidence": 0.521,
+            "match_coverage": 0.429,
+            "severity": "High"
+          },
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.479,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788022329702-1685"
+      },
+      "client_id": "human-1788022329702-1685",
+      "created_at": "2026-08-29T18:51:58.393673+00:00"
+    },
+    {
+      "id": 1449,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "vomiting, headache, chest_pain, Vomiting, Headache, Chest Pain",
+      "possible_condition": "Paralysis (brain hemorrhage)",
+      "severity_level": "Critical",
+      "confidence": 0.285,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Paralysis (brain hemorrhage)",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Critical",
+        "confidence": 0.285,
+        "top_predictions": [
+          {
+            "disease": "Paralysis (brain hemorrhage)",
+            "confidence": 0.285,
+            "match_coverage": 0.667,
+            "severity": "Critical"
+          },
+          {
+            "disease": "Heart attack",
+            "confidence": 0.285,
+            "match_coverage": 0.667,
+            "severity": "Critical"
+          },
+          {
+            "disease": "Hypertension",
+            "confidence": 0.173,
+            "match_coverage": 0.5,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788025731481-7103"
+      },
+      "client_id": "human-1788025731481-7103",
+      "created_at": "2026-08-29T18:51:58.394545+00:00"
+    },
+    {
+      "id": 1450,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, difficulty breathing, milk drop, bloody diarrhea",
+      "possible_condition": "Urgent livestock concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.8,
+      "advice": "Isolate animal and contact a veterinary specialist promptly.",
+      "result_json": {
+        "possible_condition": "Urgent livestock concern (screening)",
+        "disease_display": "Urgent livestock concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.8,
+        "advice": "Isolate animal and contact a veterinary specialist promptly.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "source": "rules_local",
+        "client_id": "animal-1788027752541-7736"
+      },
+      "client_id": "animal-1788027752541-7736",
+      "created_at": "2026-08-29T18:51:58.395926+00:00"
+    },
+    {
+      "id": 1451,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, difficulty breathing, milk drop, bloody diarrhea",
+      "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.69,
+      "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+      "result_json": {
+        "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+        "disease": "Suspected hemorrhagic enteritis (screening)",
+        "severity": "Critical",
+        "confidence": 0.69,
+        "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "top_predictions": [
+          {
+            "disease": "Suspected hemorrhagic enteritis (screening)",
+            "severity": "Critical",
+            "confidence": 0.69
+          },
+          {
+            "disease": "Respiratory distress (screening)",
+            "severity": "Critical",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Digestive upset (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "High",
+          "confidence": 0.325,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Suspected hemorrhagic enteritis (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788027752118-8791",
+      "created_at": "2026-08-29T18:51:58.397334+00:00"
+    },
+    {
+      "id": 1452,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, difficulty breathing, milk drop, bloody diarrhea",
+      "possible_condition": "Urgent livestock concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.8,
+      "advice": "Isolate animal and contact a veterinary specialist promptly.",
+      "result_json": {
+        "possible_condition": "Urgent livestock concern (screening)",
+        "disease_display": "Urgent livestock concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.8,
+        "advice": "Isolate animal and contact a veterinary specialist promptly.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "source": "rules_local",
+        "client_id": "animal-1788028078608-9158"
+      },
+      "client_id": "animal-1788028078608-9158",
+      "created_at": "2026-08-29T18:51:58.398729+00:00"
+    },
+    {
+      "id": 1453,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, difficulty breathing, milk drop, bloody diarrhea",
+      "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.69,
+      "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+      "result_json": {
+        "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+        "disease": "Suspected hemorrhagic enteritis (screening)",
+        "severity": "Critical",
+        "confidence": 0.69,
+        "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "top_predictions": [
+          {
+            "disease": "Suspected hemorrhagic enteritis (screening)",
+            "severity": "Critical",
+            "confidence": 0.69
+          },
+          {
+            "disease": "Respiratory distress (screening)",
+            "severity": "Critical",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Digestive upset (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "High",
+          "confidence": 0.325,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Suspected hemorrhagic enteritis (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788028078601-3960",
+      "created_at": "2026-08-29T18:51:58.400302+00:00"
+    },
+    {
+      "id": 1454,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, difficulty breathing, milk drop, bloody diarrhea",
+      "possible_condition": "Urgent livestock concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.8,
+      "advice": "Isolate animal and contact a veterinary specialist promptly.",
+      "result_json": {
+        "possible_condition": "Urgent livestock concern (screening)",
+        "disease_display": "Urgent livestock concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.8,
+        "advice": "Isolate animal and contact a veterinary specialist promptly.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "source": "rules_local",
+        "client_id": "animal-1788028087992-9916"
+      },
+      "client_id": "animal-1788028087992-9916",
+      "created_at": "2026-08-29T18:51:58.401480+00:00"
+    },
+    {
+      "id": 1455,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, difficulty breathing, milk drop, bloody diarrhea",
+      "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.69,
+      "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+      "result_json": {
+        "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+        "disease": "Suspected hemorrhagic enteritis (screening)",
+        "severity": "Critical",
+        "confidence": 0.69,
+        "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "top_predictions": [
+          {
+            "disease": "Suspected hemorrhagic enteritis (screening)",
+            "severity": "Critical",
+            "confidence": 0.69
+          },
+          {
+            "disease": "Respiratory distress (screening)",
+            "severity": "Critical",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Digestive upset (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "High",
+          "confidence": 0.325,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Suspected hemorrhagic enteritis (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788028087992-4431",
+      "created_at": "2026-08-29T18:51:58.402681+00:00"
+    },
+    {
+      "id": 1456,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, difficulty breathing, milk drop, bloody diarrhea",
+      "possible_condition": "Urgent livestock concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.8,
+      "advice": "Isolate animal and contact a veterinary specialist promptly.",
+      "result_json": {
+        "possible_condition": "Urgent livestock concern (screening)",
+        "disease_display": "Urgent livestock concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.8,
+        "advice": "Isolate animal and contact a veterinary specialist promptly.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "source": "rules_local",
+        "client_id": "animal-1788028104605-9031"
+      },
+      "client_id": "animal-1788028104605-9031",
+      "created_at": "2026-08-29T18:51:58.403769+00:00"
+    },
+    {
+      "id": 1457,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, difficulty breathing, milk drop, bloody diarrhea",
+      "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.69,
+      "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+      "result_json": {
+        "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+        "disease": "Suspected hemorrhagic enteritis (screening)",
+        "severity": "Critical",
+        "confidence": 0.69,
+        "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "top_predictions": [
+          {
+            "disease": "Suspected hemorrhagic enteritis (screening)",
+            "severity": "Critical",
+            "confidence": 0.69
+          },
+          {
+            "disease": "Respiratory distress (screening)",
+            "severity": "Critical",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Digestive upset (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "High",
+          "confidence": 0.325,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Suspected hemorrhagic enteritis (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788028104604-6840",
+      "created_at": "2026-08-29T18:51:58.404696+00:00"
+    },
+    {
+      "id": 1458,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, weakness, gasping, bloody diarrhea, mastitis",
+      "possible_condition": "Urgent livestock concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.8,
+      "advice": "Isolate animal and contact a veterinary specialist promptly.",
+      "result_json": {
+        "possible_condition": "Urgent livestock concern (screening)",
+        "disease_display": "Urgent livestock concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.8,
+        "advice": "Isolate animal and contact a veterinary specialist promptly.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "source": "rules_local",
+        "client_id": "animal-1788028590521-2396"
+      },
+      "client_id": "animal-1788028590521-2396",
+      "created_at": "2026-08-29T18:51:58.405655+00:00"
+    },
+    {
+      "id": 1459,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, weakness, gasping, bloody diarrhea, mastitis",
+      "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.69,
+      "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+      "result_json": {
+        "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+        "disease": "Suspected hemorrhagic enteritis (screening)",
+        "severity": "Critical",
+        "confidence": 0.69,
+        "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "top_predictions": [
+          {
+            "disease": "Suspected hemorrhagic enteritis (screening)",
+            "severity": "Critical",
+            "confidence": 0.69
+          },
+          {
+            "disease": "Respiratory distress (screening)",
+            "severity": "Critical",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Possible mastitis (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "High",
+          "confidence": 0.325,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Suspected hemorrhagic enteritis (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788028590135-2048",
+      "created_at": "2026-08-29T18:51:58.406747+00:00"
+    },
+    {
+      "id": 1460,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, weakness, sneezing, bloody diarrhea",
+      "possible_condition": "Urgent livestock concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.8,
+      "advice": "Isolate animal and contact a veterinary specialist promptly.",
+      "result_json": {
+        "possible_condition": "Urgent livestock concern (screening)",
+        "disease_display": "Urgent livestock concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.8,
+        "advice": "Isolate animal and contact a veterinary specialist promptly.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "source": "rules_local",
+        "client_id": "animal-1788028705532-5766"
+      },
+      "client_id": "animal-1788028705532-5766",
+      "created_at": "2026-08-29T18:51:58.407593+00:00"
+    },
+    {
+      "id": 1461,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, weakness, sneezing, bloody diarrhea",
+      "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.69,
+      "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+      "result_json": {
+        "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+        "disease": "Suspected hemorrhagic enteritis (screening)",
+        "severity": "Critical",
+        "confidence": 0.69,
+        "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "top_predictions": [
+          {
+            "disease": "Suspected hemorrhagic enteritis (screening)",
+            "severity": "Critical",
+            "confidence": 0.69
+          },
+          {
+            "disease": "Reduced appetite / weakness (screening)",
+            "severity": "Moderate",
+            "confidence": 0.69
+          },
+          {
+            "disease": "Respiratory infection signs (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "Moderate",
+          "confidence": 0.335,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Suspected hemorrhagic enteritis (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788028705531-462",
+      "created_at": "2026-08-29T18:51:58.408514+00:00"
+    },
+    {
+      "id": 1462,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "lameness, weakness, nasal discharge",
+      "possible_condition": "Moderate livestock concern (screening)",
+      "severity_level": "Moderate",
+      "confidence": 0.6,
+      "advice": "Improve hygiene and hydration. Seek veterinary advice if not improving.",
+      "result_json": {
+        "possible_condition": "Moderate livestock concern (screening)",
+        "disease_display": "Moderate livestock concern (screening)",
+        "severity": "Moderate",
+        "confidence": 0.6,
+        "advice": "Improve hygiene and hydration. Seek veterinary advice if not improving.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "SHEEP",
+        "source": "rules_local",
+        "client_id": "animal-1788028773497-7513"
+      },
+      "client_id": "animal-1788028773497-7513",
+      "created_at": "2026-08-29T18:51:58.409575+00:00"
+    },
+    {
+      "id": 1463,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "lameness, weakness, nasal discharge",
+      "possible_condition": "Possible FMD-like signs (screening)",
+      "severity_level": "High",
+      "confidence": 0.57,
+      "advice": "Isolate from other animals. Do not move livestock. Notify veterinarian / AH department.",
+      "result_json": {
+        "possible_condition": "Possible FMD-like signs (screening)",
+        "disease": "Possible FMD-like signs (screening)",
+        "severity": "High",
+        "confidence": 0.57,
+        "advice": "Isolate from other animals. Do not move livestock. Notify veterinarian / AH department.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "SHEEP",
+        "top_predictions": [
+          {
+            "disease": "Possible FMD-like signs (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Respiratory infection signs (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Reduced appetite / weakness (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "Moderate",
+          "confidence": 0.405,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Possible FMD-like signs (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788028773496-3906",
+      "created_at": "2026-08-29T18:51:58.410387+00:00"
+    },
+    {
+      "id": 1464,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "lameness, weakness, nasal discharge",
+      "possible_condition": "Moderate livestock concern (screening)",
+      "severity_level": "Moderate",
+      "confidence": 0.6,
+      "advice": "Improve hygiene and hydration. Seek veterinary advice if not improving.",
+      "result_json": {
+        "possible_condition": "Moderate livestock concern (screening)",
+        "disease_display": "Moderate livestock concern (screening)",
+        "severity": "Moderate",
+        "confidence": 0.6,
+        "advice": "Improve hygiene and hydration. Seek veterinary advice if not improving.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "SHEEP",
+        "source": "rules_local",
+        "client_id": "animal-1788028812146-117"
+      },
+      "client_id": "animal-1788028812146-117",
+      "created_at": "2026-08-29T18:51:58.411247+00:00"
+    },
+    {
+      "id": 1465,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "lameness, weakness, nasal discharge",
+      "possible_condition": "Possible FMD-like signs (screening)",
+      "severity_level": "High",
+      "confidence": 0.57,
+      "advice": "Isolate from other animals. Do not move livestock. Notify veterinarian / AH department.",
+      "result_json": {
+        "possible_condition": "Possible FMD-like signs (screening)",
+        "disease": "Possible FMD-like signs (screening)",
+        "severity": "High",
+        "confidence": 0.57,
+        "advice": "Isolate from other animals. Do not move livestock. Notify veterinarian / AH department.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "SHEEP",
+        "top_predictions": [
+          {
+            "disease": "Possible FMD-like signs (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Respiratory infection signs (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Reduced appetite / weakness (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "Moderate",
+          "confidence": 0.405,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Possible FMD-like signs (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788028812141-7435",
+      "created_at": "2026-08-29T18:51:58.412360+00:00"
+    },
+    {
+      "id": 1466,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, weakness, nasal discharge, collapse",
+      "possible_condition": "Urgent livestock concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.8,
+      "advice": "Isolate animal and contact a veterinary specialist promptly.",
+      "result_json": {
+        "possible_condition": "Urgent livestock concern (screening)",
+        "disease_display": "Urgent livestock concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.8,
+        "advice": "Isolate animal and contact a veterinary specialist promptly.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "source": "rules_local",
+        "client_id": "animal-1788029287499-5897"
+      },
+      "client_id": "animal-1788029287499-5897",
+      "created_at": "2026-08-29T18:51:58.413169+00:00"
+    },
+    {
+      "id": 1467,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, weakness, nasal discharge, collapse",
+      "possible_condition": "Recumbency / neurological concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.57,
+      "advice": "Do not force animal to stand. Keep shaded and calm. Call a veterinarian urgently.",
+      "result_json": {
+        "possible_condition": "Recumbency / neurological concern (screening)",
+        "disease": "Recumbency / neurological concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.57,
+        "advice": "Do not force animal to stand. Keep shaded and calm. Call a veterinarian urgently.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "CATTLE",
+        "top_predictions": [
+          {
+            "disease": "Recumbency / neurological concern (screening)",
+            "severity": "Critical",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Reduced appetite / weakness (screening)",
+            "severity": "Moderate",
+            "confidence": 0.69
+          },
+          {
+            "disease": "Respiratory infection signs (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "Moderate",
+          "confidence": 0.26,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Recumbency / neurological concern (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788029287498-6448",
+      "created_at": "2026-08-29T18:51:58.414223+00:00"
+    },
+    {
+      "id": 1468,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, milk drop, mastitis, diarrhea, clotted milk, gasping, difficulty breathing, panting, swollen udder, salivation",
+      "possible_condition": "Urgent livestock concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.8,
+      "advice": "Isolate animal and contact a veterinary specialist promptly.",
+      "result_json": {
+        "possible_condition": "Urgent livestock concern (screening)",
+        "disease_display": "Urgent livestock concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.8,
+        "advice": "Isolate animal and contact a veterinary specialist promptly.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "source": "rules_local",
+        "client_id": "animal-1788029360532-3120"
+      },
+      "client_id": "animal-1788029360532-3120",
+      "created_at": "2026-08-29T18:51:58.415577+00:00"
+    },
+    {
+      "id": 1469,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, milk drop, mastitis, diarrhea, clotted milk, gasping, difficulty breathing, panting, swollen udder, salivation",
+      "possible_condition": "Respiratory distress (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.81,
+      "advice": "Ensure fresh air, reduce crowding. Seek veterinary care immediately.",
+      "result_json": {
+        "possible_condition": "Respiratory distress (screening)",
+        "disease": "Respiratory distress (screening)",
+        "severity": "Critical",
+        "confidence": 0.81,
+        "advice": "Ensure fresh air, reduce crowding. Seek veterinary care immediately.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "top_predictions": [
+          {
+            "disease": "Respiratory distress (screening)",
+            "severity": "Critical",
+            "confidence": 0.81
+          },
+          {
+            "disease": "Suspected hemorrhagic enteritis (screening)",
+            "severity": "Critical",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Possible mastitis (screening)",
+            "severity": "High",
+            "confidence": 0.81
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "High",
+          "confidence": 0.325,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Respiratory distress (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788029360532-2361",
+      "created_at": "2026-08-29T18:51:58.416916+00:00"
+    },
+    {
+      "id": 1470,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "sneezing, gasping, not eating, weakness, nasal discharge, milk drop, mastitis, clotted milk, swollen udder, salivation",
+      "possible_condition": "Urgent livestock concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.8,
+      "advice": "Isolate animal and contact a veterinary specialist promptly.",
+      "result_json": {
+        "possible_condition": "Urgent livestock concern (screening)",
+        "disease_display": "Urgent livestock concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.8,
+        "advice": "Isolate animal and contact a veterinary specialist promptly.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "POULTRY",
+        "source": "rules_local",
+        "client_id": "animal-1788029429648-4494"
+      },
+      "client_id": "animal-1788029429648-4494",
+      "created_at": "2026-08-29T18:51:58.418096+00:00"
+    },
+    {
+      "id": 1471,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "sneezing, gasping, not eating, weakness, nasal discharge, milk drop, mastitis, clotted milk, swollen udder, salivation",
+      "possible_condition": "Respiratory distress (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.57,
+      "advice": "Ensure fresh air, reduce crowding. Seek veterinary care immediately.",
+      "result_json": {
+        "possible_condition": "Respiratory distress (screening)",
+        "disease": "Respiratory distress (screening)",
+        "severity": "Critical",
+        "confidence": 0.57,
+        "advice": "Ensure fresh air, reduce crowding. Seek veterinary care immediately.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "POULTRY",
+        "top_predictions": [
+          {
+            "disease": "Respiratory distress (screening)",
+            "severity": "Critical",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Possible mastitis (screening)",
+            "severity": "High",
+            "confidence": 0.81
+          },
+          {
+            "disease": "Possible FMD-like signs (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "High",
+          "confidence": 0.345,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Respiratory distress (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788029429648-8306",
+      "created_at": "2026-08-29T18:51:58.419331+00:00"
+    },
+    {
+      "id": 1472,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "mastitis, weakness, nasal discharge, lameness",
+      "possible_condition": "Significant livestock signs (screening)",
+      "severity_level": "High",
+      "confidence": 0.7,
+      "advice": "Isolate if contagious signs. Consult a veterinary specialist today.",
+      "result_json": {
+        "possible_condition": "Significant livestock signs (screening)",
+        "disease_display": "Significant livestock signs (screening)",
+        "severity": "High",
+        "confidence": 0.7,
+        "advice": "Isolate if contagious signs. Consult a veterinary specialist today.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "source": "rules_local",
+        "client_id": "animal-1788029457550-9648"
+      },
+      "client_id": "animal-1788029457550-9648",
+      "created_at": "2026-08-29T18:51:58.420609+00:00"
+    },
+    {
+      "id": 1473,
+      "domain": "ANIMAL",
+      "user_id": 3,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "mastitis, weakness, nasal discharge, lameness",
+      "possible_condition": "Possible FMD-like signs (screening)",
+      "severity_level": "High",
+      "confidence": 0.57,
+      "advice": "Isolate from other animals. Do not move livestock. Notify veterinarian / AH department.",
+      "result_json": {
+        "possible_condition": "Possible FMD-like signs (screening)",
+        "disease": "Possible FMD-like signs (screening)",
+        "severity": "High",
+        "confidence": 0.57,
+        "advice": "Isolate from other animals. Do not move livestock. Notify veterinarian / AH department.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "top_predictions": [
+          {
+            "disease": "Possible FMD-like signs (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Possible mastitis (screening)",
+            "severity": "High",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Respiratory infection signs (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "Moderate",
+          "confidence": 0.27,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Possible FMD-like signs (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788029457550-2817",
+      "created_at": "2026-08-29T18:51:58.421962+00:00"
+    }
+  ]
+}

@@ -11,6 +11,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../core/utils/logout_helper.dart';
 import '../../profile/widgets/profile_avatar.dart';
 import '../../../core/emergency_comms/widgets/offline_emergency_status.dart';
+import '../../../l10n/l10n.dart';
 
 
 
@@ -29,6 +30,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
         final user = authProvider.user;
+        final l10n = context.l10n;
 
         return Drawer(
       backgroundColor: Colors.white,
@@ -82,7 +84,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            user?.name ?? 'Doctor',
+                            user?.name ?? l10n.doctor,
                             style: const TextStyle(
                               color: textDark,
                               fontSize: 16,
@@ -90,8 +92,8 @@ class DoctorNavigationDrawer extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
-                            'View profile',
+                          Text(
+                            l10n.viewProfile,
                             style: TextStyle(
                               color: textGrey,
                               fontSize: 13,
@@ -119,12 +121,12 @@ class DoctorNavigationDrawer extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // MAIN MENU SECTION
-                    _buildSectionTitle('MAIN MENU'),
+                    _buildSectionTitle(l10n.mainMenu),
                     const SizedBox(height: 8),
                     _buildMenuItem(
                       context: context,
                       icon: Icons.grid_view_rounded,
-                      title: 'Dashboard',
+                      title: l10n.dashboard,
                       isActive: activeRoute == 'Dashboard',
                       onTap: () {
                         Navigator.pop(context); // close drawer
@@ -141,7 +143,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                     _buildMenuItem(
                       context: context,
                       icon: Icons.person_add_alt_1_outlined,
-                      title: 'Patient Requests',
+                      title: l10n.patientRequests,
                       isActive: activeRoute == 'Patient Requests',
                       badge: '12',
                       onTap: () {
@@ -157,7 +159,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                     _buildMenuItem(
                       context: context,
                       icon: Icons.people_alt_outlined,
-                      title: 'My Patients',
+                      title: l10n.myPatients,
                       isActive: activeRoute == 'My Patients',
                       onTap: () {
                         Navigator.pop(context);
@@ -174,7 +176,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                     _buildMenuItem(
                       context: context,
                       icon: Icons.health_and_safety_outlined,
-                      title: 'ASHA Workers',
+                      title: l10n.ashaWorkers,
                       isActive: activeRoute == 'ASHA Workers',
                       onTap: () {
                         Navigator.pop(context);
@@ -189,7 +191,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                     _buildMenuItem(
                       context: context,
                       icon: Icons.local_pharmacy_outlined,
-                      title: 'Medicine Stock',
+                      title: l10n.medicineStock,
                       isActive: activeRoute == 'Medicine Stock',
                       onTap: () {
                         Navigator.pop(context);
@@ -201,7 +203,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                     _buildMenuItem(
                       context: context,
                       icon: Icons.chat_outlined,
-                      title: 'Messages',
+                      title: l10n.messages,
                       isActive: activeRoute == 'Messages',
                       onTap: () {
                         Navigator.pop(context);
@@ -213,7 +215,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                     _buildMenuItem(
                       context: context,
                       icon: Icons.medical_services_outlined,
-                      title: 'Consultations',
+                      title: l10n.consultations,
                       isActive: activeRoute == 'Consultations',
                       onTap: () {
                         Navigator.pop(context);
@@ -225,7 +227,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                     _buildMenuItem(
                       context: context,
                       icon: Icons.assignment_outlined,
-                      title: 'Prescriptions',
+                      title: l10n.prescriptions,
                       isActive: activeRoute == 'Prescriptions',
                       onTap: () {
                         Navigator.pop(context);
@@ -241,12 +243,12 @@ class DoctorNavigationDrawer extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     // INSIGHTS & SETTINGS SECTION
-                    _buildSectionTitle('INSIGHTS & SETTINGS'),
+                    _buildSectionTitle(l10n.insightsSettings),
                     const SizedBox(height: 8),
                     _buildMenuItem(
                       context: context,
                       icon: Icons.bar_chart_rounded,
-                      title: 'Reports',
+                      title: l10n.reports,
                       isActive: activeRoute == 'Reports',
                       onTap: () {
                         Navigator.pop(context);
@@ -261,7 +263,7 @@ class DoctorNavigationDrawer extends StatelessWidget {
                     _buildMenuItem(
                       context: context,
                       icon: Icons.settings_outlined,
-                      title: 'Settings',
+                      title: l10n.settings,
                       isActive: activeRoute == 'Settings',
                       onTap: () {
                         Navigator.pop(context);
@@ -288,19 +290,19 @@ class DoctorNavigationDrawer extends StatelessWidget {
                   await LogoutHelper.logout(context);
                 },
                 borderRadius: BorderRadius.circular(12),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.logout_rounded,
                         color: Colors.redAccent,
                         size: 22,
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       Text(
-                        'Logout Account',
-                        style: TextStyle(
+                        l10n.logoutAccount,
+                        style: const TextStyle(
                           color: Colors.redAccent,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,

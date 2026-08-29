@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../core/utils/helpers.dart';
+import '../../../core/widgets/village_dropdown_field.dart';
 import '../../../routes/app_routes.dart';
 
 class PatientRegisterScreen extends StatefulWidget {
@@ -16,10 +17,10 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
   
   final _nameController = TextEditingController();
   final _emailPhoneController = TextEditingController();
-  final _villageController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  String? _selectedVillage;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeTerms = false;
@@ -28,7 +29,6 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
   void dispose() {
     _nameController.dispose();
     _emailPhoneController.dispose();
-    _villageController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -60,7 +60,7 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
         'phone_number': _emailPhoneController.text.trim(),
         'password': _passwordController.text,
         'role': 'user',
-        'village': _villageController.text.trim(),
+        'village': _selectedVillage?.trim() ?? '',
       };
       
       final success = await authProvider.register(registrationData);
@@ -223,13 +223,14 @@ class _PatientRegisterScreenState extends State<PatientRegisterScreen> {
                       
                       const SizedBox(height: 16),
 
-                      _buildTextField(
-                        controller: _villageController,
+                      VillageDropdownField(
+                        value: _selectedVillage,
                         label: "Village / Location",
-                        hint: "Enter your village name",
+                        hint: "Select your village",
+                        accentColor: primaryColor,
+                        fillColor: inputBgColor,
                         icon: Icons.home_outlined,
-                        color: primaryColor,
-                        bgColor: inputBgColor,
+                        onChanged: (val) => setState(() => _selectedVillage = val),
                       ),
                       
                       const SizedBox(height: 32),

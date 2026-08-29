@@ -35,12 +35,20 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         qs = Prescription.objects.all().order_by('-issued_at')
         try:
             if user.role == 'doctor':
+                # Doctor sees held + active (held = waiting in TEMP vault)
                 return qs.filter(doctor=user.doctor_profile)
             if user.role == 'user':
-                return qs.filter(patient=user.patient_profile)
+                # Patient only sees released (active) prescriptions
+                return qs.filter(
+                    patient=user.patient_profile,
+                    status=Prescription.STATUS_ACTIVE,
+                )
             if user.role == 'asha_worker':
                 village = user.asha_profile.assigned_village
-                return qs.filter(patient__user__village=village)
+                return qs.filter(
+                    patient__user__village=village,
+                    status=Prescription.STATUS_ACTIVE,
+                )
             if user.is_staff:
                 return qs
         except Exception:
@@ -118,7 +126,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
             file=upload,
             file_content_type=content_type[:64],
             file_size=file_size,
-            status=Prescription.STATUS_ACTIVE,
+            status=Prescription.STATUS_HELD,
         )
 
         log_security_event(
@@ -131,12 +139,24 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
                 'prescription_type': Prescription.TYPE_HANDWRITTEN,
                 'file_size': file_size,
                 'content_type': content_type,
+                'held_in_temp_vault': True,
             },
         )
-        notify_patient_prescription(prescription)
+        # Do NOT notify patient yet — held until admin restore after blackout.
+        try:
+            from apps.blackout.service import snapshot_all
+            snapshot_all(reason='prescription_held')
+        except Exception:
+            pass
 
         serializer = self.get_serializer(prescription)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        data = serializer.data
+        data['held_in_temp_vault'] = True
+        data['message'] = (
+            'Prescription held in TEMP vault (admin only). '
+            'Patient will receive it after admin Restore.'
+        )
+        return Response(data, status=status.HTTP_201_CREATED)
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -160,15 +180,21 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         prescription = serializer.save(
             doctor=user.doctor_profile,
             prescription_type=Prescription.TYPE_DIGITAL,
-            status=Prescription.STATUS_ACTIVE,
+            status=Prescription.STATUS_HELD,
         )
         log_security_event(
             self.request,
             action='prescription_create',
             object_type='Prescription',
             object_id=prescription.pk,
+            metadata={'held_in_temp_vault': True},
         )
-        notify_patient_prescription(prescription)
+        # Do NOT notify patient — TEMP vault hold until admin restore.
+        try:
+            from apps.blackout.service import snapshot_all
+            snapshot_all(reason='prescription_held')
+        except Exception:
+            pass
 
     def perform_update(self, serializer):
         if getattr(self.request.user, 'role', None) != 'doctor':
@@ -249,7 +275,10 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
             return Response({"error": "Only patients can access this"}, status=status.HTTP_403_FORBIDDEN)
         if not hasattr(request.user, 'patient_profile'):
             return Response([], status=status.HTTP_200_OK)
-        prescriptions = Prescription.objects.filter(patient=request.user.patient_profile)
+        prescriptions = Prescription.objects.filter(
+            patient=request.user.patient_profile,
+            status=Prescription.STATUS_ACTIVE,
+        )
         serializer = self.get_serializer(prescriptions, many=True)
         return Response(serializer.data)
 
@@ -260,6 +289,9 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         if not hasattr(request.user, 'asha_profile'):
             return Response([], status=status.HTTP_200_OK)
         village = request.user.asha_profile.assigned_village
-        prescriptions = Prescription.objects.filter(patient__user__village=village)
+        prescriptions = Prescription.objects.filter(
+            patient__user__village=village,
+            status=Prescription.STATUS_ACTIVE,
+        )
         serializer = self.get_serializer(prescriptions, many=True)
         return Response(serializer.data)

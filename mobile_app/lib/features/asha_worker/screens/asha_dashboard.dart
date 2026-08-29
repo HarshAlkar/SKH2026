@@ -5,12 +5,14 @@ import '../widgets/quick_action_button.dart';
 import '../widgets/activity_tile.dart';
 import '../widgets/emergency_button.dart';
 import '../widgets/asha_sidebar.dart';
+import '../../../l10n/l10n.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../models/user_model.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/sync/offline_api.dart';
 import '../../../core/widgets/sync_status_banner.dart';
 import '../../../core/widgets/signaling_status_chip.dart';
+import '../../../core/widgets/simulate_blackout_button.dart';
 import '../../../providers/consultation_provider.dart';
 import '../../../core/services/permission_dialog_service.dart';
 import '../../../routes/app_routes.dart';
@@ -83,7 +85,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
       }
       setState(() {
         _dashboardError =
-            'Could not load data from ${AppConfig.displayHost}. Log out and log in again.';
+            context.l10n.couldNotLoadData(AppConfig.displayHost);
         _isLoading = false;
       });
     }
@@ -118,6 +120,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                   padding: EdgeInsets.only(right: 4),
                   child: Center(child: SignalingStatusChip(compact: true)),
                 ),
+                const SimulateBlackoutButton(compact: true),
                 IconButton(
                   icon: const Icon(Icons.refresh),
                   onPressed: _fetchDashboardData,
@@ -328,6 +331,22 @@ class _AshaDashboardState extends State<AshaDashboard> {
                           onTap: isVerified ? () => setState(() => _selectedIndex = 2) : _showUnverifiedMessage,
                         ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: QuickActionButton(
+                          icon: Icons.verified_user_outlined,
+                          label: "Verify Health Info",
+                          onTap: isVerified
+                              ? () => _openAndRefresh(AppRoutes.verifyHealthInfo)
+                              : _showUnverifiedMessage,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      const Expanded(child: SizedBox()),
                     ],
                   ),
                 ],

@@ -1,5 +1,7 @@
+import '../../../core/l10n/language_id_service.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/connectivity_service.dart';
+import '../../../core/services/locale_controller.dart';
 import '../../one_health/escalation_policy.dart';
 import '../models/screening_chat_context.dart';
 
@@ -13,6 +15,8 @@ class GeminiHealthChatService {
   final ApiService _api = ApiService();
   final List<Map<String, String>> _turns = [];
   bool? _serverConfigured;
+
+  static const Duration _aiTimeout = Duration(seconds: 60);
 
   /// True only after a successful status probe (or unknown until checked).
   bool get isConfigured => _serverConfigured ?? true;
@@ -37,7 +41,7 @@ class GeminiHealthChatService {
   /// SAFE probe — never receives the API key.
   Future<bool> checkServerConfigured() async {
     try {
-      final response = await _api.get('/ai/status/');
+      final response = await _api.get('/ai/status/', timeout: _aiTimeout);
       if (response is Map) {
         final ok = response['gemini_configured'] == true;
         _serverConfigured = ok;
@@ -62,6 +66,21 @@ class GeminiHealthChatService {
     }
   }
 
+  List<Map<String, String>> _historyPayload() {
+    final history = <Map<String, String>>[];
+    for (final turn in _turns) {
+      final user = turn['user'];
+      final assistant = turn['assistant'];
+      if (user != null && user.isNotEmpty) {
+        history.add({'role': 'user', 'text': user});
+      }
+      if (assistant != null && assistant.isNotEmpty) {
+        history.add({'role': 'model', 'text': assistant});
+      }
+    }
+    return history;
+  }
+
   Future<String> sendMessage(String userText) async {
     final text = userText.trim();
     if (text.isEmpty) return '';
@@ -76,12 +95,22 @@ class GeminiHealthChatService {
       throw StateError('Chat session was not started.');
     }
 
+    final language = await LanguageIdService.instance.detect(
+      text,
+      fallback: LocaleController.instance.languageCode,
+    );
+
     final prompt = StringBuffer()
       ..writeln('Screening context (decision-support only):')
       ..writeln(ctx.toPromptBlock())
       ..writeln()
       ..writeln('User question:')
-      ..writeln(text);
+      ..writeln(text)
+      ..writeln()
+      ..writeln(
+        'Answer in clear language. Include an Evidence section with short '
+        'public-health bullets supporting your advice.',
+      );
 
     try {
       final response = await _api.post(
@@ -90,7 +119,10 @@ class GeminiHealthChatService {
           'message': prompt.toString(),
           'domain': _domainKey(ctx.domain),
           'severity': ctx.severity,
+          'history': _historyPayload(),
+          'language': language,
         },
+        timeout: _aiTimeout,
       );
       if (response is Map) {
         final reply = (response['reply'] ?? response['message'] ?? '').toString().trim();
@@ -118,5 +150,33 @@ class GeminiHealthChatService {
       }
       throw StateError('AI chat failed: $e');
     }
+  }
+
+  /// Village / free-form Gemini report analysis via backend.
+  Future<String> generateReportAnalysis({
+    required String reportType,
+    required Map<String, dynamic> context,
+    String focus = '',
+  }) async {
+    if (!await isOnline) {
+      throw StateError('AI report needs internet.');
+    }
+    final response = await _api.post(
+      '/ai/report-analysis/',
+      body: {
+        'report_type': reportType,
+        'focus': focus,
+        'context': context,
+        'language': LocaleController.instance.languageCode,
+      },
+      timeout: _aiTimeout,
+    );
+    if (response is Map) {
+      final report = (response['report'] ?? '').toString().trim();
+      if (report.isNotEmpty) return report;
+      final err = response['error']?.toString();
+      if (err != null && err.isNotEmpty) throw StateError(err);
+    }
+    throw StateError('Empty AI report.');
   }
 }

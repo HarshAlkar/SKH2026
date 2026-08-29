@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../widgets/custom_input_field.dart';
 import '../widgets/custom_dropdown_field.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/sync/offline_api.dart';
 import '../../../providers/auth_provider.dart';
 
@@ -20,11 +21,11 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
 
   final _nameController = TextEditingController();
   final _ageController = TextEditingController();
-  final _villageController = TextEditingController();
   final _phoneController = TextEditingController();
   final _diseaseController = TextEditingController();
 
   String? _selectedGender;
+  String? _selectedVillage;
   String? _selectedBloodGroup = "Not Known";
 
   bool _isLoading = false;
@@ -39,7 +40,7 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
       final asha = context.read<AuthProvider>().user;
       final village = asha?.village.trim() ?? '';
       if (village.isNotEmpty) {
-        _villageController.text = village;
+        setState(() => _selectedVillage = village);
       }
     });
   }
@@ -48,7 +49,6 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
   void dispose() {
     _nameController.dispose();
     _ageController.dispose();
-    _villageController.dispose();
     _phoneController.dispose();
     _diseaseController.dispose();
     super.dispose();
@@ -63,8 +63,8 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
       try {
         final asha = context.read<AuthProvider>().user;
         final phone = _phoneController.text.trim();
-        final village = _villageController.text.trim().isNotEmpty
-            ? _villageController.text.trim()
+        final village = (_selectedVillage ?? '').trim().isNotEmpty
+            ? _selectedVillage!.trim()
             : (asha?.village ?? '');
         // Strong random temp password — never derive from phone digits
         final tempPassword =
@@ -236,12 +236,16 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
                   title: "LOCATION & CONTACT",
                   child: Column(
                     children: [
-                      CustomInputField(
+                      CustomDropdownField(
                         label: "Village",
-                        hintText: "Assigned village",
+                        hintText: "Select village",
                         prefixIcon: Icons.location_on,
-                        controller: _villageController,
-                        readOnly: true,
+                        items: AppConstants.villageDropdownItems(
+                          current: _selectedVillage,
+                        ),
+                        value: _selectedVillage,
+                        onChanged: (val) =>
+                            setState(() => _selectedVillage = val),
                         validator: (value) =>
                             (value == null || value.trim().isEmpty)
                             ? 'Required'

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/locale_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../one_health/escalation_policy.dart';
 import '../../one_health/screening_disclaimer.dart';
 import '../models/screening_chat_context.dart';
@@ -59,9 +61,7 @@ class _SharedAIHealthChatState extends State<SharedAIHealthChat> {
     if (!online) {
       setState(() {
         _booting = false;
-        _offlineNote =
-            'AI chat requires an internet connection, but your screening result '
-            'and recommended next steps are available offline.';
+        _offlineNote = context.l10n.aiChatRequiresInternet;
       });
       return;
     }
@@ -70,10 +70,7 @@ class _SharedAIHealthChatState extends State<SharedAIHealthChat> {
     if (!configured) {
       setState(() {
         _booting = false;
-        _offlineNote =
-            'AI chat is not configured on the server. '
-            'Set GEMINI_API_KEY in Django (.env / Render). '
-            'Screening results remain available offline without Gemini.';
+        _offlineNote = context.l10n.aiChatNotConfigured;
       });
       return;
     }
@@ -85,10 +82,10 @@ class _SharedAIHealthChatState extends State<SharedAIHealthChat> {
         _messages.add(
           _ChatBubble(
             fromUser: false,
-            text:
-                'I can help explain this ${widget.screeningContext.domainLabel} result in simple language. '
-                'Ask what it means, what to watch for, or what to do next.\n\n'
-                '${_disclaimerLine()}',
+            text: context.l10n.askAiAboutResult(
+              widget.screeningContext.domainLabel,
+              _disclaimerLine(),
+            ),
           ),
         );
       });
@@ -103,7 +100,10 @@ class _SharedAIHealthChatState extends State<SharedAIHealthChat> {
 
   String _disclaimerLine() {
     final animal = widget.screeningContext.domain == ScreeningDomain.livestock;
-    return ScreeningDisclaimer.text(language: 'en', isAnimal: animal);
+    return ScreeningDisclaimer.text(
+      language: LocaleController.instance.languageCode,
+      isAnimal: animal,
+    );
   }
 
   Future<void> _send() async {
@@ -158,7 +158,7 @@ class _SharedAIHealthChatState extends State<SharedAIHealthChat> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Ask AI about this', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(context.l10n.askAi, style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF1E293B),
         elevation: 0,
@@ -283,7 +283,7 @@ class _SharedAIHealthChatState extends State<SharedAIHealthChat> {
                         textInputAction: TextInputAction.send,
                         onSubmitted: (_) => _send(),
                         decoration: InputDecoration(
-                          hintText: 'Ask a question…',
+                          hintText: context.l10n.typeQuestion,
                           filled: true,
                           fillColor: Colors.white,
                           border: OutlineInputBorder(

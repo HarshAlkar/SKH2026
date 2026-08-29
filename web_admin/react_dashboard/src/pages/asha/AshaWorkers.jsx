@@ -14,6 +14,7 @@ import { Modal, Field, inputClass } from '../../components/ui/Modal';
 import { toast } from '../../components/ui/Toast';
 import VerificationStatusBadge from '../../components/verification/VerificationStatusBadge';
 import VerificationModal from '../../components/verification/VerificationModal';
+import ChangePasswordModal, { useChangePassword } from '../../components/users/ChangePasswordModal';
 
 const empty = {
   name: '',
@@ -36,6 +37,12 @@ export default function AshaPage() {
   const [village, setVillage] = useState('');
   const [verStatus, setVerStatus] = useState(searchParams.get('verification') || '');
   const [verifyAsha, setVerifyAsha] = useState(null);
+  const password = useChangePassword();
+  const [rosterAsha, setRosterAsha] = useState(null);
+  const [rosterRows, setRosterRows] = useState([]);
+  const [available, setAvailable] = useState([]);
+  const [picked, setPicked] = useState([]);
+  const [rosterLoading, setRosterLoading] = useState(false);
 
   const villages = useMemo(() => [...new Set(rows.map((r) => r.assigned_village).filter(Boolean))], [rows]);
   const filtered = useMemo(() => {
@@ -83,7 +90,7 @@ export default function AshaPage() {
     <div>
       <PageHeader
         title="ASHA Workers"
-        subtitle="Community health workers and village visit coverage."
+        subtitle="Community health workers, village coverage, and assigned patients."
         actions={
           <button
             type="button"
@@ -145,6 +152,11 @@ export default function AshaPage() {
           { key: 'assigned_village', header: 'Village' },
           { key: 'phc_center', header: 'PHC' },
           {
+            key: 'assigned_patient_count',
+            header: 'Patients',
+            render: (r) => r.assigned_patient_count ?? 0,
+          },
+          {
             key: 'visits',
             header: 'Visit progress',
             render: (r) => {
@@ -183,6 +195,29 @@ export default function AshaPage() {
                 <button
                   type="button"
                   className="text-primary text-xs font-semibold px-2 py-1"
+                  onClick={async () => {
+                    setRosterAsha(r);
+                    setPicked([]);
+                    setRosterLoading(true);
+                    try {
+                      const [assigned, unassigned] = await Promise.all([
+                        adminApi.ashaPatients(r.id),
+                        adminApi.patients({ unassigned: true }),
+                      ]);
+                      setRosterRows(Array.isArray(assigned) ? assigned : assigned?.results || []);
+                      setAvailable(Array.isArray(unassigned) ? unassigned : unassigned?.results || []);
+                    } catch (err) {
+                      toast(err.message, 'error');
+                    } finally {
+                      setRosterLoading(false);
+                    }
+                  }}
+                >
+                  Patients
+                </button>
+                <button
+                  type="button"
+                  className="text-primary text-xs font-semibold px-2 py-1"
                   onClick={() => {
                     setEdit(r);
                     setForm({ ...empty, ...r, name: r.full_name });
@@ -190,6 +225,21 @@ export default function AshaPage() {
                   }}
                 >
                   Edit
+                </button>
+                <button
+                  type="button"
+                  className="text-primary text-xs font-semibold px-2 py-1"
+                  onClick={() =>
+                    password.setTarget({
+                      name: r.full_name,
+                      request: (pw) =>
+                        r.user_id
+                          ? adminApi.setUserPassword(r.user_id, pw)
+                          : adminApi.setAshaPassword(r.id, pw),
+                    })
+                  }
+                >
+                  Password
                 </button>
               </div>
             ),
@@ -255,6 +305,110 @@ export default function AshaPage() {
           reload();
         }}
       />
+      <ChangePasswordModal
+        open={!!password.target}
+        title="Change ASHA password"
+        subtitle={password.target ? `ASHA: ${password.target.name}` : ''}
+        onClose={() => password.setTarget(null)}
+        onSubmit={password.submit}
+        saving={password.saving}
+      />
+
+      <Modal
+        open={!!rosterAsha}
+        wide
+        title={rosterAsha ? `Patients under ${rosterAsha.full_name || rosterAsha.name}` : 'Assigned patients'}
+        onClose={() => setRosterAsha(null)}
+      >
+        <p className="text-sm text-muted -mt-2 mb-3">
+          Patients assigned here stay synced with this ASHA worker’s village.
+        </p>
+        {rosterLoading ? (
+          <p className="text-sm text-muted">Loading…</p>
+        ) : (
+          <>
+            <div className="mb-4">
+              <p className="text-sm font-semibold mb-2">Assigned ({rosterRows.length})</p>
+              {rosterRows.length === 0 ? (
+                <p className="text-sm text-muted">No patients assigned yet.</p>
+              ) : (
+                <ul className="divide-y border rounded-xl">
+                  {rosterRows.map((p) => (
+                    <li key={p.id} className="flex items-center justify-between px-3 py-2 text-sm">
+                      <span>
+                        <span className="font-medium">{p.name}</span>
+                        <span className="text-muted"> · {p.phone_number || 'No phone'} · {p.village || '—'}</span>
+                      </span>
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-rose-600"
+                        onClick={async () => {
+                          try {
+                            await adminApi.patchPatient(p.id, { assigned_asha: null });
+                            setRosterRows((rows) => rows.filter((row) => row.id !== p.id));
+                            setAvailable((rows) => [...rows, { ...p, assigned_asha: null }]);
+                            toast('Patient unassigned');
+                            reload();
+                          } catch (err) {
+                            toast(err.message, 'error');
+                          }
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-2">Add unassigned patients</p>
+              {available.length === 0 ? (
+                <p className="text-sm text-muted">No unassigned patients.</p>
+              ) : (
+                <>
+                  <div className="max-h-48 overflow-y-auto border rounded-xl mb-3">
+                    {available.map((p) => (
+                      <label key={p.id} className="flex items-center gap-2 px-3 py-2 text-sm border-b last:border-b-0">
+                        <input
+                          type="checkbox"
+                          checked={picked.includes(p.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) setPicked((ids) => [...ids, p.id]);
+                            else setPicked((ids) => ids.filter((id) => id !== p.id));
+                          }}
+                        />
+                        <span>
+                          {p.name} · {p.village || 'No village'}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={!picked.length}
+                    className="w-full rounded-lg bg-primary text-white py-2.5 font-semibold disabled:opacity-60"
+                    onClick={async () => {
+                      try {
+                        const data = await adminApi.assignAshaPatients(rosterAsha.id, picked);
+                        setRosterRows(data.patients || []);
+                        setAvailable((rows) => rows.filter((row) => !picked.includes(row.id)));
+                        setPicked([]);
+                        toast(data.status || 'Patients assigned');
+                        reload();
+                      } catch (err) {
+                        toast(err.message, 'error');
+                      }
+                    }}
+                  >
+                    Assign selected ({picked.length})
+                  </button>
+                </>
+              )}
+            </div>
+          </>
+        )}
+      </Modal>
     </div>
   );
 }

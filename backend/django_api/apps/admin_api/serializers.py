@@ -3,7 +3,7 @@ from django.db.models import Q
 
 from apps.users.models import User
 from apps.users.views import UserSerializer, RegisterSerializer, normalize_identifier
-from apps.patients.models import Patient
+from apps.patients.models import Patient, sync_patient_village_to_asha, sync_assigned_patients_village
 from apps.doctors.models import Doctor, DoctorDocument
 from apps.asha_workers.models import ASHAWorker, VillageVisit, ASHADocument
 from apps.consultations.models import Consultation
@@ -52,24 +52,41 @@ class AdminPatientSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)
     is_active = serializers.BooleanField(source='user.is_active', required=False)
     email = serializers.CharField(source='user.email', read_only=True)
+    assigned_asha = serializers.PrimaryKeyRelatedField(
+        queryset=ASHAWorker.objects.select_related('user').all(),
+        allow_null=True,
+        required=False,
+    )
+    assigned_asha_name = serializers.SerializerMethodField()
+    assigned_asha_village = serializers.CharField(source='assigned_asha.assigned_village', read_only=True, allow_null=True)
 
     class Meta:
         model = Patient
         fields = [
             'id', 'user_id', 'name', 'age', 'village', 'gender',
             'blood_group', 'address', 'medical_history', 'phone_number',
-            'is_active', 'email',
+            'is_active', 'email', 'assigned_asha', 'assigned_asha_name',
+            'assigned_asha_village',
         ]
+
+    def get_assigned_asha_name(self, obj):
+        asha = obj.assigned_asha
+        if not asha or not asha.user:
+            return None
+        return asha.user.name or asha.user.username
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('user', {})
+        instance = super().update(instance, validated_data)
         if user_data:
             user = instance.user
             for field in ('name', 'village', 'is_active'):
                 if field in user_data:
                     setattr(user, field, user_data[field])
             user.save()
-        return super().update(instance, validated_data)
+        if instance.assigned_asha:
+            sync_patient_village_to_asha(instance, instance.assigned_asha)
+        return instance
 
 
 class AdminDoctorDocumentSerializer(serializers.ModelSerializer):
@@ -146,6 +163,7 @@ class AdminAshaSerializer(serializers.ModelSerializer):
     is_active = serializers.BooleanField(source='user.is_active', required=False)
     user_id = serializers.IntegerField(source='user.id', read_only=True)
     documents = AdminAshaDocumentSerializer(many=True, read_only=True)
+    assigned_patient_count = serializers.SerializerMethodField()
 
     class Meta:
         model = ASHAWorker
@@ -153,7 +171,14 @@ class AdminAshaSerializer(serializers.ModelSerializer):
             'id', 'user_id', 'full_name', 'phone_number', 'email', 'village',
             'assigned_village', 'phc_center', 'worker_id', 'district', 'is_active',
             'verification_status', 'rejection_reason', 'documents',
+            'assigned_patient_count',
         ]
+
+    def get_assigned_patient_count(self, obj):
+        count = getattr(obj, 'assigned_patient_count', None)
+        if isinstance(count, int):
+            return count
+        return obj.assigned_patients.count()
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('user', {})
@@ -166,10 +191,12 @@ class AdminAshaSerializer(serializers.ModelSerializer):
             if 'is_active' in user_data:
                 user.is_active = user_data['is_active']
             user.save()
-        if 'assigned_village' in validated_data and validated_data['assigned_village']:
-            instance.user.village = validated_data['assigned_village']
+        instance = super().update(instance, validated_data)
+        if instance.assigned_village:
+            instance.user.village = instance.assigned_village
             instance.user.save(update_fields=['village'])
-        return super().update(instance, validated_data)
+            sync_assigned_patients_village(instance)
+        return instance
 
 
 class AdminConsultationSerializer(serializers.ModelSerializer):
@@ -378,6 +405,20 @@ class AdminChatThreadSerializer(serializers.ModelSerializer):
         if not msg:
             return None
         return AdminChatMessageSerializer(msg).data
+
+
+class AdminSetPasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=128)
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=128)
+
+    def validate(self, attrs):
+        value = (attrs.get('new_password') or attrs.get('password') or '').strip()
+        if not value:
+            raise serializers.ValidationError({'new_password': 'New password is required.'})
+        if len(value) < 8:
+            raise serializers.ValidationError({'new_password': 'Password must be at least 8 characters.'})
+        attrs['new_password'] = value
+        return attrs
 
 
 class AdminCreateUserSerializer(RegisterSerializer):

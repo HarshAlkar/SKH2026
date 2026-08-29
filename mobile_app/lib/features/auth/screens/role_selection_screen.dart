@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/server_host_helper.dart';
+import '../../../core/services/locale_controller.dart';
+import '../../../l10n/l10n.dart';
 import '../../../routes/app_routes.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
@@ -50,27 +52,27 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Server (cloud or PC)',
-            style: TextStyle(
+          Text(
+            context.l10n.serverCloudOrPc,
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: Color(0xFF1E293B),
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Active API: ${AppConfig.baseUrl}',
+            context.l10n.activeApi(AppConfig.baseUrl),
             style: const TextStyle(fontSize: 11, color: AppColors.primary),
           ),
           const SizedBox(height: 2),
           Text(
-            'Calls auto: ${AppConfig.signalingServerUrl}',
+            context.l10n.callsAuto(AppConfig.signalingServerUrl),
             style: const TextStyle(fontSize: 11, color: Color(0xFF0F766E)),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Cloud: https://your-api.onrender.com  ·  Emulator: 10.0.2.2  ·  Phone: PC Wi-Fi IP',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          Text(
+            context.l10n.serverHint,
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
           Row(
@@ -97,7 +99,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   foregroundColor: Colors.white,
                   minimumSize: const Size(72, 44),
                 ),
-                child: const Text('Save'),
+                child: Text(context.l10n.save),
               ),
             ],
           ),
@@ -132,9 +134,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             ),
           ),
         ),
-        title: const Text(
-          'VitalReach',
-          style: TextStyle(
+        title: Text(
+          context.l10n.appName,
+          style: const TextStyle(
             color: Color(0xFF1E293B),
             fontWeight: FontWeight.bold,
           ),
@@ -155,9 +157,30 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
-                'Select your role to continue',
-                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              Text(
+                context.l10n.selectRole,
+                style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: Text(context.l10n.english),
+                    selected: LocaleController.instance.languageCode == 'en',
+                    onSelected: (_) => LocaleController.instance.setLanguage('en'),
+                  ),
+                  ChoiceChip(
+                    label: Text(context.l10n.hindi),
+                    selected: LocaleController.instance.languageCode == 'hi',
+                    onSelected: (_) => LocaleController.instance.setLanguage('hi'),
+                  ),
+                  ChoiceChip(
+                    label: Text(context.l10n.marathi),
+                    selected: LocaleController.instance.languageCode == 'mr',
+                    onSelected: (_) => LocaleController.instance.setLanguage('mr'),
+                  ),
+                ],
               ),
               const SizedBox(height: 32),
 
@@ -166,10 +189,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               _buildRoleCard(
                 index: 0,
                 icon: Icons.person_outline,
-                title: 'Villager / Patient',
-                description:
-                    'Check symptoms, track medicines, and consult doctors for your family\'s health.',
-                buttonText: 'Continue as Patient',
+                title: context.l10n.rolePatient,
+                description: context.l10n.rolePatientDesc,
+                buttonText: context.l10n.continueAsPatient,
                 color: AppColors.primary,
                 onTap: () => Navigator.pushNamed(context, AppRoutes.userLogin),
               ),
@@ -177,10 +199,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               _buildRoleCard(
                 index: 1,
                 icon: Icons.assignment_ind_outlined,
-                title: 'ASHA Worker',
-                description:
-                    'Manage village health data, track community visits, and assist local patients.',
-                buttonText: 'Continue as ASHA',
+                title: context.l10n.roleAsha,
+                description: context.l10n.roleAshaDesc,
+                buttonText: context.l10n.continueAsAsha,
                 color: AppColors.secondary,
                 onTap: () => Navigator.pushNamed(context, AppRoutes.ashaLogin),
               ),
@@ -188,21 +209,20 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               _buildRoleCard(
                 index: 2,
                 icon: Icons.medical_services_outlined,
-                title: 'Doctor',
-                description:
-                    'Provide telemedicine consultation and expert medical advice to rural communities.',
-                buttonText: 'Continue as Doctor',
+                title: context.l10n.roleDoctor,
+                description: context.l10n.roleDoctorDesc,
+                buttonText: context.l10n.continueAsDoctor,
                 color: Colors.orange,
                 onTap: () =>
                     Navigator.pushNamed(context, AppRoutes.doctorLogin),
               ),
 
               const SizedBox(height: 20),
-              const Center(
+              Center(
                 child: Text(
-                  '© 2024 VitalReach. \nHealthcare reaching everywhere.',
+                  context.l10n.copyright,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
                 ),
               ),
             ],

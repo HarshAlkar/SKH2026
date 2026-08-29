@@ -1,0 +1,403 @@
+{
+  "phase": "ready",
+  "message": "Saved to TEMP VAULT: 5 livestock/human screenings + 4 doctor prescriptions. Next: simulate Blackout (wipe LIVE).",
+  "live_count": 9,
+  "vault_count": 9,
+  "recovered": 0,
+  "updated_at": "2026-08-29T21:44:09.873268+00:00",
+  "log": [
+    "03:12:25  Vault snapshot: 3 screenings + 4 Rx (screening_create)",
+    "03:13:59  Vault snapshot: 4 screenings + 4 Rx (screening_create)",
+    "03:14:09  Vault snapshot: 5 screenings + 4 Rx (screening_create)"
+  ],
+  "primary_count": 9,
+  "shadow_count": 9,
+  "live_rows": [
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 7,
+      "title": "Fungal infection",
+      "detail": "itching, yellowish_skin, skin_rash, dischromic_patches, blister",
+      "severity": "Moderate",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:44:09.855711+00:00"
+    },
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 6,
+      "title": "Not enough recognizable skin symptoms",
+      "detail": "itching, yellowish_skin, yellowing_of_eyes",
+      "severity": "Unknown",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:43:59.382520+00:00"
+    },
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 5,
+      "title": "Hepatitis C",
+      "detail": "fatigue, nausea, skin_rash, \u0925\u0915\u0935\u093e, \u092e\u0933\u092e\u0933, \u092a\u0941\u0930\u0933",
+      "severity": "High",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:42:25.213426+00:00"
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 38,
+      "title": "Prescription",
+      "detail": "",
+      "severity": "active",
+      "who": "dr #4 -> pt #5",
+      "created_at": "2026-08-29T19:34:05.208261+00:00"
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 37,
+      "title": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "detail": "okay",
+      "severity": "active",
+      "who": "dr #5 -> pt #5",
+      "created_at": "2026-08-29T19:34:05.188222+00:00"
+    },
+    {
+      "kind": "Doctor prescription (TEMP hold)",
+      "type": "prescription",
+      "id": 36,
+      "title": "Prescription",
+      "detail": "",
+      "severity": "HELD-admin",
+      "who": "dr #4 -> pt #5",
+      "created_at": "2026-08-29T19:33:56.912709+00:00"
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 35,
+      "title": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "detail": "okay",
+      "severity": "active",
+      "who": "dr #5 -> pt #5",
+      "created_at": "2026-08-29T19:27:04.529506+00:00"
+    },
+    {
+      "kind": "Livestock screening",
+      "type": "screening",
+      "id": 4,
+      "title": "Suspected hemorrhagic enteritis (screening)",
+      "detail": "not eating, diarrhea, weakness, sneezing",
+      "severity": "Critical",
+      "who": "user #12",
+      "created_at": "2026-08-29T19:27:04.522073+00:00"
+    },
+    {
+      "kind": "Livestock screening",
+      "type": "screening",
+      "id": 3,
+      "title": "Moderate livestock concern (screening)",
+      "detail": "not eating, diarrhea, weakness, sneezing",
+      "severity": "Moderate",
+      "who": "user #12",
+      "created_at": "2026-08-29T19:27:04.514512+00:00"
+    }
+  ],
+  "vault_rows": [
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 7,
+      "title": "Fungal infection",
+      "detail": "itching, yellowish_skin, skin_rash, dischromic_patches, blister",
+      "severity": "Moderate",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:44:09.855711+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 6,
+      "title": "Not enough recognizable skin symptoms",
+      "detail": "itching, yellowish_skin, yellowing_of_eyes",
+      "severity": "Unknown",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:43:59.382520+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 5,
+      "title": "Hepatitis C",
+      "detail": "fatigue, nausea, skin_rash, \u0925\u0915\u0935\u093e, \u092e\u0933\u092e\u0933, \u092a\u0941\u0930\u0933",
+      "severity": "High",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:42:25.213426+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 38,
+      "title": "Prescription",
+      "detail": "",
+      "severity": "active",
+      "who": "dr #4 -> pt #5",
+      "created_at": "2026-08-29T19:34:05.208261+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 37,
+      "title": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "detail": "okay",
+      "severity": "active",
+      "who": "dr #5 -> pt #5",
+      "created_at": "2026-08-29T19:34:05.188222+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 36,
+      "title": "Prescription",
+      "detail": "",
+      "severity": "held",
+      "who": "dr #4 -> pt #5",
+      "created_at": "2026-08-29T19:33:56.912709+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 35,
+      "title": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "detail": "okay",
+      "severity": "active",
+      "who": "dr #5 -> pt #5",
+      "created_at": "2026-08-29T19:27:04.529506+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Livestock screening",
+      "type": "screening",
+      "id": 4,
+      "title": "Suspected hemorrhagic enteritis (screening)",
+      "detail": "not eating, diarrhea, weakness, sneezing",
+      "severity": "Critical",
+      "who": "user #12",
+      "created_at": "2026-08-29T19:27:04.522073+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Livestock screening",
+      "type": "screening",
+      "id": 3,
+      "title": "Moderate livestock concern (screening)",
+      "detail": "not eating, diarrhea, weakness, sneezing",
+      "severity": "Moderate",
+      "who": "user #12",
+      "created_at": "2026-08-29T19:27:04.514512+00:00",
+      "holding": true
+    }
+  ],
+  "primary_rows": [
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 7,
+      "title": "Fungal infection",
+      "detail": "itching, yellowish_skin, skin_rash, dischromic_patches, blister",
+      "severity": "Moderate",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:44:09.855711+00:00"
+    },
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 6,
+      "title": "Not enough recognizable skin symptoms",
+      "detail": "itching, yellowish_skin, yellowing_of_eyes",
+      "severity": "Unknown",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:43:59.382520+00:00"
+    },
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 5,
+      "title": "Hepatitis C",
+      "detail": "fatigue, nausea, skin_rash, \u0925\u0915\u0935\u093e, \u092e\u0933\u092e\u0933, \u092a\u0941\u0930\u0933",
+      "severity": "High",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:42:25.213426+00:00"
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 38,
+      "title": "Prescription",
+      "detail": "",
+      "severity": "active",
+      "who": "dr #4 -> pt #5",
+      "created_at": "2026-08-29T19:34:05.208261+00:00"
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 37,
+      "title": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "detail": "okay",
+      "severity": "active",
+      "who": "dr #5 -> pt #5",
+      "created_at": "2026-08-29T19:34:05.188222+00:00"
+    },
+    {
+      "kind": "Doctor prescription (TEMP hold)",
+      "type": "prescription",
+      "id": 36,
+      "title": "Prescription",
+      "detail": "",
+      "severity": "HELD-admin",
+      "who": "dr #4 -> pt #5",
+      "created_at": "2026-08-29T19:33:56.912709+00:00"
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 35,
+      "title": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "detail": "okay",
+      "severity": "active",
+      "who": "dr #5 -> pt #5",
+      "created_at": "2026-08-29T19:27:04.529506+00:00"
+    },
+    {
+      "kind": "Livestock screening",
+      "type": "screening",
+      "id": 4,
+      "title": "Suspected hemorrhagic enteritis (screening)",
+      "detail": "not eating, diarrhea, weakness, sneezing",
+      "severity": "Critical",
+      "who": "user #12",
+      "created_at": "2026-08-29T19:27:04.522073+00:00"
+    },
+    {
+      "kind": "Livestock screening",
+      "type": "screening",
+      "id": 3,
+      "title": "Moderate livestock concern (screening)",
+      "detail": "not eating, diarrhea, weakness, sneezing",
+      "severity": "Moderate",
+      "who": "user #12",
+      "created_at": "2026-08-29T19:27:04.514512+00:00"
+    }
+  ],
+  "shadow_rows": [
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 7,
+      "title": "Fungal infection",
+      "detail": "itching, yellowish_skin, skin_rash, dischromic_patches, blister",
+      "severity": "Moderate",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:44:09.855711+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 6,
+      "title": "Not enough recognizable skin symptoms",
+      "detail": "itching, yellowish_skin, yellowing_of_eyes",
+      "severity": "Unknown",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:43:59.382520+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Human screening",
+      "type": "screening",
+      "id": 5,
+      "title": "Hepatitis C",
+      "detail": "fatigue, nausea, skin_rash, \u0925\u0915\u0935\u093e, \u092e\u0933\u092e\u0933, \u092a\u0941\u0930\u0933",
+      "severity": "High",
+      "who": "user #12",
+      "created_at": "2026-08-29T21:42:25.213426+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 38,
+      "title": "Prescription",
+      "detail": "",
+      "severity": "active",
+      "who": "dr #4 -> pt #5",
+      "created_at": "2026-08-29T19:34:05.208261+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 37,
+      "title": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "detail": "okay",
+      "severity": "active",
+      "who": "dr #5 -> pt #5",
+      "created_at": "2026-08-29T19:34:05.188222+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 36,
+      "title": "Prescription",
+      "detail": "",
+      "severity": "held",
+      "who": "dr #4 -> pt #5",
+      "created_at": "2026-08-29T19:33:56.912709+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Doctor prescription",
+      "type": "prescription",
+      "id": 35,
+      "title": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "detail": "okay",
+      "severity": "active",
+      "who": "dr #5 -> pt #5",
+      "created_at": "2026-08-29T19:27:04.529506+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Livestock screening",
+      "type": "screening",
+      "id": 4,
+      "title": "Suspected hemorrhagic enteritis (screening)",
+      "detail": "not eating, diarrhea, weakness, sneezing",
+      "severity": "Critical",
+      "who": "user #12",
+      "created_at": "2026-08-29T19:27:04.522073+00:00",
+      "holding": true
+    },
+    {
+      "kind": "Livestock screening",
+      "type": "screening",
+      "id": 3,
+      "title": "Moderate livestock concern (screening)",
+      "detail": "not eating, diarrhea, weakness, sneezing",
+      "severity": "Moderate",
+      "who": "user #12",
+      "created_at": "2026-08-29T19:27:04.514512+00:00",
+      "holding": true
+    }
+  ],
+  "db_file": "C:\\Users\\HARSH\\OneDrive\\Desktop\\HARSH\\SKH\\SKH2026\\backend\\django_api\\db.sqlite3",
+  "shadow_file": "C:\\Users\\HARSH\\OneDrive\\Desktop\\HARSH\\SKH\\SKH2026\\backend\\django_api\\blackout_data\\temp_vault.json"
+}

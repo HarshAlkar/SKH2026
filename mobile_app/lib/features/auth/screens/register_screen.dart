@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/village_dropdown_field.dart';
 import '../../../routes/app_routes.dart';
 import '../../../core/utils/validators.dart';
 import '../../../core/utils/helpers.dart';
+import '../../../l10n/l10n.dart';
 import '../../../providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -19,7 +21,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // Shared Controllers
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _villageController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -34,6 +35,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // State variables
   String _selectedRole = 'user';
+  String? _selectedVillage;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -47,7 +49,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _villageController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -61,7 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _handleRegistration() async {
     if (_formKey.currentState!.validate()) {
       if (_passwordController.text != _confirmPasswordController.text) {
-        Helpers.showSnackBar(context, 'Passwords do not match', isError: true);
+        Helpers.showSnackBar(context, context.l10n.passwordsDoNotMatch, isError: true);
         return;
       }
 
@@ -70,7 +71,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final Map<String, dynamic> regData = {
         'name': _nameController.text,
         'phone_number': _phoneController.text,
-        'village': _villageController.text,
+        'village': _selectedVillage ?? '',
         'email': _emailController.text,
         'password': _passwordController.text,
         'role': _selectedRole,
@@ -81,14 +82,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         regData['experience_years'] = int.tryParse(_expController.text) ?? 0;
         regData['hospital_name'] = _hospitalController.text;
       } else if (_selectedRole == 'asha_worker') {
-        regData['assigned_village'] = _villageController.text;
+        regData['assigned_village'] = _selectedVillage ?? '';
         regData['phc_center'] = _phcController.text;
       }
 
       final success = await authProvider.register(regData);
 
       if (success && mounted) {
-        Helpers.showSnackBar(context, 'Registration Successful!');
+        Helpers.showSnackBar(context, context.l10n.registrationSuccessful);
         // Navigate to dashboard
         switch (_selectedRole) {
           case 'doctor':
@@ -101,7 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             Navigator.pushReplacementNamed(context, AppRoutes.userDashboard);
         }
       } else if (mounted) {
-        Helpers.showSnackBar(context, authProvider.error ?? 'Registration failed', isError: true);
+        Helpers.showSnackBar(context, authProvider.error ?? context.l10n.registrationFailed, isError: true);
       }
     }
   }
@@ -173,12 +174,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             validator: (v) => Validators.validateEmail(v),
                           ),
                           const SizedBox(height: 16),
-                          _buildTextField(
-                            controller: _villageController,
+                          VillageDropdownField(
+                            value: _selectedVillage,
                             label: 'Village / City',
-                            placeholder: 'Enter village name',
+                            hint: 'Select village',
+                            accentColor: AppColors.primary,
+                            fillColor: Colors.grey.shade50,
                             icon: Icons.location_on_outlined,
-                            validator: (v) => Validators.validateRequired(v, 'Village'),
+                            onChanged: (val) => setState(() => _selectedVillage = val),
                           ),
                         ],
                       ),

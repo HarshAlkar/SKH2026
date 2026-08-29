@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
+import '../../../core/l10n/screening_i18n.dart';
 import '../../../core/security/model_integrity.dart';
 
 /// On-device multi-hot symptom MLP (TFLite) for offline human screening.
@@ -86,7 +87,10 @@ class SymptomMlService {
       return {
         'disease': 'Insufficient input',
         'possible_condition': 'Not enough recognizable symptoms',
-        'disease_display': 'Not enough recognizable symptoms',
+        'disease_display': ScreeningI18n.disease(
+          'Not enough recognizable symptoms',
+          language,
+        ),
         'severity': 'Unknown',
         'confidence': 0.0,
         'top_predictions': <Map<String, dynamic>>[],
@@ -94,10 +98,13 @@ class SymptomMlService {
         'source': 'symptom_mlp_ondevice',
         'score_type': 'model_probability',
         'result_state': 'INSUFFICIENT_INPUT',
-        'disclaimer': _disclaimer,
-        'message':
-            'We could not map enough symptoms to the screening vocabulary. '
-            'Please select chips or add more detail. This is not a diagnosis.',
+        'disclaimer': ScreeningI18n.disclaimer(language),
+        'message': language.toLowerCase().startsWith('mr')
+            ? 'पुरेशी लक्षणे ओळखता आली नाहीत. चिप्स निवडा किंवा अधिक तपशील द्या. हे निदान नाही.'
+            : language.toLowerCase().startsWith('hi')
+                ? 'पर्याप्त लक्षण नहीं पहचाने गए। चिप्स चुनें या और विवरण दें। यह निदान नहीं है।'
+                : 'We could not map enough symptoms to the screening vocabulary. '
+                    'Please select chips or add more detail. This is not a diagnosis.',
         'insufficient_symptoms': true,
         'language': language,
       };
@@ -146,37 +153,54 @@ class SymptomMlService {
     final tips = _precautions[condition] ?? const <String>[];
 
     final headline = ambiguous
-        ? 'Elevated-risk screening result'
-        : 'Possible condition identified through screening';
+        ? ScreeningI18n.disease('Elevated-risk screening result', language)
+        : ScreeningI18n.disease(condition, language);
     final displayName = ambiguous
-        ? 'Elevated-risk screening result'
-        : 'Possible: $condition (screening)';
+        ? ScreeningI18n.disease('Elevated-risk screening result', language)
+        : ScreeningI18n.disease(condition, language);
+
+    final localizedTop = [
+      for (final row in top.take(3))
+        {
+          ...row,
+          'disease_display': ScreeningI18n.disease(
+            row['disease'].toString(),
+            language,
+          ),
+          'severity_display': ScreeningI18n.severity(
+            row['severity'].toString(),
+            language,
+          ),
+        },
+    ];
 
     return {
       'disease': condition,
       'possible_condition': displayName,
       'disease_display': displayName,
       'severity': best['severity'],
+      'severity_display': ScreeningI18n.severity(
+        best['severity'].toString(),
+        language,
+      ),
       'confidence': best['confidence'],
-      'top_predictions': top.take(3).toList(),
+      'top_predictions': localizedTop,
       'raw_probabilities': rawTop,
       'matched_features': matchedFeatures,
       'ambiguous': ambiguous,
       'precautions': tips,
-      'advice': tips.isEmpty
-          ? 'Discuss these screening results with a qualified healthcare professional.'
-          : tips.take(3).join('. '),
+      'advice': ScreeningI18n.advice(
+        language: language,
+        alertSent: false,
+        diseaseName: condition,
+      ),
       'alert_sent': false,
       'source': 'symptom_mlp_ondevice',
       'score_type': 'model_probability',
       'result_state': 'SUCCESS_ONDEVICE_ML',
       'headline': headline,
-      'disclaimer': _disclaimer,
-      'message': ambiguous
-          ? 'Possible conditions to discuss with a healthcare professional are listed below. '
-              'AI-assisted screening only. This is not a medical diagnosis.'
-          : 'Screening result indicates elevated risk for $condition. '
-              'This is not a diagnosis. Please consult a qualified healthcare professional.',
+      'disclaimer': ScreeningI18n.disclaimer(language),
+      'message': ScreeningI18n.disclaimer(language),
       'language': language,
     };
   }
@@ -294,8 +318,11 @@ class SymptomMlService {
   List<String> _normalizeInputs(List<String> inputs) {
     final out = <String>{};
     for (final raw in inputs) {
-      final parts = raw
-          .toLowerCase()
+      var mapped = raw.toLowerCase();
+      ScreeningI18n.indicSynonyms.forEach((indic, en) {
+        mapped = mapped.replaceAll(indic, ' $en ');
+      });
+      final parts = mapped
           .replaceAll(RegExp(r'[^a-z0-9_\s]'), ' ')
           .split(RegExp(r'[\s_]+'))
           .where((p) => p.isNotEmpty);

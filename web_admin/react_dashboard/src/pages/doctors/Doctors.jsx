@@ -14,6 +14,7 @@ import { Modal, Field, inputClass } from '../../components/ui/Modal';
 import { toast } from '../../components/ui/Toast';
 import DoctorVerification from './DoctorVerification';
 import VerificationStatusBadge from '../../components/verification/VerificationStatusBadge';
+import ChangePasswordModal, { useChangePassword } from '../../components/users/ChangePasswordModal';
 
 const empty = {
   name: '',
@@ -38,6 +39,7 @@ export default function DoctorsPage() {
   const [spec, setSpec] = useState('');
   const [verStatus, setVerStatus] = useState(searchParams.get('verification') || '');
   const [verifyDoctor, setVerifyDoctor] = useState(null);
+  const password = useChangePassword();
 
   const specs = useMemo(() => [...new Set(rows.map((r) => r.specialization).filter(Boolean))], [rows]);
   const pendingCount = rows.filter((r) => r.verification_status === 'PENDING_VERIFICATION').length;
@@ -193,6 +195,21 @@ export default function DoctorsPage() {
                 >
                   Edit
                 </button>
+                <button
+                  type="button"
+                  className="text-primary text-xs font-semibold px-2 py-1"
+                  onClick={() =>
+                    password.setTarget({
+                      name: r.full_name,
+                      request: (pw) =>
+                        r.user_id
+                          ? adminApi.setUserPassword(r.user_id, pw)
+                          : adminApi.setDoctorPassword(r.id, pw),
+                    })
+                  }
+                >
+                  Password
+                </button>
               </div>
             ),
           },
@@ -250,6 +267,14 @@ export default function DoctorsPage() {
           setVerifyDoctor(null);
           reload();
         }}
+      />
+      <ChangePasswordModal
+        open={!!password.target}
+        title="Change doctor password"
+        subtitle={password.target ? `Doctor: ${password.target.name}` : ''}
+        onClose={() => password.setTarget(null)}
+        onSubmit={password.submit}
+        saving={password.saving}
       />
     </div>
   );

@@ -13,8 +13,10 @@ class Prescription(models.Model):
     ]
 
     STATUS_ACTIVE = 'active'
+    STATUS_HELD = 'held'  # TEMP vault — not visible to patient until admin restore
     STATUS_CHOICES = [
         (STATUS_ACTIVE, 'Active'),
+        (STATUS_HELD, 'Held in TEMP vault'),
     ]
 
     patient = models.ForeignKey(

@@ -46,6 +46,7 @@ def api_root_view(request):
             "/api/admin/",
             "/api/one-health/",
             "/api/ai/",
+            "/api/blackout/display/",
         ]
     })
 
@@ -73,6 +74,9 @@ urlpatterns = [
     path('api/ai/', include('apps.ai_proxy.urls')),
     path('api/places/', include('apps.places_proxy.urls')),
     path('api/iot/', include('apps.security_audit.urls')),
+    path('api/blackout/', include('apps.blackout.urls')),
+    path('blackout/', include('apps.blackout.urls')),
+    path('api/trustshield/', include('apps.trustshield.urls')),
 ]
 
 # Local media only in DEBUG — production should use private storage / signed URLs

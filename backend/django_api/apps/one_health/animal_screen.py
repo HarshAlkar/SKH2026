@@ -162,7 +162,7 @@ def _rule_screen(symptoms_text: str, species: str) -> dict[str, Any]:
     }
 
 
-def screen_animal_symptoms(symptoms_text: str, species: str = 'CATTLE') -> dict[str, Any]:
+def screen_animal_symptoms(symptoms_text: str, species: str = 'CATTLE', language: str = 'en') -> dict[str, Any]:
     """ML condition-family screening with Critical/High keyword safety override."""
     rules = _rule_screen(symptoms_text, species)
     ml = None
@@ -174,7 +174,7 @@ def screen_animal_symptoms(symptoms_text: str, species: str = 'CATTLE') -> dict[
         ml = None
 
     if ml is None:
-        return rules
+        return _localize_animal(rules, language)
 
     # Prefer rule engine when it flags Critical or High (safety net).
     if _SEVERITY_RANK.get(rules.get('severity'), 0) >= _SEVERITY_RANK['High']:
@@ -190,7 +190,7 @@ def screen_animal_symptoms(symptoms_text: str, species: str = 'CATTLE') -> dict[
             f"Livestock screening indicates elevated risk for {out.get('possible_condition')}. "
             "This result is decision support and not a veterinary diagnosis."
         )
-        return out
+        return _localize_animal(out, language)
 
     out = {
         'possible_condition': ml.get('condition') or ml.get('possible_condition'),
@@ -217,4 +217,35 @@ def screen_animal_symptoms(symptoms_text: str, species: str = 'CATTLE') -> dict[
             "This result is decision support and not a veterinary diagnosis."
         ),
     }
+    return _localize_animal(out, language)
+
+
+def _localize_animal(result: dict[str, Any], language: str) -> dict[str, Any]:
+    lang = (language or 'en').lower()
+    out = dict(result)
+    out['language'] = 'mr' if lang.startswith('mr') else ('hi' if lang.startswith('hi') else 'en')
+    if out['language'] == 'hi':
+        out['disclaimer'] = (
+            'स्क्रीनिंग से जोखिम का संकेत — योग्य पशुचिकित्सक से सलाह लें। यह पशु चिकित्सा निदान नहीं है।'
+        )
+        out['severity_display'] = {
+            'Low': 'कम', 'Moderate': 'मध्यम', 'High': 'उच्च', 'Critical': 'गंभीर',
+        }.get(str(out.get('severity') or ''), out.get('severity'))
+        out['disease_display'] = out.get('possible_condition')
+        if not out.get('advice'):
+            out['advice'] = 'पशु को छाया और पानी दें। बिगड़ने पर पशुचिकित्सक से संपर्क करें।'
+    elif out['language'] == 'mr':
+        out['disclaimer'] = (
+            'स्क्रीनिंगमुळे धोका दिसतो — पात्र पशुवैद्यांचा सल्ला घ्या. हे पशुवैद्यकीय निदान नाही.'
+        )
+        out['severity_display'] = {
+            'Low': 'कमी', 'Moderate': 'मध्यम', 'High': 'उच्च', 'Critical': 'गंभीर',
+        }.get(str(out.get('severity') or ''), out.get('severity'))
+        out['disease_display'] = out.get('possible_condition')
+        if not out.get('advice'):
+            out['advice'] = 'पशुला सावली आणि पाणी द्या. बिघडल्यास पशुवैद्यकाशी संपर्क करा.'
+    else:
+        out['disclaimer'] = DISCLAIMER
+        out['severity_display'] = out.get('severity')
+        out['disease_display'] = out.get('possible_condition')
     return out

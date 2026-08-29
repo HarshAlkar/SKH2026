@@ -1,0 +1,271 @@
+{
+  "saved_at": "2026-08-29T21:44:09.871325+00:00",
+  "reason": "screening_create",
+  "screenings": [
+    {
+      "id": 3,
+      "domain": "ANIMAL",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, diarrhea, weakness, sneezing",
+      "possible_condition": "Moderate livestock concern (screening)",
+      "severity_level": "Moderate",
+      "confidence": 0.6,
+      "advice": "Improve hygiene and hydration. Seek veterinary advice if not improving.",
+      "result_json": {
+        "possible_condition": "Moderate livestock concern (screening)",
+        "disease_display": "Moderate livestock concern (screening)",
+        "severity": "Moderate",
+        "confidence": 0.6,
+        "advice": "Improve hygiene and hydration. Seek veterinary advice if not improving.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "source": "rules_local",
+        "client_id": "animal-1788031599295-1504"
+      },
+      "client_id": "animal-1788031599295-1504",
+      "status": "released",
+      "created_at": "2026-08-29T19:27:04.514512+00:00"
+    },
+    {
+      "id": 4,
+      "domain": "ANIMAL",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "not eating, diarrhea, weakness, sneezing",
+      "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.57,
+      "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+      "result_json": {
+        "possible_condition": "Suspected hemorrhagic enteritis (screening)",
+        "disease": "Suspected hemorrhagic enteritis (screening)",
+        "severity": "Critical",
+        "confidence": 0.57,
+        "advice": "Isolate animal, withhold feed briefly, provide clean water. Contact a veterinarian immediately.",
+        "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "top_predictions": [
+          {
+            "disease": "Suspected hemorrhagic enteritis (screening)",
+            "severity": "Critical",
+            "confidence": 0.57
+          },
+          {
+            "disease": "Reduced appetite / weakness (screening)",
+            "severity": "Moderate",
+            "confidence": 0.69
+          },
+          {
+            "disease": "Respiratory infection signs (screening)",
+            "severity": "Moderate",
+            "confidence": 0.57
+          }
+        ],
+        "source": "rules_override_ml",
+        "ml_suggestion": {
+          "condition": "Non-specific illness signs",
+          "severity": "Moderate",
+          "confidence": 0.335,
+          "family": "Other"
+        },
+        "message": "Livestock screening indicates elevated risk for Suspected hemorrhagic enteritis (screening). This result is decision support and not a veterinary diagnosis."
+      },
+      "client_id": "animal-1788031598900-5785",
+      "status": "released",
+      "created_at": "2026-08-29T19:27:04.522073+00:00"
+    },
+    {
+      "id": 5,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fatigue, nausea, skin_rash, \u0925\u0915\u0935\u093e, \u092e\u0933\u092e\u0933, \u092a\u0941\u0930\u0933",
+      "possible_condition": "Hepatitis C",
+      "severity_level": "High",
+      "confidence": 1.0,
+      "advice": "\u092a\u0941\u0930\u0947\u0938\u0947 \u092a\u093e\u0923\u0940 \u092a\u094d\u092f\u093e \u0906\u0923\u093f \u0935\u093f\u0936\u094d\u0930\u093e\u0902\u0924\u0940 \u0918\u094d\u092f\u093e. \u0932\u0915\u094d\u0937\u0923\u093e\u0902\u0915\u0921\u0947 \u0932\u0915\u094d\u0937 \u0926\u094d\u092f\u093e.",
+      "result_json": {
+        "disease": "Hepatitis C",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "High",
+        "confidence": 1.0,
+        "top_predictions": [
+          {
+            "disease": "Hepatitis C",
+            "confidence": 1.0,
+            "match_coverage": 0.4,
+            "severity": "High"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "\u092a\u0941\u0930\u0947\u0938\u0947 \u092a\u093e\u0923\u0940 \u092a\u094d\u092f\u093e \u0906\u0923\u093f \u0935\u093f\u0936\u094d\u0930\u093e\u0902\u0924\u0940 \u0918\u094d\u092f\u093e. \u0932\u0915\u094d\u0937\u0923\u093e\u0902\u0915\u0921\u0947 \u0932\u0915\u094d\u0937 \u0926\u094d\u092f\u093e.",
+        "disclaimer": "\u0938\u094d\u0915\u094d\u0930\u0940\u0928\u093f\u0902\u0917\u092e\u0941\u0933\u0947 \u0927\u094b\u0915\u093e \u0926\u093f\u0938\u0924\u094b \u2014 \u092a\u093e\u0924\u094d\u0930 \u0906\u0930\u094b\u0917\u094d\u092f \u0924\u091c\u094d\u091c\u094d\u091e\u093e\u0902\u091a\u093e \u0938\u0932\u094d\u0932\u093e \u0918\u094d\u092f\u093e. \u0939\u0947 \u0935\u0948\u0926\u094d\u092f\u0915\u0940\u092f \u0928\u093f\u0926\u093e\u0928 \u0928\u093e\u0939\u0940.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "mr",
+        "ml_error": "Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788039743067-9388"
+      },
+      "client_id": "human-1788039743067-9388",
+      "status": "released",
+      "created_at": "2026-08-29T21:42:25.213426+00:00"
+    },
+    {
+      "id": 6,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "itching, yellowish_skin, yellowing_of_eyes",
+      "possible_condition": "Not enough recognizable skin symptoms",
+      "severity_level": "Unknown",
+      "confidence": 0.0,
+      "advice": "Add more specific symptoms using chips or clearer free-text. This is not a Low-risk clearance.",
+      "result_json": {
+        "disease": "Not enough recognizable skin symptoms",
+        "possible_condition": "Not enough recognizable skin symptoms",
+        "disease_display": "Not enough recognizable skin symptoms",
+        "severity": "Unknown",
+        "confidence": 0.0,
+        "top_predictions": [],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "score_type": "symptom_match_fallback",
+        "result_state": "INSUFFICIENT_INPUT",
+        "insufficient_symptoms": true,
+        "advice": "Add more specific symptoms using chips or clearer free-text. This is not a Low-risk clearance.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "Screening could not classify reliably from the symptoms provided. Please add more detail and try again. This is not a diagnosis.",
+        "language": "en",
+        "client_id": "human-1788039837144-8279"
+      },
+      "client_id": "human-1788039837144-8279",
+      "status": "released",
+      "created_at": "2026-08-29T21:43:59.382520+00:00"
+    },
+    {
+      "id": 7,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "itching, yellowish_skin, skin_rash, dischromic_patches, blister",
+      "possible_condition": "Fungal infection",
+      "severity_level": "Moderate",
+      "confidence": 0.691,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Fungal infection",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 0.691,
+        "top_predictions": [
+          {
+            "disease": "Fungal infection",
+            "confidence": 0.691,
+            "match_coverage": 1.0,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Drug Reaction",
+            "confidence": 0.154,
+            "match_coverage": 0.5,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Impetigo",
+            "confidence": 0.154,
+            "match_coverage": 0.5,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788039847597-9365"
+      },
+      "client_id": "human-1788039847597-9365",
+      "status": "released",
+      "created_at": "2026-08-29T21:44:09.855711+00:00"
+    }
+  ],
+  "prescriptions": [
+    {
+      "id": 35,
+      "patient_id": 5,
+      "doctor_id": 5,
+      "medications": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "dosage_instructions": "okay",
+      "notes": "dawai khao",
+      "consultation_id": null,
+      "prescription_type": "digital",
+      "status": "active",
+      "issued_at": "2026-08-29T19:27:04.529506+00:00",
+      "file": "",
+      "file_content_type": "",
+      "file_size": null
+    },
+    {
+      "id": 36,
+      "patient_id": 5,
+      "doctor_id": 4,
+      "medications": "",
+      "dosage_instructions": "",
+      "notes": "",
+      "consultation_id": null,
+      "prescription_type": "handwritten",
+      "status": "held",
+      "issued_at": "2026-08-29T19:33:56.912709+00:00",
+      "file": "prescription_documents/rx_scan_42db3512b6014a04bfe4df7f7603ba1b.jpg",
+      "file_content_type": "image/jpeg",
+      "file_size": 1725853
+    },
+    {
+      "id": 37,
+      "patient_id": 5,
+      "doctor_id": 5,
+      "medications": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "dosage_instructions": "okay",
+      "notes": "dawai khao",
+      "consultation_id": null,
+      "prescription_type": "digital",
+      "status": "active",
+      "issued_at": "2026-08-29T19:34:05.188222+00:00",
+      "file": "",
+      "file_content_type": "",
+      "file_size": null
+    },
+    {
+      "id": 38,
+      "patient_id": 5,
+      "doctor_id": 4,
+      "medications": "",
+      "dosage_instructions": "",
+      "notes": "",
+      "consultation_id": null,
+      "prescription_type": "handwritten",
+      "status": "active",
+      "issued_at": "2026-08-29T19:34:05.208261+00:00",
+      "file": "prescription_documents/rx_scan_42db3512b6014a04bfe4df7f7603ba1b.jpg",
+      "file_content_type": "image/jpeg",
+      "file_size": 1725853
+    }
+  ]
+}
