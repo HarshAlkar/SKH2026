@@ -162,35 +162,18 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
           ),
           const SizedBox(height: 16),
           const Divider(height: 1, color: Color(0xFFE2E8F0)),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(Icons.calendar_today, size: 15, color: Color(0xFF64748B)),
+              const Icon(Icons.calendar_today, size: 16, color: Colors.grey),
               const SizedBox(width: 6),
-              Text(formattedDate, style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(formattedDate, style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w500, fontSize: 13)),
               const Spacer(),
-              const Icon(Icons.access_time, size: 15, color: Color(0xFF64748B)),
+              const Icon(Icons.access_time, size: 16, color: Colors.grey),
               const SizedBox(width: 6),
-              Text(formattedTime, style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(formattedTime, style: const TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.w500, fontSize: 13)),
             ],
           ),
-          if (appt['notes'] != null && appt['notes'].toString().trim().isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Reason: ${appt['notes']}',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF475569)),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
         ],
       ),
     );

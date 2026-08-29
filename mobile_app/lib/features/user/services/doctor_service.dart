@@ -86,37 +86,14 @@ class DoctorService {
     }
   }
 
-  Future<Map<String, dynamic>> smartMatch({
-    required String symptoms,
-    String? duration,
-    String? severity,
-  }) async {
+  Future<Map<String, dynamic>> smartMatch(String symptoms) async {
     final response = await _apiService.post(
       '/consultations/appointments/smart-match/',
-      body: {
-        'symptoms': symptoms,
-        if (duration != null && duration.isNotEmpty) 'duration': duration,
-        if (severity != null && severity.isNotEmpty) 'severity': severity,
-      },
+      body: {'symptoms': symptoms},
     );
     if (response is Map<String, dynamic>) {
       return response;
     }
     return Map<String, dynamic>.from(response);
-  }
-
-  Future<List<String>> getDoctorSlots({
-    required int doctorId,
-    required String date,
-  }) async {
-    try {
-      final response = await _apiService.get('/consultations/appointments/doctor-slots/?doctor_id=$doctorId&date=$date');
-      if (response is Map && response['available_slots'] is List) {
-        return List<String>.from(response['available_slots']);
-      }
-      return ['09:00:00', '10:30:00', '11:15:00', '12:00:00', '14:30:00', '16:00:00', '17:30:00'];
-    } catch (e) {
-      return ['09:00:00', '10:30:00', '11:15:00', '12:00:00', '14:30:00', '16:00:00', '17:30:00'];
-    }
   }
 }

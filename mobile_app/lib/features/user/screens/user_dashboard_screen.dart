@@ -11,6 +11,7 @@ import '../../profile/widgets/profile_avatar.dart';
 import '../../../providers/consultation_provider.dart';
 import '../../../core/sync/offline_api.dart';
 import '../../../core/widgets/sync_status_banner.dart';
+import '../../../core/recovery/recovery_status_banner.dart';
 import '../../../core/services/permission_dialog_service.dart';
 import 'asha_workers_screen.dart';
 
@@ -95,6 +96,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
       body: Column(
         children: [
           const SyncStatusBanner(),
+          const RecoveryStatusBanner(),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -309,8 +311,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         _buildActionCard('My Appointments', Icons.event_available_outlined, AppRoutes.patientAppointments),
         _buildActionCard('Medicine Tracker', Icons.medication_outlined, AppRoutes.medicineTracker),
         _buildActionCard('Nearby Clinics', Icons.location_on_outlined, AppRoutes.nearbyClinics),
+        _buildActionCard('Consult Doctor', Icons.video_camera_front_outlined, AppRoutes.consultDoctor),
         _buildActionCard('ASHA Workers', Icons.health_and_safety_outlined, AppRoutes.ashaWorkers),
-        _buildActionCard('Emergency Help', Icons.emergency_outlined, AppRoutes.emergencyHelp),
         _buildActionCard('My Prescriptions', Icons.description_outlined, AppRoutes.myPrescriptions),
         _buildActionCard('Health Tips', Icons.lightbulb_outline, AppRoutes.healthTips),
       ],

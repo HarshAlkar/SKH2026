@@ -1,3 +1,4 @@
+import '../recovery/in_flight_recovery_queue.dart';
 import '../services/api_service.dart';
 import 'local_store.dart';
 import 'sync_service.dart';
@@ -84,15 +85,37 @@ class OfflineApi {
     String? fileField,
     Map<String, String>? fields,
   }) async {
+    final clientId = (body is Map && body['client_id'] != null)
+        ? body['client_id'].toString()
+        : 'op_${DateTime.now().millisecondsSinceEpoch}_${path.replaceAll('/', '_')}';
+
+    final enrichedBody = body is Map
+        ? {...body, 'client_id': clientId}
+        : body;
+
+    // 1. Atomically record in encrypted in-flight recovery queue before primary store write
+    await InFlightRecoveryQueue.instance.recordInFlight(
+      clientId: clientId,
+      actionType: path.replaceAll('/', '_').toUpperCase(),
+      path: path,
+      method: method,
+      payload: enrichedBody is Map ? Map<String, dynamic>.from(enrichedBody) : {'body': enrichedBody},
+    );
+
+    // 2. Primary local store write
     await _store.enqueue(
       method: method,
       path: path,
-      body: body,
+      body: enrichedBody,
       filePath: filePath,
       fileField: fileField,
       fields: fields,
     );
-    await _optimisticCache(method, path, body);
+
+    // 3. Mark committed in in-flight queue
+    await InFlightRecoveryQueue.instance.markCommitted(clientId);
+
+    await _optimisticCache(method, path, enrichedBody);
     await _sync.refreshPending();
     // Await flush so callers get accurate "Saved to cloud" vs "on this phone".
     await _sync.flush();

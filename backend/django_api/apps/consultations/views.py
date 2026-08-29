@@ -263,9 +263,6 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='smart-match')
     def smart_match(self, request):
         symptoms = request.data.get('symptoms', '').strip()
-        duration = request.data.get('duration', '').strip()
-        patient_severity = (request.data.get('severity') or '').strip().upper()
-
         if not symptoms:
             return Response(
                 {'error': 'Please describe what is happening to you.'},
@@ -277,71 +274,50 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         urgency = 'MODERATE'
         specialization = 'General Physician'
         rec_type = 'VIDEO'
-        reason = "Based on your reported symptoms, consultation with a General Physician is recommended."
 
         # Clinical Categorization & Urgency Rules
-        if any(k in lower for k in ['chest pain', 'heart', 'attack', 'breathing', 'breath', 'unconscious', 'faint', 'choking', 'severe bleeding', 'stroke', 'paralysis']) or patient_severity == 'EMERGENCY':
+        if any(k in lower for k in ['chest pain', 'heart', 'attack', 'breathing', 'breath', 'unconscious', 'faint', 'choking', 'severe bleeding', 'stroke', 'paralysis']):
             urgency = 'EMERGENCY'
             specialization = 'Cardiology / Emergency Care'
             rec_type = 'OFFLINE'
-            reason = "Urgent medical attention recommended based on critical symptoms. Immediate care priority assigned."
         elif any(k in lower for k in ['child', 'baby', 'infant', 'pediatric', 'kid', 'newborn', 'vomiting child']):
-            urgency = 'HIGH' if patient_severity in ('SEVERE', 'EMERGENCY') else 'MODERATE'
+            urgency = 'MODERATE'
             specialization = 'Pediatrician'
             rec_type = 'VIDEO'
-            reason = "Pediatric consultation recommended for child-related health concerns."
         elif any(k in lower for k in ['skin', 'rash', 'itching', 'eczema', 'allergy', 'boil', 'fungal', 'pimple', 'scabies']):
-            urgency = 'HIGH' if patient_severity == 'SEVERE' else 'LOW'
+            urgency = 'LOW'
             specialization = 'Dermatologist'
             rec_type = 'VIDEO'
-            reason = "Preliminary screening suggests that a Dermatology consultation is most appropriate for your skin condition."
         elif any(k in lower for k in ['pregnant', 'pregnancy', 'maternity', 'period', 'menstrual', 'gyneco', 'delivery']):
-            urgency = 'HIGH' if patient_severity in ('SEVERE', 'EMERGENCY') else 'MODERATE'
+            urgency = 'MODERATE'
             specialization = 'Gynecologist'
             rec_type = 'VIDEO'
-            reason = "Consultation with a Gynecologist / Women's Health Specialist is recommended."
         elif any(k in lower for k in ['bone', 'fracture', 'joint', 'knee', 'spine', 'back pain', 'ortho', 'dislocation']):
-            urgency = 'HIGH' if ('fracture' in lower or 'dislocation' in lower or patient_severity == 'SEVERE') else 'MODERATE'
+            urgency = 'HIGH' if ('fracture' in lower or 'dislocation' in lower) else 'MODERATE'
             specialization = 'Orthopedic Surgeon'
-            rec_type = 'OFFLINE' if ('fracture' in lower or 'dislocation' in lower) else 'VIDEO'
-            reason = "Orthopedic evaluation recommended for joint and musculoskeletal symptoms."
-        elif any(k in lower for k in ['high fever', 'dengue', 'malaria', 'severe pain', 'vomiting blood']) or patient_severity == 'SEVERE':
+            rec_type = 'OFFLINE' if 'fracture' in lower else 'VIDEO'
+        elif any(k in lower for k in ['high fever', 'dengue', 'malaria', 'severe pain', 'vomiting blood']):
             urgency = 'HIGH'
             specialization = 'General Physician'
             rec_type = 'VIDEO'
-            reason = "Priority General Physician consultation recommended for acute illness symptoms."
         else:
-            urgency = 'LOW' if patient_severity == 'MILD' else 'MODERATE'
+            urgency = 'MODERATE'
             specialization = 'General Physician'
             rec_type = 'VIDEO'
-            reason = "General Physician consultation recommended for common symptoms and evaluation."
 
-        # Query active verified doctors with valid user accounts
-        doctors = list(
-            Doctor.objects.filter(
-                verification_status='VERIFIED',
-                is_available=True,
-                user__name__isnull=False,
-            ).exclude(user__name='').select_related('user')
-        )
+        # Query active verified doctors
+        doctors = Doctor.objects.filter(verification_status='VERIFIED', is_available=True).select_related('user')
         matched_doctor = None
-        other_doctors = []
         spec_keyword = specialization.lower().split('/')[0].split(' ')[0]
 
         for doc in doctors:
             doc_spec = (doc.specialization or '').lower()
             if spec_keyword in doc_spec:
-                if not matched_doctor:
-                    matched_doctor = doc
-                else:
-                    other_doctors.append(doc)
-            else:
-                other_doctors.append(doc)
+                matched_doctor = doc
+                break
 
         if not matched_doctor:
-            matched_doctor = doctors[0] if doctors else None
-            if doctors:
-                other_doctors = doctors[1:]
+            matched_doctor = doctors.first()
 
         if not matched_doctor:
             # Fallback to any doctor in system
@@ -400,27 +376,10 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         if not doc_name.startswith('Dr.'):
             doc_name = f"Dr. {doc_name}"
 
-        # Format other suitable doctors
-        other_docs_data = []
-        for odoc in other_doctors[:4]:
-            od_user = odoc.user
-            od_name = od_user.name if od_user and od_user.name else 'Doctor'
-            if not od_name.startswith('Dr.'):
-                od_name = f"Dr. {od_name}"
-            other_docs_data.append({
-                "id": odoc.id,
-                "name": od_name,
-                "specialization": odoc.specialization or "General Physician",
-                "hospital_name": odoc.hospital_name or "Kopargaon Rural Hospital",
-            })
-
         return Response({
             "symptoms_analyzed": symptoms,
-            "duration": duration,
-            "severity": patient_severity or urgency,
             "urgency": urgency,
             "recommended_specialization": matched_doctor.specialization or specialization,
-            "recommendation_reason": reason,
             "recommended_doctor": {
                 "id": matched_doctor.id,
                 "name": doc_name,
@@ -433,43 +392,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             "recommended_type": rec_type,
             "alternative_dates": dates,
             "alternative_times": avail_times,
-            "other_doctors": other_docs_data,
-            "is_emergency": (urgency == 'EMERGENCY'),
-            "disclaimer": "Preliminary screening and triage recommendation only. This does not constitute a formal medical diagnosis."
         }, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['get'], url_path='doctor-slots')
-    def doctor_slots(self, request):
-        doctor_id = request.query_params.get('doctor_id')
-        date_str = request.query_params.get('date')
-
-        if not doctor_id or not date_str:
-            return Response({'error': 'doctor_id and date query parameters are required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        doctor = _resolve_doctor(doctor_id)
-        if not doctor:
-            return Response({'error': 'Doctor not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        standard_slots = ['09:00:00', '10:30:00', '11:15:00', '12:00:00', '14:30:00', '16:00:00', '17:30:00']
-        booked_times = Appointment.objects.filter(
-            doctor=doctor,
-            appointment_date=date_str,
-            status='SCHEDULED'
-        ).values_list('appointment_time', flat=True)
-
-        booked_set = set()
-        for b_time in booked_times:
-            time_str = b_time.strftime('%H:%M:%S') if hasattr(b_time, 'strftime') else str(b_time)[:8]
-            booked_set.add(time_str)
-
-        available_slots = [s for s in standard_slots if s not in booked_set]
-        return Response({
-            'doctor_id': doctor.id,
-            'date': date_str,
-            'available_slots': available_slots,
-            'all_slots': standard_slots,
-            'booked_slots': list(booked_set)
-        })
 
     def perform_update(self, serializer):
         user = self.request.user

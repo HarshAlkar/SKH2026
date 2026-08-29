@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'app.dart';
 import 'core/services/storage_service.dart';
@@ -6,6 +7,8 @@ import 'core/services/notification_service.dart';
 import 'core/sync/sync_service.dart';
 import 'core/emergency_comms/emergency_comms.dart';
 import 'core/emergency_comms/emergency_alert_host.dart';
+import 'core/recovery/disaster_recovery_service.dart';
+import 'core/recovery/snapshot_manager.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -34,6 +37,18 @@ void main() async {
     debugPrint('EmergencyComms.init failed: $e\n$st');
   }
   EmergencyAlertHost.instance.start();
+
+  try {
+    final healthy = await DisasterRecoveryService.instance.checkHealth();
+    if (!healthy) {
+      debugPrint('[DisasterRecovery] Integrity check failed on startup. Triggering automatic recovery...');
+      await DisasterRecoveryService.instance.executeDisasterRecovery();
+    } else {
+      unawaited(SnapshotManager.instance.createSnapshot(reason: 'app_launch_baseline'));
+    }
+  } catch (e, st) {
+    debugPrint('DisasterRecovery startup init failed: $e\n$st');
+  }
 
   runApp(const VitalReachApp());
 }
