@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/recovery/disaster_recovery_service.dart';
+import '../../../core/recovery/recovery_status_banner.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/permission_dialog_service.dart';
 import '../../../core/services/settings_store.dart';
@@ -42,6 +44,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Emergency Contacts state
   List<EmergencyContactModel> _emergencyContacts = [];
   bool _loadingContacts = false;
+  bool _simulatingBlackout = false;
+
+  Future<void> _simulateBlackout() async {
+    setState(() => _simulatingBlackout = true);
+    try {
+      final res = await DisasterRecoveryService.instance.simulateBlackoutFaultInjection();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            res.success
+                ? t('✅ Blackout Recovery Succeeded: ${res.recordsRestored} records restored, ${res.operationsReplayed} pending ops replayed.',
+                    '✅ ब्लैकआउट रिकवरी सफल: ${res.recordsRestored} रिकॉर्ड्स और ${res.operationsReplayed} इन-फ़्लाइट ऑपरेशन्स रीस्टोर हुए।')
+                : t('❌ Recovery Failed: ${res.statusMessage}', '❌ रिकवरी विफल: ${res.statusMessage}'),
+          ),
+          backgroundColor: res.success ? Colors.green : Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Simulation error: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _simulatingBlackout = false);
+    }
+  }
 
   // Controllers
   late final TextEditingController _name;
@@ -564,6 +594,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           t('Profile', 'प्रोफ़ाइल'),
           style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: AppColors.textPrimary),
+            tooltip: t('Settings / Blackout Demo', 'सेटिंग्स / ब्लैकआउट डेमो'),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.settings),
+          ),
+        ],
       ),
       body: user == null
           ? Center(child: Text(t('Please log in', 'कृपया लॉग इन करें')))
@@ -848,6 +885,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
 
                 const SizedBox(height: 24),
+                // BLACKOUT RESILIENCE (HACKATHON DEMO) CARD
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.deepOrange.shade200),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.deepOrange.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.security, color: Colors.deepOrange, size: 22),
+                              const SizedBox(width: 8),
+                              Text(
+                                t('BLACKOUT RESILIENCE', 'ब्लैकआउट रेजिलिएंस'),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                              ),
+                            ],
+                          ),
+                          ValueListenableBuilder<RecoveryState>(
+                            valueListenable: DisasterRecoveryService.instance.stateNotifier,
+                            builder: (context, state, _) {
+                              final isNormal = state == RecoveryState.normal;
+                              return Chip(
+                                label: Text(
+                                  isNormal ? 'HEALTHY' : state.name.toUpperCase(),
+                                  style: TextStyle(
+                                    color: isNormal ? Colors.green.shade800 : Colors.orange.shade800,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                backgroundColor: isNormal ? Colors.green.shade50 : Colors.orange.shade50,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        t('AES-256 Encrypted Snapshots + In-flight Replay Engine', 'AES-256 स्नैपशॉट + इन-फ़्लाइट रिप्ले इंजन'),
+                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepOrange,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: _simulatingBlackout ? null : _simulateBlackout,
+                          icon: _simulatingBlackout
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Icon(Icons.flash_on),
+                          label: Text(
+                            _simulatingBlackout
+                                ? t('Simulating Blackout & Recovering...', 'ब्लैकआउट सिम्युलेट और रिकवर हो रहा है...')
+                                : t('Simulate Blackout / Corrupt Primary Store', 'ब्लैकआउट सिम्युलेट करें (प्राइमरी स्टोर करप्ट)'),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 OutlinedButton.icon(
                   onPressed: () => Navigator.pushNamed(context, AppRoutes.settings),
                   icon: const Icon(Icons.settings_outlined),
