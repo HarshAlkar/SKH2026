@@ -10,7 +10,8 @@ class LocalStore {
   Database? _db;
 
   Future<Database> get database async {
-    if (_db != null) return _db!;
+    if (_db != null && _db!.isOpen) return _db!;
+    _db = null;
     final dbPath = await getDatabasesPath();
     _db = await openDatabase(
       join(dbPath, 'vitalreach.db'),
@@ -30,6 +31,17 @@ class LocalStore {
       },
     );
     return _db!;
+  }
+
+  Future<void> closeAndReset() async {
+    if (_db != null) {
+      try {
+        if (_db!.isOpen) {
+          await _db!.close();
+        }
+      } catch (_) {}
+      _db = null;
+    }
   }
 
   Future<void> _createV1Tables(Database db) async {

@@ -9,9 +9,21 @@ class MedicineDbService {
   MedicineDbService._init();
 
   Future<Database> get database async {
-    if (_database != null) return _database!;
+    if (_database != null && _database!.isOpen) return _database!;
+    _database = null;
     _database = await _initDB('medicines.db');
     return _database!;
+  }
+
+  Future<void> closeAndReset() async {
+    if (_database != null) {
+      try {
+        if (_database!.isOpen) {
+          await _database!.close();
+        }
+      } catch (_) {}
+      _database = null;
+    }
   }
 
   Future<Database> _initDB(String filePath) async {

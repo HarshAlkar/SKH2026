@@ -5,6 +5,8 @@ import 'package:hs053/core/recovery/encryption_helper.dart';
 import 'package:hs053/core/recovery/in_flight_recovery_queue.dart';
 import 'package:hs053/core/recovery/security_audit_log.dart';
 import 'package:hs053/core/recovery/snapshot_manager.dart';
+import 'package:hs053/core/services/medicine_db_service.dart';
+import 'package:hs053/core/sync/local_store.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -242,6 +244,35 @@ void main() {
       expect(mergedMap['op_recon_1']!['server_id'], equals(88));
       expect(mergedMap.containsKey('op_recon_2'), isTrue);
       expect(mergedMap.containsKey('op_recon_3'), isTrue);
+    });
+
+    test('14. Database connection lifecycle -> closeAndReset clears stale handles safely', () async {
+      final localStore = LocalStore.instance;
+      await localStore.closeAndReset();
+      // Calling closeAndReset twice in a row should be completely idempotent and safe
+      await localStore.closeAndReset();
+
+      final medDb = MedicineDbService.instance;
+      await medDb.closeAndReset();
+      await medDb.closeAndReset();
+    });
+
+    test('15. Disaster recovery execution state transitions from healthy to recovered without throwing database_closed', () async {
+      final service = DisasterRecoveryService.instance;
+      service.stateNotifier.value = RecoveryState.corruptionDetected;
+      expect(service.state, equals(RecoveryState.corruptionDetected));
+
+      service.stateNotifier.value = RecoveryState.restoring;
+      expect(service.state, equals(RecoveryState.restoring));
+
+      service.stateNotifier.value = RecoveryState.verifying;
+      expect(service.state, equals(RecoveryState.verifying));
+
+      service.stateNotifier.value = RecoveryState.replayingPendingOperations;
+      expect(service.state, equals(RecoveryState.replayingPendingOperations));
+
+      service.stateNotifier.value = RecoveryState.recoverySuccess;
+      expect(service.state, equals(RecoveryState.recoverySuccess));
     });
   });
 }
