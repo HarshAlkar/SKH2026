@@ -1,5 +1,4 @@
 import '../services/storage_service.dart';
-import 'gemini_secrets.dart';
 
 class AppConfig {
   static const String defaultHost = String.fromEnvironment(
@@ -7,16 +6,11 @@ class AppConfig {
     defaultValue: 'https://skh2026.onrender.com',
   );
 
-  /// Gemini API key for SharedAIHealthChat.
-  /// Set via --dart-define=GEMINI_API_KEY=... or edit gemini_secrets.dart locally
-  /// (keep real keys out of git).
-  static String get geminiApiKey {
-    const fromDefine = String.fromEnvironment('GEMINI_API_KEY');
-    if (fromDefine.trim().isNotEmpty) return fromDefine.trim();
-    return GeminiSecrets.apiKey.trim();
-  }
+  /// Gemini chat uses authenticated Django proxy — no client API key.
+  static bool get hasGeminiKey => true;
 
-  static bool get hasGeminiKey => geminiApiKey.isNotEmpty;
+  @Deprecated('Use server proxy; client keys are not used')
+  static String get geminiApiKey => '';
 
   /// Cloud signaling origin (Render HTTPS, no :5000). Override via dart-define or saved URL.
   static const String defaultCloudSignalingUrl = String.fromEnvironment(

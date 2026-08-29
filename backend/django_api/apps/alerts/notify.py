@@ -56,6 +56,52 @@ def notify_village_care_team(patient_user, disease, severity, dedupe_minutes=30)
     return notification, True
 
 
+def notify_patient_prescription(prescription, dedupe_minutes=5):
+    """Notify the patient that a new prescription is available (reuses AlertNotification)."""
+    patient = getattr(prescription, 'patient', None)
+    patient_user = getattr(patient, 'user', None) if patient else None
+    if patient_user is None:
+        return None, False
+
+    doctor = getattr(prescription, 'doctor', None)
+    doctor_user = getattr(doctor, 'user', None) if doctor else None
+    doctor_name = ''
+    if doctor_user is not None:
+        doctor_name = (doctor_user.name or doctor_user.username or '').strip()
+    doctor_label = f"Dr. {doctor_name}" if doctor_name else "Your doctor"
+
+    rx_type = getattr(prescription, 'prescription_type', '') or 'digital'
+    if rx_type == 'handwritten':
+        disease = f"{doctor_label} uploaded a handwritten prescription."
+    else:
+        disease = f"{doctor_label} issued a new prescription."
+
+    cutoff = timezone.now() - timedelta(minutes=dedupe_minutes)
+    existing = (
+        AlertNotification.objects.filter(
+            patient=patient_user,
+            disease=disease,
+            doctor=doctor,
+            created_at__gte=cutoff,
+        )
+        .order_by("-created_at")
+        .first()
+    )
+    if existing:
+        return existing, False
+
+    village = getattr(patient_user, "village", None)
+    asha = find_asha_for_village(village)
+    notification = AlertNotification.objects.create(
+        patient=patient_user,
+        doctor=doctor,
+        asha_worker=asha,
+        disease=disease[:200],
+        severity="Info",
+    )
+    return notification, True
+
+
 def notify_livestock_care_team(owner_user, condition, severity, species='', dedupe_minutes=30):
     """Escalate animal screening High/Critical to ASHA + veterinarian (or any doctor)."""
     if owner_user is None:

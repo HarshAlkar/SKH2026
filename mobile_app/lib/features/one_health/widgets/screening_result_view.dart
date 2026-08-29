@@ -60,36 +60,66 @@ class ScreeningResultView extends StatelessWidget {
         return const Color(0xFFEA580C);
       case 'Moderate':
         return const Color(0xFFD97706);
+      case 'Unknown':
+        return const Color(0xFF64748B);
       default:
         return const Color(0xFF059669);
     }
   }
 
+  bool get _isUnresolved {
+    final s = severity.trim().toLowerCase();
+    final finding = possibleFinding.toLowerCase();
+    return s == 'unknown' ||
+        finding.contains('could not be completed') ||
+        finding.contains('not enough recognizable') ||
+        finding.contains('insufficient') ||
+        finding.contains('screening unavailable');
+  }
+
   @override
   Widget build(BuildContext context) {
-    final band = EscalationPolicy.normalize(severity);
-    final showEscalate = EscalationPolicy.shouldShowEscalationButtons(band);
-    final meaning = explanation ??
-        ScreeningHealthSteps.explanation(
-          domain: domain,
-          severity: band,
-          possibleFinding: possibleFinding,
-        );
-    final steps = nextSteps.isNotEmpty
-        ? nextSteps
-        : ScreeningHealthSteps.forResult(
-            domain: domain,
-            severity: band,
-            condition: possibleFinding,
-          );
-    final seek = whenToSeekHelp ??
-        EscalationPolicy.whenToSeekHelp(severity: band, domain: domain);
+    final band = _isUnresolved
+        ? 'Unknown'
+        : EscalationPolicy.normalize(severity);
+    final showEscalate =
+        !_isUnresolved && EscalationPolicy.shouldShowEscalationButtons(band);
+    final meaning = _isUnresolved
+        ? (explanation ??
+            'Screening could not be completed reliably from the information provided. '
+                'Please add more specific symptoms or try again. '
+                'This is not a Low-risk clearance and not a diagnosis.')
+        : (explanation ??
+            ScreeningHealthSteps.explanation(
+              domain: domain,
+              severity: band,
+              possibleFinding: possibleFinding,
+            ));
+    final steps = _isUnresolved
+        ? const <String>[
+            'Add clearer symptoms using chips or free text.',
+            'Try again once the on-device model is available.',
+            'Seek care if you remain worried about your symptoms.',
+          ]
+        : (nextSteps.isNotEmpty
+            ? nextSteps
+            : ScreeningHealthSteps.forResult(
+                domain: domain,
+                severity: band,
+                condition: possibleFinding,
+              ));
+    final seek = _isUnresolved
+        ? 'Do not treat this screen as reassurance. Seek care if symptoms worsen or you are concerned.'
+        : (whenToSeekHelp ??
+            EscalationPolicy.whenToSeekHelp(severity: band, domain: domain));
     final disc = disclaimer ??
         ScreeningDisclaimer.text(
           language: 'en',
           isAnimal: domain == ScreeningDomain.livestock,
         );
-    final banner = EscalationPolicy.bannerMessage(severity: band, domain: domain);
+    final banner = _isUnresolved
+        ? null
+        : EscalationPolicy.bannerMessage(severity: band, domain: domain);
 
     return Container(
       width: double.infinity,
@@ -166,7 +196,9 @@ class ScreeningResultView extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              'Risk: ${band.toUpperCase()}',
+              _isUnresolved
+                  ? 'STATUS: SCREENING UNAVAILABLE'
+                  : 'Risk: ${band.toUpperCase()}',
               style: TextStyle(
                 color: _bandColor,
                 fontWeight: FontWeight.bold,
@@ -207,7 +239,7 @@ class ScreeningResultView extends StatelessWidget {
                 border: Border.all(color: _bandColor.withValues(alpha: 0.35)),
               ),
               child: Text(
-                banner,
+                banner ?? '',
                 style: TextStyle(
                   color: _bandColor,
                   fontWeight: FontWeight.w600,
@@ -216,7 +248,7 @@ class ScreeningResultView extends StatelessWidget {
                 ),
               ),
             ),
-          ] else if (band == 'Moderate') ...[
+          ] else if (band == 'Moderate' && banner != null) ...[
             const SizedBox(height: 14),
             Text(
               banner,

@@ -11,9 +11,9 @@ class SymptomDatasetService {
   static const _assetPath = 'lib/dataset/disease/dataset.csv';
 
   static const _aliases = <String, String>{
-    'temp': 'fever',
-    'temperature': 'fever',
-    'fever': 'fever',
+    'temp': 'high_fever',
+    'temperature': 'high_fever',
+    'fever': 'high_fever',
     'cough': 'cough',
     'rash': 'skin_rash',
     'itch': 'itching',
@@ -36,13 +36,13 @@ class SymptomDatasetService {
   };
 
   static const _commonRespiratory = {
+    'high_fever',
+    'mild_fever',
     'fever',
     'cough',
     'headache',
     'fatigue',
     'continuous_sneezing',
-    'high_fever',
-    'mild_fever',
   };
 
   static const _confidenceFloor = 0.35;
@@ -270,6 +270,7 @@ class SymptomDatasetService {
       'alert_sent': false,
       'source': skinOnly ? 'dataset_skin' : 'dataset_local',
       'score_type': 'symptom_match_fallback',
+      'result_state': 'SUCCESS_FALLBACK',
       'headline': 'Symptom-match screening (fallback)',
       'advice': _adviceFor(best['disease'] as String, language: language),
       'disclaimer': _disclaimer(language),
@@ -327,34 +328,43 @@ class SymptomDatasetService {
   }
 
   List<String> _normalizeInputs(List<String> inputs) {
-    final raw = <String>[];
+    final ordered = <String>[];
+    final seen = <String>{};
     for (final item in inputs) {
       final chunks = item
           .toLowerCase()
           .split(RegExp(r'[,\s/]+'))
           .map(_normalizeToken)
-          .where((s) => s.isNotEmpty);
-      raw.addAll(chunks);
-      raw.add(_normalizeToken(item));
-    }
-
-    final joined = List<String>.from(raw);
-    for (var i = 0; i < raw.length - 1; i++) {
-      joined.add('${raw[i]}_${raw[i + 1]}');
-    }
-
-    final normalized = <String>[];
-    for (final token in joined) {
-      if (token.isEmpty) continue;
-      normalized.add(token);
-      final alias = _aliases[token];
-      if (alias != null) normalized.add(alias);
-      for (final part in token.split('_')) {
-        final partAlias = _aliases[part];
-        if (partAlias != null) normalized.add(partAlias);
+          .where((s) => s.isNotEmpty)
+          .toList();
+      // Prefer whole-phrase token when it is a known symptom key.
+      final whole = _normalizeToken(item);
+      final sequence = <String>[];
+      if (whole.isNotEmpty && (chunks.length > 1 || chunks.isEmpty)) {
+        sequence.add(whole);
+      }
+      sequence.addAll(chunks);
+      for (final token in sequence) {
+        if (token.isEmpty || seen.contains(token)) continue;
+        seen.add(token);
+        ordered.add(token);
+        final alias = _aliases[token];
+        if (alias != null && seen.add(alias)) ordered.add(alias);
+        for (final part in token.split('_')) {
+          final partAlias = _aliases[part];
+          if (partAlias != null && seen.add(partAlias)) ordered.add(partAlias);
+        }
       }
     }
-    return normalized.toSet().toList();
+
+    // Bigrams only for distinct adjacent tokens (never vomiting_vomiting).
+    final withBigrams = List<String>.from(ordered);
+    for (var i = 0; i < ordered.length - 1; i++) {
+      if (ordered[i] == ordered[i + 1]) continue;
+      final pair = '${ordered[i]}_${ordered[i + 1]}';
+      if (seen.add(pair)) withBigrams.add(pair);
+    }
+    return withBigrams;
   }
 
   String _normalizeToken(String value) {
@@ -377,30 +387,64 @@ class SymptomDatasetService {
     late double confidence;
 
     if (skinOnly) {
-      disease = 'Undetermined skin condition';
-      severity = 'Low';
-      confidence = 0.2;
-    } else if (present.isNotEmpty && present.every((t) => _commonRespiratory.contains(t) || t == 'vomiting' || t == 'nausea')) {
+      disease = 'Not enough recognizable skin symptoms';
+      severity = 'Unknown';
+      confidence = 0.0;
+    } else if (present.isNotEmpty &&
+        present.every(
+          (t) =>
+              _commonRespiratory.contains(t) ||
+              t == 'vomiting' ||
+              t == 'nausea' ||
+              t == 'high_fever' ||
+              t == 'mild_fever' ||
+              t == 'fever',
+        )) {
       disease = 'Possible viral illness';
-      severity = present.contains('high_fever') || present.contains('fever') ? 'Moderate' : 'Low';
+      severity = present.contains('high_fever') || present.contains('fever')
+          ? 'Moderate'
+          : 'Low';
       confidence = 0.42;
+      return {
+        'disease': disease,
+        'severity': severity,
+        'confidence': confidence,
+        'top_predictions': [
+          {'disease': disease, 'confidence': confidence, 'severity': severity},
+        ],
+        'alert_sent': false,
+        'source': 'dataset_local',
+        'score_type': 'symptom_match_fallback',
+        'result_state': 'SUCCESS_FALLBACK',
+        'advice': _adviceFor(disease, language: language),
+        'disclaimer': _disclaimer(language),
+        'language': language.startsWith('hi') ? 'hi' : 'en',
+      };
     } else {
-      disease = 'Undetermined';
-      severity = 'Low';
-      confidence = 0.2;
+      disease = 'Not enough recognizable symptoms';
+      severity = 'Unknown';
+      confidence = 0.0;
     }
 
     return {
       'disease': disease,
+      'possible_condition': disease,
+      'disease_display': disease,
       'severity': severity,
       'confidence': confidence,
-      'top_predictions': [
-        {'disease': disease, 'confidence': confidence, 'severity': severity},
-      ],
+      'top_predictions': <Map<String, dynamic>>[],
       'alert_sent': false,
       'source': skinOnly ? 'dataset_skin' : 'dataset_local',
-      'advice': _adviceFor(disease, language: language),
+      'score_type': 'symptom_match_fallback',
+      'result_state': 'INSUFFICIENT_INPUT',
+      'insufficient_symptoms': true,
+      'advice':
+          'Add more specific symptoms using chips or clearer free-text. '
+          'This is not a Low-risk clearance.',
       'disclaimer': _disclaimer(language),
+      'message':
+          'Screening could not classify reliably from the symptoms provided. '
+          'Please add more detail and try again. This is not a diagnosis.',
       'language': language.startsWith('hi') ? 'hi' : 'en',
     };
   }

@@ -2,7 +2,7 @@ from rest_framework import serializers, viewsets, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.authtoken.models import Token
+from rest_framework.throttling import ScopedRateThrottle
 from django.contrib.auth import authenticate
 from django.conf import settings
 from django.db import transaction
@@ -14,6 +14,9 @@ from apps.doctors.models import Doctor, DoctorDocument
 from apps.asha_workers.models import ASHAWorker, ASHADocument
 from apps.patients.models import Patient
 from apps.inventory.models import MedicalStaffProfile, HealthcareFacility
+from apps.common.authentication import rotate_token
+from apps.common.uploads import validate_image_upload, safe_upload_name
+from apps.security_audit.audit import log_security_event
 import json
 import random
 import datetime
@@ -78,7 +81,7 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if obj.role == "doctor" and hasattr(obj, "doctor_profile"):
             profile = obj.doctor_profile
-            return {
+            details = {
                 "specialization": profile.specialization,
                 "experience_years": profile.experience_years,
                 "hospital_name": profile.hospital_name,
@@ -88,11 +91,18 @@ class UserSerializer(serializers.ModelSerializer):
                 "is_available": profile.is_available,
                 "verification_status": profile.verification_status,
                 "rejection_reason": profile.rejection_reason,
-                "documents": _document_payload(profile.documents.all(), request),
             }
+            request = self.context.get('request')
+            viewer = getattr(request, 'user', None) if request else None
+            if viewer and (
+                viewer.is_staff
+                or viewer.pk == obj.pk
+            ):
+                details["documents"] = _document_payload(profile.documents.all(), request)
+            return details
         if obj.role == "asha_worker" and hasattr(obj, "asha_profile"):
             profile = obj.asha_profile
-            return {
+            details = {
                 "asha_id": profile.id,
                 "assigned_village": profile.assigned_village,
                 "phc_center": profile.phc_center,
@@ -100,8 +110,12 @@ class UserSerializer(serializers.ModelSerializer):
                 "district": profile.district,
                 "verification_status": profile.verification_status,
                 "rejection_reason": profile.rejection_reason,
-                "documents": _document_payload(profile.documents.all(), request),
             }
+            request = self.context.get('request')
+            viewer = getattr(request, 'user', None) if request else None
+            if viewer and (viewer.is_staff or viewer.pk == obj.pk):
+                details["documents"] = _document_payload(profile.documents.all(), request)
+            return details
         if obj.role == "user" and hasattr(obj, "patient_profile"):
             return {
                 "patient_id": obj.patient_profile.id,
@@ -126,7 +140,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RegisterSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required=False, allow_blank=True)
-    password = serializers.CharField(write_only=True, min_length=6)
+    password = serializers.CharField(write_only=True, min_length=8)
     role = serializers.ChoiceField(choices=User.ROLE_CHOICES)
 
     specialization = serializers.CharField(required=False, allow_blank=True)
@@ -375,6 +389,20 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     http_method_names = ["get", "post", "patch", "head", "options"]
 
+    throttle_classes = [ScopedRateThrottle]
+
+    def get_throttles(self):
+        scope_map = {
+            'login': 'login',
+            'register': 'register',
+            'send_otp': 'otp',
+            'verify_otp': 'otp',
+            'reset_password': 'otp',
+            'upload_photo': 'upload',
+        }
+        self.throttle_scope = scope_map.get(self.action, 'user')
+        return super().get_throttles()
+
     def get_permissions(self):
         if self.action in ["register", "login", "send_otp", "verify_otp", "reset_password"]:
             return [AllowAny()]
@@ -384,6 +412,18 @@ class UserViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return User.objects.none()
+        if self.action == "list" and not user.is_staff:
+            # Prevent arbitrary role enumeration via GET /api/users/?role=
+            role_filter = (self.request.query_params.get("role") or "").strip()
+            if role_filter and user.role not in ("doctor", "asha_worker", "medical_staff"):
+                return User.objects.none()
+            if role_filter == "doctor":
+                return User.objects.filter(role="doctor")
+            if role_filter == "asha_worker":
+                return User.objects.filter(role="asha_worker")
+            if user.is_staff:
+                return User.objects.all()
+            return User.objects.filter(pk=user.pk)
         if self.action == "get_doctors":
             return User.objects.filter(role="doctor")
         if self.action == "get_asha_workers":
@@ -475,8 +515,14 @@ class UserViewSet(viewsets.ModelViewSet):
         photo = request.FILES.get("photo") or request.FILES.get("image")
         if not photo:
             return Response({"error": "photo is required"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            ext = validate_image_upload(photo, max_bytes=3 * 1024 * 1024)
+        except Exception as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        photo.name = safe_upload_name(ext, prefix='profile')
         request.user.photo = photo
         request.user.save(update_fields=["photo"])
+        log_security_event(request, action='upload_photo', object_type='User', object_id=request.user.pk)
         return Response(UserSerializer(request.user, context={"request": request}).data)
 
     @action(detail=False, methods=["post"], url_path="change-password")
@@ -488,16 +534,18 @@ class UserViewSet(viewsets.ModelViewSet):
                 {"error": "Current password and new password are required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if len(new_password) < 6:
+        if len(new_password) < 8:
             return Response(
-                {"error": "Password must be at least 6 characters"},
+                {"error": "Password must be at least 8 characters"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         if not request.user.check_password(current_password):
             return Response({"error": "Current password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
         request.user.set_password(new_password)
         request.user.save()
-        return Response({"message": "Password changed successfully"})
+        rotate_token(request.user)
+        log_security_event(request, action='change_password', object_type='User', object_id=request.user.pk)
+        return Response({"message": "Password changed successfully. Please log in again."})
 
     @action(detail=False, methods=["post"], url_path="register")
     def register(self, request):
@@ -508,19 +556,25 @@ class UserViewSet(viewsets.ModelViewSet):
                 Q(phone_number=phone) | Q(username=phone)
             ).first()
             if existing:
-                token, _created = Token.objects.get_or_create(user=existing)
+                log_security_event(
+                    request, action='register', success=False,
+                    metadata={'reason': 'already_exists', 'role': role},
+                )
                 return Response(
                     {
-                        "token": token.key,
-                        "user": UserSerializer(existing, context={"request": request}).data,
+                        "error": "An account with this phone number and role already exists. Please log in.",
                         "already_exists": True,
                     },
-                    status=status.HTTP_200_OK,
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
         serializer = RegisterSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             user = serializer.save()
-            token, _created = Token.objects.get_or_create(user=user)
+            token = rotate_token(user)
+            log_security_event(
+                request, action='register', object_type='User', object_id=user.pk,
+                actor=user, metadata={'role': user.role},
+            )
             return Response(
                 {"token": token.key, "user": UserSerializer(user, context={"request": request}).data},
                 status=status.HTTP_201_CREATED,
@@ -551,24 +605,32 @@ class UserViewSet(viewsets.ModelViewSet):
                 existing = User.objects.filter(
                     Q(phone_number=identifier) | Q(email=identifier) | Q(username=identifier)
                 ).first()
+                log_security_event(request, action='login', success=False, metadata={'reason': 'wrong_module'})
                 return Response(
                     {
                         "error": f"Invalid login for this module. This account is registered as {existing.get_role_display()}."
                     },
                     status=status.HTTP_403_FORBIDDEN,
                 )
+            log_security_event(request, action='login', success=False, metadata={'reason': 'not_found'})
             return Response({"error": "Invalid credentials or user not found"}, status=status.HTTP_401_UNAUTHORIZED)
 
         user = authenticate(username=user_obj.username, password=password)
         if user:
-            token, _created = Token.objects.get_or_create(user=user)
+            token = rotate_token(user)
+            log_security_event(request, action='login', object_type='User', object_id=user.pk, actor=user)
             return Response({"token": token.key, "user": UserSerializer(user, context={"request": request}).data})
+        log_security_event(
+            request, action='login', success=False, actor=user_obj,
+            object_type='User', object_id=user_obj.pk, metadata={'reason': 'bad_password'},
+        )
         return Response({"error": "Invalid password"}, status=status.HTTP_401_UNAUTHORIZED)
 
     @action(detail=False, methods=["post"], url_path="logout")
     def logout(self, request):
         try:
             request.user.auth_token.delete()
+            log_security_event(request, action='logout', object_type='User', object_id=request.user.pk)
             return Response({"message": "Successfully logged out"}, status=status.HTTP_200_OK)
         except Exception:
             return Response({"error": "Something went wrong"}, status=status.HTTP_400_BAD_REQUEST)
@@ -601,15 +663,20 @@ class UserViewSet(viewsets.ModelViewSet):
 
         sms_sent = send_otp_sms(phone_number, otp_code)
         payload = {"message": f"OTP sent to {phone_number}"}
-        if settings.DEBUG and not sms_sent:
-            print(f"DEBUG: OTP for {phone_number} is {otp_code}")
+        # Only expose OTP when explicitly enabled for local SMS-less testing
+        if getattr(settings, 'EXPOSE_OTP_FOR_DEV', False) and not sms_sent:
             payload["otp"] = otp_code
         elif not sms_sent and not settings.DEBUG:
             return Response(
                 {"error": "SMS provider is not configured."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
+        elif not sms_sent and settings.DEBUG and not getattr(settings, 'EXPOSE_OTP_FOR_DEV', False):
+            # Dev without SMS: still allow testing via server logs only (not API body)
+            import logging
+            logging.getLogger(__name__).info('OTP generated for %s (not returned in response)', phone_number)
 
+        log_security_event(request, action='send_otp', success=True, metadata={'sms_sent': bool(sms_sent)})
         return Response(payload, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=["post"], url_path="verify-otp")
@@ -631,6 +698,7 @@ class UserViewSet(viewsets.ModelViewSet):
         )
 
         if not otp_record:
+            log_security_event(request, action='verify_otp', success=False)
             return Response({"error": "Invalid OTP"}, status=status.HTTP_400_BAD_REQUEST)
         if otp_record.is_expired():
             otp_record.delete()
@@ -648,7 +716,8 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
         otp_record.delete()
-        token, _created = Token.objects.get_or_create(user=user)
+        token = rotate_token(user)
+        log_security_event(request, action='verify_otp', object_type='User', object_id=user.pk, actor=user)
         return Response(
             {
                 "message": "OTP verified successfully",

@@ -9,6 +9,7 @@ class EscalationPolicy {
     if (s == 'critical') return 'Critical';
     if (s == 'high') return 'High';
     if (s == 'moderate') return 'Moderate';
+    if (s == 'unknown' || s == 'unavailable' || s == 'n/a') return 'Unknown';
     return 'Low';
   }
 

@@ -3,11 +3,14 @@ import 'dart:convert';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../security/secure_payload_crypto.dart';
+
 class LocalStore {
   static final LocalStore instance = LocalStore._();
   LocalStore._();
 
   Database? _db;
+  final _crypto = SecurePayloadCrypto.instance;
 
   Future<Database> get database async {
     if (_db != null) return _db!;
@@ -100,10 +103,17 @@ class LocalStore {
     Map<String, String>? fields,
   }) async {
     final db = await database;
+    dynamic enriched = body;
+    if (body is Map && body['client_id'] == null) {
+      enriched = Map<String, dynamic>.from(body)
+        ..['client_id'] =
+            '${DateTime.now().microsecondsSinceEpoch}-${method.hashCode.abs()}';
+    }
+    final encryptedBody = await _crypto.encryptJson(enriched);
     return db.insert('outbox', {
       'method': method.toUpperCase(),
       'path': path,
-      'body': body == null ? null : jsonEncode(body),
+      'body': encryptedBody,
       'file_path': filePath,
       'file_field': fileField,
       'fields_json': fields == null ? null : jsonEncode(fields),
@@ -120,12 +130,24 @@ class LocalStore {
 
   Future<List<Map<String, dynamic>>> pending() async {
     final db = await database;
-    return db.query(
+    final rows = await db.query(
       'outbox',
       where: "status = ?",
       whereArgs: ['pending'],
       orderBy: 'id ASC',
     );
+    final out = <Map<String, dynamic>>[];
+    for (final row in rows) {
+      final copy = Map<String, dynamic>.from(row);
+      final rawBody = copy['body'] as String?;
+      if (rawBody != null && rawBody.isNotEmpty) {
+        try {
+          copy['body'] = jsonEncode(await _crypto.decryptJson(rawBody));
+        } catch (_) {}
+      }
+      out.add(copy);
+    }
+    return out;
   }
 
   Future<int> pendingCount() async {
@@ -165,11 +187,12 @@ class LocalStore {
 
   Future<void> putCache(String key, dynamic payload) async {
     final db = await database;
+    final encrypted = await _crypto.encryptJson(payload);
     await db.insert(
       'cache_entries',
       {
         'cache_key': key,
-        'payload': jsonEncode(payload),
+        'payload': encrypted ?? '',
         'updated_at': DateTime.now().toIso8601String(),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
@@ -185,7 +208,7 @@ class LocalStore {
       limit: 1,
     );
     if (rows.isEmpty) return null;
-    return jsonDecode(rows.first['payload'] as String);
+    return _crypto.decryptJson(rows.first['payload'] as String);
   }
 
   Future<void> prependToListCache(String key, Map<String, dynamic> item) async {

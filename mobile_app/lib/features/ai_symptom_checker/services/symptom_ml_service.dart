@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'dart:math' as math;
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
+
+import '../../../core/security/model_integrity.dart';
 
 /// On-device multi-hot symptom MLP (TFLite) for offline human screening.
 class SymptomMlService {
@@ -34,8 +35,9 @@ class SymptomMlService {
       _interpreter != null && _features.isNotEmpty && _classes.isNotEmpty;
 
   static const _aliases = {
-    'temp': 'fever',
-    'temperature': 'fever',
+    'temp': 'high_fever',
+    'temperature': 'high_fever',
+    'fever': 'high_fever',
     'rash': 'skin_rash',
     'itch': 'itching',
     'vomit': 'vomiting',
@@ -82,15 +84,16 @@ class SymptomMlService {
     }
     if (matchedFeatures.isEmpty) {
       return {
-        'disease': 'Undetermined',
-        'possible_condition': 'Elevated-risk screening result',
-        'disease_display': 'Elevated-risk screening result',
-        'severity': 'Low',
+        'disease': 'Insufficient input',
+        'possible_condition': 'Not enough recognizable symptoms',
+        'disease_display': 'Not enough recognizable symptoms',
+        'severity': 'Unknown',
         'confidence': 0.0,
         'top_predictions': <Map<String, dynamic>>[],
         'matched_features': matchedFeatures,
         'source': 'symptom_mlp_ondevice',
         'score_type': 'model_probability',
+        'result_state': 'INSUFFICIENT_INPUT',
         'disclaimer': _disclaimer,
         'message':
             'We could not map enough symptoms to the screening vocabulary. '
@@ -107,7 +110,7 @@ class SymptomMlService {
 
     final top = <Map<String, dynamic>>[];
     final rawTop = <Map<String, dynamic>>[];
-    for (final index in ranked.take(3)) {
+    for (final index in ranked.take(5)) {
       if (index >= _classes.length) continue;
       final name = _classes[index];
       final p = calibrated[index];
@@ -124,6 +127,15 @@ class SymptomMlService {
         'probability': _round4(p),
         'severity': sev,
       });
+    }
+
+    if (kDebugMode) {
+      debugPrint('SymptomMlService inputs=$inputs');
+      debugPrint('SymptomMlService normalized=$tokens');
+      debugPrint('SymptomMlService matched=$matchedFeatures vectorLen=${vector.length}');
+      debugPrint(
+        'SymptomMlService top5=${top.map((e) => '${e['disease']}=${e['confidence']}').join(', ')}',
+      );
     }
 
     final best = top.first;
@@ -146,7 +158,7 @@ class SymptomMlService {
       'disease_display': displayName,
       'severity': best['severity'],
       'confidence': best['confidence'],
-      'top_predictions': top,
+      'top_predictions': top.take(3).toList(),
       'raw_probabilities': rawTop,
       'matched_features': matchedFeatures,
       'ambiguous': ambiguous,
@@ -157,6 +169,7 @@ class SymptomMlService {
       'alert_sent': false,
       'source': 'symptom_mlp_ondevice',
       'score_type': 'model_probability',
+      'result_state': 'SUCCESS_ONDEVICE_ML',
       'headline': headline,
       'disclaimer': _disclaimer,
       'message': ambiguous
@@ -257,6 +270,12 @@ class SymptomMlService {
       _classes = const [];
     }
     try {
+      final ok = await ModelIntegrity.verifyAsset(_modelAsset);
+      if (!ok) {
+        _lastError = 'Model integrity check failed (SHA-256 mismatch).';
+        debugPrint(_lastError);
+        return;
+      }
       _interpreter = await Interpreter.fromAsset(_modelAsset);
       debugPrint(
         'SymptomMlService: loaded TFLite '

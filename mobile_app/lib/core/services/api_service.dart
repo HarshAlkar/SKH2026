@@ -6,11 +6,13 @@ import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import '../constants/api_constants.dart';
 import '../utils/network_errors.dart';
+import '../security/secure_session_store.dart';
 import 'storage_service.dart';
 
 class ApiService {
   http.Client _client = _createClient();
   final StorageService _storageService = StorageService();
+  final _session = SecureSessionStore.instance;
   static const Duration _timeout = Duration(seconds: 20);
   static const Duration _connectTimeout = Duration(seconds: 8);
 
@@ -42,7 +44,7 @@ class ApiService {
     String endpoint,
     Map<String, String>? extra,
   ) async {
-    final token = _skipAuth(endpoint) ? null : _storageService.getString('token');
+    final token = _skipAuth(endpoint) ? null : await _session.readToken();
     return {
       'Accept': 'application/json',
       if (token != null && token.isNotEmpty) 'Authorization': 'Token $token',
@@ -90,6 +92,33 @@ class ApiService {
           .get(_uri(endpoint), headers: combinedHeaders)
           .timeout(timeout ?? _timeout);
       return _processResponse(response);
+    });
+  }
+
+  /// Authenticated binary download (e.g. private prescription files).
+  Future<List<int>> getBytes(
+    String endpoint, {
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) async {
+    return _send(() async {
+      final combinedHeaders = await _getHeaders(endpoint, headers);
+      final response = await _client
+          .get(_uri(endpoint), headers: combinedHeaders)
+          .timeout(timeout ?? const Duration(seconds: 60));
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response.bodyBytes;
+      }
+      String message = 'API Error: ${response.statusCode}';
+      try {
+        final body = jsonDecode(response.body);
+        if (body is Map && body['error'] != null) {
+          message = body['error'].toString();
+        } else if (body is Map && body['detail'] != null) {
+          message = body['detail'].toString();
+        }
+      } catch (_) {}
+      throw Exception(message);
     });
   }
 
@@ -201,6 +230,20 @@ class ApiService {
   }
 
   dynamic _processResponse(http.Response response) {
+    final raw = response.body.trimLeft();
+    if (raw.startsWith('<') ||
+        (response.headers['content-type'] ?? '').contains('text/html')) {
+      final lower = raw.toLowerCase();
+      if (lower.contains('disallowedhost') || lower.contains('allowed_hosts')) {
+        throw Exception(
+          'Django blocked this device IP. Add it to ALLOWED_HOSTS (or keep DEBUG=True) and restart the server.',
+        );
+      }
+      throw Exception(
+        'Server returned an HTML error (${response.statusCode}) instead of JSON. Check Django logs.',
+      );
+    }
+
     dynamic body;
     try {
       body = jsonDecode(response.body);

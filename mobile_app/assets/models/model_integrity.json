@@ -1,0 +1,14 @@
+{
+  "description": "SHA-256 integrity hashes for on-device TFLite models (hashing, not encryption).",
+  "models": {
+    "symptom_mlp.tflite": {
+      "sha256": "7156d1dc20cbce284c2bf1a1bc07321d8059fb06810aca240eb4b8bac3f0fc00"
+    },
+    "skin_cnn.tflite": {
+      "sha256": ""
+    },
+    "livestock_mlp.tflite": {
+      "sha256": ""
+    }
+  }
+}

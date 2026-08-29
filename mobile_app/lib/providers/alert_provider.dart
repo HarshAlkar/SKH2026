@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/alert_model.dart';
 import '../core/services/api_service.dart';
-import '../core/services/storage_service.dart';
+import '../core/security/secure_session_store.dart';
 
 class AlertProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
-  final StorageService _storageService = StorageService();
   List<AlertModel> _alerts = [];
   bool _isLoading = false;
 
@@ -16,7 +15,7 @@ class AlertProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final token = _storageService.getString('token');
+      final token = await SecureSessionStore.instance.readToken();
       final response = await _apiService.get(
         '/alerts/notifications/',
         headers: token != null ? {'Authorization': 'Token $token'} : null,

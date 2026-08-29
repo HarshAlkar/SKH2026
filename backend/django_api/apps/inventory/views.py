@@ -332,7 +332,6 @@ class SyncStockView(APIView):
             allowed = user_facility_ids(request.user)
             if (
                 allowed is not None
-                and allowed
                 and batch.facility_id not in allowed
                 and not request.user.is_staff
             ):
@@ -350,6 +349,12 @@ class SyncStockView(APIView):
                 'movement': StockMovementSerializer(result['movement']).data,
                 'batch': StockBatchSerializer(result['movement'].batch).data,
             })
+        from apps.security_audit.audit import log_security_event
+        log_security_event(
+            request, action='stock_sync',
+            object_type='StockMovement',
+            metadata={'item_count': len(items)},
+        )
         return Response({'results': results})
 
 

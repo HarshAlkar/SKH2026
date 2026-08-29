@@ -65,11 +65,15 @@ class _SharedAIHealthChatState extends State<SharedAIHealthChat> {
       });
       return;
     }
-    if (!_service.isConfigured) {
+    final configured = await _service.checkServerConfigured();
+    if (!mounted) return;
+    if (!configured) {
       setState(() {
         _booting = false;
         _offlineNote =
-            'AI chat is not configured on this build. Screening results remain available offline.';
+            'AI chat is not configured on the server. '
+            'Set GEMINI_API_KEY in Django (.env / Render). '
+            'Screening results remain available offline without Gemini.';
       });
       return;
     }

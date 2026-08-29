@@ -7,11 +7,13 @@ import '../constants/api_constants.dart';
 import '../sync/offline_api.dart';
 import '../sync/pending_upload_store.dart';
 import 'storage_service.dart';
+import '../security/secure_session_store.dart';
 
 class AuthenticationService {
   final ApiService _apiService = ApiService();
   final _secureStorage = const FlutterSecureStorage();
   final StorageService _storageService = StorageService();
+  final _session = SecureSessionStore.instance;
 
   Map<String, dynamic> _requireAuthPayload(dynamic response, String action) {
     if (response is! Map) {
@@ -39,8 +41,10 @@ class AuthenticationService {
     String? password,
     String? role,
   }) async {
-    await _storageService.saveString('user_data', jsonEncode(userData));
-    await _storageService.saveString('token', token);
+    await _session.writeSession(
+      token: token,
+      userDataJson: jsonEncode(userData),
+    );
     if (phoneNumber != null) {
       await _secureStorage.write(key: 'phone_number', value: phoneNumber);
     }
@@ -92,8 +96,8 @@ class AuthenticationService {
     String? cachedRole = await _secureStorage.read(key: 'role');
 
     if (phoneNumber == cachedPhone && password == cachedPass && role == cachedRole) {
-      String? cachedUserData = _storageService.getString('user_data');
-      final token = _storageService.getString('token');
+      final cachedUserData = await _session.readUserDataJson();
+      final token = await _session.readToken();
       if (cachedUserData != null && token != null) {
         return {
           'user': jsonDecode(cachedUserData),
@@ -134,6 +138,7 @@ class AuthenticationService {
     }
     await _storageService.remove('user_data');
     await _storageService.remove('token');
+    await _session.clearSession();
     await _secureStorage.delete(key: 'phone_number');
     await _secureStorage.delete(key: 'password');
     await _secureStorage.delete(key: 'role');
@@ -189,8 +194,8 @@ class AuthenticationService {
   }
 
   Future<Map<String, dynamic>?> getCachedUser() async {
-    String? cachedUserData = _storageService.getString('user_data');
-    final token = _storageService.getString('token');
+    final cachedUserData = await _session.readUserDataJson();
+    final token = await _session.readToken();
     if (cachedUserData != null && token != null && token.isNotEmpty) {
       return {
         'user': jsonDecode(cachedUserData),
@@ -201,7 +206,11 @@ class AuthenticationService {
   }
 
   Future<void> cacheUser(Map<String, dynamic> userData) async {
-    await _storageService.saveString('user_data', jsonEncode(userData));
+    final token = await _session.readToken() ?? '';
+    await _session.writeSession(
+      token: token,
+      userDataJson: jsonEncode(userData),
+    );
   }
 
   Future<Map<String, dynamic>> fetchMe() async {

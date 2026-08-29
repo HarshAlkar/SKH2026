@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
+import '../../../core/security/model_integrity.dart';
+
 /// On-device livestock condition-family MLP for offline One Health screening.
 class LivestockMlService {
   LivestockMlService._();
@@ -170,7 +172,12 @@ class LivestockMlService {
       _disclaimer = labels['disclaimer']?.toString() ?? _disclaimer;
     } catch (_) {}
     try {
-      _interpreter = await Interpreter.fromAsset(_modelAsset);
+      final ok = await ModelIntegrity.verifyAsset(_modelAsset);
+      if (!ok) {
+        _interpreter = null;
+      } else {
+        _interpreter = await Interpreter.fromAsset(_modelAsset);
+      }
     } catch (_) {
       _interpreter = null;
     }

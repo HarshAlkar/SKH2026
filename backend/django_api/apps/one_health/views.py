@@ -1,13 +1,19 @@
+from django.conf import settings
 from rest_framework import serializers, viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from apps.alerts.notify import notify_village_care_team, notify_livestock_care_team
+from apps.common.ownership import strip_client_identity_fields, validate_client_timestamp
 from apps.doctors.models import Doctor
+from apps.security_audit.audit import log_security_event
 
 from .animal_screen import screen_animal_symptoms, DISCLAIMER
 from .models import LivestockCase, ScreeningEvent
+
+_ALLOWED_SEVERITY = {'Low', 'Moderate', 'High', 'Critical', 'Unknown'}
 
 
 class LivestockCaseSerializer(serializers.ModelSerializer):
@@ -46,6 +52,8 @@ class LivestockCaseViewSet(viewsets.ModelViewSet):
 class ScreeningEventViewSet(viewsets.ModelViewSet):
     serializer_class = ScreeningEventSerializer
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'sync'
     http_method_names = ['get', 'post', 'head', 'options']
 
     def get_queryset(self):
@@ -63,10 +71,33 @@ class ScreeningEventViewSet(viewsets.ModelViewSet):
             if existing:
                 return Response(ScreeningEventSerializer(existing).data, status=status.HTTP_200_OK)
 
-        data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        data = strip_client_identity_fields(
+            request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
+        )
+        created_at = data.get('created_at') or data.get('client_timestamp')
+        ok, err = validate_client_timestamp(
+            created_at,
+            max_skew_days=getattr(settings, 'SYNC_TIMESTAMP_MAX_SKEW_DAYS', 30),
+        )
+        if not ok:
+            return Response({'error': err}, status=status.HTTP_400_BAD_REQUEST)
+        severity = (data.get('severity_level') or 'Unknown')
+        if severity not in _ALLOWED_SEVERITY:
+            data['severity_level'] = 'Unknown'
+        # Never trust client livestock ownership
+        case_id = data.get('livestock_case')
+        if case_id:
+            if not LivestockCase.objects.filter(pk=case_id, owner=request.user).exists():
+                data.pop('livestock_case', None)
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         event = serializer.save(user=request.user)
+        log_security_event(
+            request, action='screening_create',
+            object_type='ScreeningEvent', object_id=event.pk,
+            metadata={'domain': event.domain, 'client_id': client_id or None},
+        )
         return Response(ScreeningEventSerializer(event).data, status=status.HTTP_201_CREATED)
 
 

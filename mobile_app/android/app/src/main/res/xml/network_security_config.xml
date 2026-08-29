@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Allow HTTP (cleartext) for local PC Wi-Fi IPs and HTTPS for cloud. -->
+<!--
+  Release builds: cleartext disabled by default (HTTPS only).
+  Debug/local LAN: cleartext allowed only for localhost and private LAN ranges
+  via domain-config when using a debug network_security_config overlay.
+  Production should use HTTPS — TCP/IP alone is NOT encryption; TLS is.
+-->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="true">
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
@@ -10,9 +15,10 @@
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>
-        <!-- Common home/office LAN prefixes (exact host still set in app Server field) -->
-        <domain includeSubdomains="true">192.168.0.1</domain>
-        <domain includeSubdomains="true">192.168.1.1</domain>
-        <domain includeSubdomains="true">192.168.29.1</domain>
+        <domain includeSubdomains="true">10.0.0.0</domain>
+        <domain includeSubdomains="true">192.168.0.0</domain>
+        <domain includeSubdomains="true">192.168.1.0</domain>
+        <domain includeSubdomains="true">192.168.29.0</domain>
+        <domain includeSubdomains="true">172.16.0.0</domain>
     </domain-config>
 </network-security-config>

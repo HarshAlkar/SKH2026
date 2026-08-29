@@ -16,6 +16,15 @@ class PendingUploadStore {
     return dest;
   }
 
+  Future<File> savePrescriptionScan(File source) async {
+    final dir = await _uploadDir();
+    final ext = p.extension(source.path).isEmpty ? '.jpg' : p.extension(source.path);
+    final name = 'rx_scan_${DateTime.now().millisecondsSinceEpoch}$ext';
+    final dest = File(p.join(dir.path, name));
+    await dest.writeAsBytes(await source.readAsBytes(), flush: true);
+    return dest;
+  }
+
   Future<void> deleteIfExists(String? path) async {
     if (path == null || path.isEmpty) return;
     try {

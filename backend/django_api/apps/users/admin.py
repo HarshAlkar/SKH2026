@@ -15,5 +15,7 @@ class UserAdmin(DjangoUserAdmin):
 
 @admin.register(OTPVerification)
 class OTPVerificationAdmin(admin.ModelAdmin):
-    list_display = ("phone_number", "otp_code", "is_verified", "expiry_time", "created_at")
+    list_display = ("phone_number", "is_verified", "expiry_time", "created_at")
     list_filter = ("is_verified",)
+    exclude = ("otp_code",)
+    readonly_fields = ("phone_number", "is_verified", "expiry_time", "created_at")

@@ -6,9 +6,13 @@ from django.utils import timezone
 import datetime
 import json
 
+
 @receiver(post_save, sender=Prescription)
 def sync_prescription_to_schedule(sender, instance, created, **kwargs):
     if not created:
+        return
+
+    if getattr(instance, 'prescription_type', None) == Prescription.TYPE_HANDWRITTEN:
         return
 
     patient = instance.patient
@@ -17,7 +21,9 @@ def sync_prescription_to_schedule(sender, instance, created, **kwargs):
     if patient is None:
         return
 
-    medications_text = instance.medications or ""
+    medications_text = (instance.medications or "").strip()
+    if not medications_text:
+        return
 
     try:
         meds = json.loads(medications_text)

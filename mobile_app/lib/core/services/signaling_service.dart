@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../config/app_config.dart';
+import '../security/secure_session_store.dart';
 
 typedef SignalingCallback = void Function(Map<String, dynamic> data);
 
@@ -36,7 +37,7 @@ class SignalingService {
   String? get activeConsultationId => _activeConsultationId;
   int get callEpoch => _callEpoch;
 
-  void connect(String userId) {
+  void connect(String userId, {String? authToken}) async {
     if (_connectedUserId == userId && (_socket?.connected ?? false)) {
       return;
     }
@@ -44,11 +45,19 @@ class SignalingService {
     disconnect();
     _connectedUserId = userId;
 
+    final token = authToken ?? await SecureSessionStore.instance.readToken();
+
     _socket = io.io(
       serverUrl,
       io.OptionBuilder()
           .setTransports(['websocket', 'polling'])
-          .setQuery({'userId': userId})
+          .setQuery({
+            'userId': userId,
+            if (token != null && token.isNotEmpty) 'token': token,
+          })
+          .setAuth({
+            if (token != null && token.isNotEmpty) 'token': token,
+          })
           .enableForceNew()
           .enableReconnection()
           .setReconnectionAttempts(99)

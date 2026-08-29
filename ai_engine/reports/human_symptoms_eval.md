@@ -6,7 +6,7 @@
 - **split**: 70/15/15 stratified on deduped rows
 - **best_model**: logistic_regression
 - **model_size_bytes**: 63253
-- **inference_ms_approx**: 0.003079218731727451
+- **inference_ms_approx**: 0.0030817187507636845
 - **offline_compatible**: True
 - **limitations**: Source CSV is highly duplicated/synthetic; near-perfect sklearn scores on held-out unique rows do NOT prove clinical accuracy. Offline Flutter uses the MLP TFLite model (see test_metrics_mlp_tflite). Never present as diagnosis.
 

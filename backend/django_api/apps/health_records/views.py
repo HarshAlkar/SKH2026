@@ -3,6 +3,8 @@ from rest_framework.response import Response
 
 from apps.patients.models import Patient
 from apps.alerts.notify import notify_village_care_team
+from apps.common.ownership import user_can_access_patient, patients_queryset_for
+from apps.security_audit.audit import log_security_event
 from .models import HealthRecord
 
 
@@ -18,18 +20,12 @@ class HealthRecordViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = HealthRecord.objects.all().order_by('-created_at')
+        allowed_patients = patients_queryset_for(user)
+        qs = HealthRecord.objects.filter(patient__in=allowed_patients).order_by('-created_at')
         patient_id = self.request.query_params.get('patient_id')
         if patient_id:
             qs = qs.filter(patient_id=patient_id)
-        if user.role == 'asha_worker':
-            asha = getattr(user, 'asha_profile', None)
-            if asha is None:
-                return HealthRecord.objects.none()
-            return qs.filter(patient__user__village__iexact=asha.assigned_village)
-        if user.role == 'doctor':
-            return qs
-        return qs.filter(patient__user=user)
+        return qs
 
     def list(self, request, *args, **kwargs):
         data = []
@@ -59,6 +55,9 @@ class HealthRecordViewSet(viewsets.ModelViewSet):
         if patient is None:
             return Response({'error': 'Patient not found'}, status=status.HTTP_404_NOT_FOUND)
 
+        if not user_can_access_patient(request.user, patient):
+            return Response({'error': 'Not allowed to create records for this patient.'}, status=403)
+
         notify_doctor = bool(request.data.get('notify_doctor'))
         risk_level = 'highRisk' if notify_doctor else 'normal'
         try:
@@ -79,6 +78,10 @@ class HealthRecordViewSet(viewsets.ModelViewSet):
             weight=request.data.get('weight') or '',
             symptoms=request.data.get('symptoms') or '',
             risk_level=risk_level,
+        )
+        log_security_event(
+            request, action='health_record_create',
+            object_type='HealthRecord', object_id=record.pk,
         )
         if risk_level == 'highRisk' or notify_doctor:
             notify_village_care_team(

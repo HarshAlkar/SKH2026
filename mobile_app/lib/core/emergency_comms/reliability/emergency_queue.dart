@@ -1,16 +1,19 @@
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
+import '../../security/secure_payload_crypto.dart';
 import '../emergency_comms_config.dart';
 import '../emergency_packet.dart';
 
 /// Persistent high-priority send queue. Separate from the Django REST outbox
 /// in [LocalStore] so offline radio traffic never depends on cloud sync.
+/// Payloads are AES-256-GCM encrypted at rest.
 class EmergencyQueue {
   EmergencyQueue._();
   static final EmergencyQueue instance = EmergencyQueue._();
 
   Database? _db;
+  final _crypto = SecurePayloadCrypto.instance;
 
   Future<Database> get database async {
     if (_db != null) return _db!;
@@ -69,12 +72,13 @@ class EmergencyQueue {
 
   Future<void> enqueue(EmergencyPacket packet) async {
     final db = await database;
+    final encrypted = await _crypto.encryptString(packet.encode());
     await db.insert(
       'emergency_outbox',
       {
         'packet_id': packet.packetId,
         'seq': packet.seq,
-        'payload': packet.encode(),
+        'payload': encrypted,
         'priority': packet.priority,
         'ttl': packet.ttl,
         'retries': 0,
@@ -99,9 +103,20 @@ class EmergencyQueue {
       where: "status = 'pending'",
       orderBy: 'priority DESC, seq ASC',
     );
-    return rows
-        .map((row) => EmergencyPacket.decode(row['payload'] as String))
-        .toList();
+    final packets = <EmergencyPacket>[];
+    for (final row in rows) {
+      final raw = row['payload'] as String;
+      try {
+        final plain = await _crypto.decryptString(raw);
+        packets.add(EmergencyPacket.decode(plain));
+      } catch (_) {
+        // Legacy plaintext row
+        try {
+          packets.add(EmergencyPacket.decode(raw));
+        } catch (_) {}
+      }
+    }
+    return packets;
   }
 
   Future<int> pendingCount() async {

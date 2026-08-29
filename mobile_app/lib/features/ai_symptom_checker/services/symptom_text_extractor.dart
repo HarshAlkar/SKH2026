@@ -7,15 +7,17 @@ class SymptomTextExtractor {
   static final SymptomTextExtractor instance = SymptomTextExtractor._();
 
   /// Phrase (lowercase) → feature token used in training.
+  /// Must match keys in symptom_labels.json features (e.g. high_fever, not fever).
   static const Map<String, String> phraseMap = {
     'high fever': 'high_fever',
     'very high fever': 'high_fever',
     'high temperature': 'high_fever',
     'feeling very hot': 'high_fever',
-    'fever': 'fever',
-    'temperature': 'fever',
-    'feeling hot': 'fever',
+    'fever': 'high_fever',
+    'temperature': 'high_fever',
+    'feeling hot': 'high_fever',
     'mild fever': 'mild_fever',
+    'have been vomiting': 'vomiting',
     'throwing up': 'vomiting',
     'threw up': 'vomiting',
     'vomit': 'vomiting',
@@ -32,6 +34,7 @@ class SymptomTextExtractor {
     'stomach ache': 'abdominal_pain',
     'headache': 'headache',
     'head hurts': 'headache',
+    'my head hurts': 'headache',
     'pain in head': 'headache',
     'pain in my head': 'headache',
     'migraine': 'headache',
@@ -48,6 +51,8 @@ class SymptomTextExtractor {
     'shivering': 'chills',
     'yellowish skin': 'yellowish_skin',
     'yellow skin': 'yellowish_skin',
+    'my eyes are yellow': 'yellowing_of_eyes',
+    'eyes are yellow': 'yellowing_of_eyes',
     'yellowing of eyes': 'yellowing_of_eyes',
     'yellow eyes': 'yellowing_of_eyes',
     'yellow eye': 'yellowing_of_eyes',
@@ -87,6 +92,14 @@ class SymptomTextExtractor {
     caseSensitive: false,
   );
 
+  /// Duration / time phrases are not symptoms.
+  static final _durationNoise = RegExp(
+    r'\bfor\s+\d+\s*(day|days|week|weeks|month|months|hour|hours)\b'
+    r'|\b\d+\s*(day|days|week|weeks|month|months|hour|hours)\b'
+    r'|\bsince\s+(yesterday|today|last\s+\w+)\b',
+    caseSensitive: false,
+  );
+
   /// Longer phrases first so "high fever" wins over "fever".
   static final List<MapEntry<String, String>> _sortedPhrases = () {
     final entries = phraseMap.entries.toList()
@@ -98,7 +111,8 @@ class SymptomTextExtractor {
     String text, {
     Set<String>? vocabulary,
   }) {
-    final normalized = text.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), ' ');
+    var normalized = text.toLowerCase().replaceAll(RegExp(r'[^\w\s]'), ' ');
+    normalized = normalized.replaceAll(_durationNoise, ' ');
     final collapsed = normalized.replaceAll(RegExp(r'\s+'), ' ').trim();
     if (collapsed.isEmpty) {
       return const SymptomExtractionResult(
@@ -108,7 +122,6 @@ class SymptomTextExtractor {
       );
     }
 
-    // Vague / non-mappable descriptions.
     const vague = {
       'strange',
       'weird',
@@ -120,9 +133,22 @@ class SymptomTextExtractor {
     };
     final words = collapsed.split(' ');
     final onlyVague = words.every(
-      (w) => vague.contains(w) ||
-          {'my', 'body', 'feels', 'feeling', 'i', 'am', 'a', 'the', 'and', 'or'}
-              .contains(w),
+      (w) =>
+          vague.contains(w) ||
+          {
+            'my',
+            'body',
+            'feels',
+            'feeling',
+            'i',
+            'am',
+            'a',
+            'the',
+            'and',
+            'or',
+            'have',
+            'been',
+          }.contains(w),
     );
 
     final extracted = <String>{};
@@ -150,13 +176,19 @@ class SymptomTextExtractor {
       }
     }
 
-    // Remove suppressed from extracted.
     extracted.removeAll(suppressed);
 
     final unknown = extracted.isEmpty &&
         (onlyVague ||
             matchedSpans.isEmpty &&
                 collapsed.split(' ').where((w) => w.length > 3).length >= 2);
+
+    if (kDebugMode) {
+      debugPrint(
+        'SymptomTextExtractor raw="$text" '
+        'extracted=$extracted suppressed=$suppressed unknown=$unknown',
+      );
+    }
 
     return SymptomExtractionResult(
       extracted: extracted.toList()..sort(),

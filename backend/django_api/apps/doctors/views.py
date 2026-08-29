@@ -32,6 +32,14 @@ class DoctorViewSet(viewsets.ReadOnlyModelViewSet):
         if not document_type or not file:
             return Response({'error': 'document_type and file are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        from apps.common.uploads import validate_document_upload, safe_upload_name
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            ext = validate_document_upload(file, max_bytes=5 * 1024 * 1024)
+            file.name = safe_upload_name(ext, prefix='doctor_doc')
+        except DjangoValidationError as exc:
+            return Response({'error': str(exc.message if hasattr(exc, 'message') else exc)}, status=400)
+
         doc = DoctorDocument.objects.filter(doctor=doctor, document_type=document_type).first()
         if doc:
             doc.file = file
@@ -46,6 +54,8 @@ class DoctorViewSet(viewsets.ReadOnlyModelViewSet):
             doctor.verification_status = 'INCOMPLETE'
             doctor.rejection_reason = None
             doctor.save(update_fields=['verification_status', 'rejection_reason'])
+        from apps.security_audit.audit import log_security_event
+        log_security_event(request, action='doctor_doc_upload', object_type='DoctorDocument', object_id=doc.pk)
         return Response(
             DoctorDocumentSerializer(doc, context={'request': request}).data,
             status=status.HTTP_201_CREATED,

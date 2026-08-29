@@ -640,7 +640,8 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
         ),
         nextSteps: steps,
         symptoms: symptoms,
-        aiSource: analysis['source']?.toString(),
+        aiSource: analysis['result_state']?.toString() ??
+            analysis['source']?.toString(),
         rawResult: Map<String, dynamic>.from(analysis),
       ),
     );
@@ -1306,43 +1307,75 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
         : 0;
     final source = analysis['source']?.toString() ?? 'unknown';
     final scoreType = analysis['score_type']?.toString() ?? '';
-    final isFallback =
-        scoreType == 'symptom_match_fallback' || source.contains('dataset');
+    final resultState = analysis['result_state']?.toString() ?? '';
+    final isUnresolved = resultState == 'MODEL_ERROR' ||
+        resultState == 'INSUFFICIENT_INPUT' ||
+        resultState == 'NETWORK_ERROR' ||
+        (analysis['insufficient_symptoms'] == true);
+    final isFallback = !isUnresolved &&
+        (scoreType == 'symptom_match_fallback' ||
+            resultState == 'SUCCESS_FALLBACK' ||
+            source.contains('dataset'));
     final domain = _resultDomain();
     final symptoms = domain == ScreeningDomain.skin
         ? List<String>.from(_selectedSkinSymptoms)
         : [..._selectedSymptoms, ..._extractedSymptoms];
-    final steps = ScreeningHealthSteps.forResult(
-      domain: domain,
-      severity: severity,
-      condition: disease,
-      symptoms: symptoms,
-    );
-    final band = EscalationPolicy.normalize(severity);
+    final steps = isUnresolved
+        ? const <String>[
+            'Add clearer symptoms using chips or free text.',
+            'Try again once screening completes successfully.',
+            'Seek care if you remain worried about your symptoms.',
+          ]
+        : ScreeningHealthSteps.forResult(
+            domain: domain,
+            severity: severity,
+            condition: disease,
+            symptoms: symptoms,
+          );
+    final band = isUnresolved ? 'Unknown' : EscalationPolicy.normalize(severity);
     final doctorFirst = EscalationPolicy.preferDoctorFirst(band);
 
     String sourceLabel;
-    switch (source) {
-      case 'skin_cnn_ondevice':
+    switch (resultState) {
+      case 'SUCCESS_ONDEVICE_ML':
         sourceLabel = 'On-device ML';
         break;
-      case 'symptom_mlp_ondevice':
-        sourceLabel = 'On-device ML';
-        break;
-      case 'dataset_local':
-      case 'dataset_skin':
+      case 'SUCCESS_FALLBACK':
         sourceLabel = 'Fallback';
         break;
-      case 'server_ml':
-      case 'symptom_ml':
-        sourceLabel = 'Server ML';
+      case 'MODEL_ERROR':
+        sourceLabel = 'Model error';
+        break;
+      case 'INSUFFICIENT_INPUT':
+        sourceLabel = 'Insufficient input';
+        break;
+      case 'NETWORK_ERROR':
+        sourceLabel = 'Network error';
         break;
       default:
-        sourceLabel = source.contains('ondevice')
-            ? 'On-device ML'
-            : (source.contains('fallback') || source.contains('dataset')
-                ? 'Fallback'
-                : source);
+        switch (source) {
+          case 'skin_cnn_ondevice':
+          case 'symptom_mlp_ondevice':
+            sourceLabel = 'On-device ML';
+            break;
+          case 'dataset_local':
+          case 'dataset_skin':
+            sourceLabel = 'Fallback';
+            break;
+          case 'model_error':
+            sourceLabel = 'Model error';
+            break;
+          case 'server_ml':
+          case 'symptom_ml':
+            sourceLabel = 'Server ML';
+            break;
+          default:
+            sourceLabel = source.contains('ondevice')
+                ? 'On-device ML'
+                : (source.contains('fallback') || source.contains('dataset')
+                    ? 'Fallback'
+                    : source);
+        }
     }
 
     final List top = analysis['top_predictions'] is List

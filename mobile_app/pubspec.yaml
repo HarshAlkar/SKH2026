@@ -49,6 +49,8 @@ dependencies:
   path: ^1.9.1
   flutter_secure_storage: ^10.0.0
   http: ^1.6.0
+  crypto: ^3.0.6
+  cryptography: ^2.7.0
   fl_chart: 0.69.0
   speech_to_text: ^7.3.0
   flutter_local_notifications: ^18.0.1

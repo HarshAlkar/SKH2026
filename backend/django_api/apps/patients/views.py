@@ -2,6 +2,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework import serializers
 
+from apps.common.ownership import patients_queryset_for
 from .models import Patient
 
 
@@ -36,15 +37,7 @@ class PatientViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'patch', 'put']
 
     def get_queryset(self):
-        user = self.request.user
-        if user.role == 'asha_worker':
-            asha = getattr(user, 'asha_profile', None)
-            if asha is None:
-                return Patient.objects.none()
-            return Patient.objects.filter(user__village__iexact=asha.assigned_village)
-        if user.role == 'doctor':
-            return Patient.objects.all()
-        return Patient.objects.filter(user=user)
+        return patients_queryset_for(self.request.user)
 
     def list(self, request, *args, **kwargs):
         data = []

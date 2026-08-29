@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../services/connectivity_service.dart';
 import '../services/storage_service.dart';
+import '../security/secure_session_store.dart';
 import 'local_store.dart';
 import 'pending_upload_store.dart';
 import 'sync_status.dart';
@@ -181,7 +182,8 @@ class SyncService {
   }
 
   Future<void> _resolveProfilePhoto(Map response, {String? filePath}) async {
-    final raw = _storage.getString('user_data');
+    final session = SecureSessionStore.instance;
+    final raw = await session.readUserDataJson();
     if (raw == null) return;
     final user = Map<String, dynamic>.from(jsonDecode(raw) as Map);
     if (response['photo_url'] != null) {
@@ -193,7 +195,8 @@ class SyncService {
       }
     }
     user.remove('pending_photo_path');
-    await _storage.saveString('user_data', jsonEncode(user));
+    final token = await session.readToken() ?? '';
+    await session.writeSession(token: token, userDataJson: jsonEncode(user));
     if (filePath != null) {
       await PendingUploadStore.instance.deleteIfExists(filePath);
     }

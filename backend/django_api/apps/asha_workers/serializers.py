@@ -18,6 +18,14 @@ class VillageVisitSerializer(serializers.ModelSerializer):
     def get_patient_name(self, obj):
         return obj.patient.user.name or obj.patient.user.username
 
+    def validate_patient(self, patient):
+        request = self.context.get('request')
+        if request and getattr(request.user, 'role', None) == 'asha_worker':
+            from apps.common.ownership import user_can_access_patient
+            if not user_can_access_patient(request.user, patient):
+                raise serializers.ValidationError('Patient is not in your assigned village.')
+        return patient
+
 
 class ASHADocumentSerializer(serializers.ModelSerializer):
     class Meta:

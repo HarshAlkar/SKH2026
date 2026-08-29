@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -64,11 +66,14 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
         final village = _villageController.text.trim().isNotEmpty
             ? _villageController.text.trim()
             : (asha?.village ?? '');
+        // Strong random temp password — never derive from phone digits
+        final tempPassword =
+            'Vr${DateTime.now().millisecondsSinceEpoch}${Random.secure().nextInt(999999)}';
         final result = await OfflineApi.instance.post('/users/register/', body: {
           'name': _nameController.text.trim(),
           'phone_number': phone,
           'username': phone,
-          'password': phone.length >= 6 ? phone.substring(phone.length - 6) : '123456',
+          'password': tempPassword,
           'role': 'user',
           'village': village,
           'age': int.tryParse(_ageController.text.trim()) ?? 0,
@@ -81,11 +86,12 @@ class _RegisterPatientScreenState extends State<RegisterPatientScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              result.message,
+              '${result.message} Temp password shown once: $tempPassword',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             backgroundColor: result.synced ? Colors.green : Colors.orange,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 12),
           ),
         );
         Navigator.pop(context, true);

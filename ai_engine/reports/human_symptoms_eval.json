@@ -4170,17 +4170,17 @@
       "AIDS": 1.0,
       "_mean": 1.0
     },
-    "temperature": 0.5
+    "temperature": 1.0
   },
   "mlp_val_metrics": {
     "val_accuracy": 1.0,
     "val_f1_macro": 1.0,
-    "temperature": 0.5
+    "temperature": 1.0
   },
   "cv_f1_macro_trainval": 1.0,
   "model_size_bytes": 63253,
   "tflite_size_bytes": 33632,
-  "inference_ms_approx": 0.003079218731727451,
+  "inference_ms_approx": 0.0030817187507636845,
   "offline_compatible": true,
   "artifacts": {
     "pickle": "C:\\Users\\HARSH\\OneDrive\\Desktop\\HARSH\\SKH\\SKH2026\\ai_engine\\models\\trained_model.pkl",
@@ -6234,6 +6234,6 @@
       "AIDS": 1.0,
       "_mean": 1.0
     },
-    "temperature": 0.5
+    "temperature": 1.0
   }
 }

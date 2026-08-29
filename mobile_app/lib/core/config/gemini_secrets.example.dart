@@ -1,5 +1,5 @@
-/// Copy to gemini_secrets.dart and fill in your key.
-/// Do not commit real keys.
+/// Example only — do not put real Gemini keys in the Flutter app.
+/// Prefer server-side GEMINI_API_KEY on Django and POST /api/ai/gemini-chat/.
 class GeminiSecrets {
   GeminiSecrets._();
 
@@ -7,7 +7,4 @@ class GeminiSecrets {
     'GEMINI_API_KEY',
     defaultValue: '',
   );
-
-  static const String projectName = 'your-project-name';
-  static const String projectId = 'projects/your-project-number';
 }

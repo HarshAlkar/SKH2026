@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:tflite_flutter/tflite_flutter.dart';
 
+import '../../../core/security/model_integrity.dart';
+
 class SkinCnnService {
   SkinCnnService._();
   static final SkinCnnService instance = SkinCnnService._();
@@ -108,7 +110,12 @@ class SkinCnnService {
     }
 
     try {
-      _interpreter = await Interpreter.fromAsset(_modelAsset);
+      final ok = await ModelIntegrity.verifyAsset(_modelAsset);
+      if (!ok) {
+        _interpreter = null;
+      } else {
+        _interpreter = await Interpreter.fromAsset(_modelAsset);
+      }
     } catch (_) {
       try {
         _interpreter = await Interpreter.fromAsset('models/skin_cnn.tflite');

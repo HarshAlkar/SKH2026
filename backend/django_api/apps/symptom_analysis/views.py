@@ -53,6 +53,11 @@ def _record_human_screening(
 
 class SymptomAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_scope = 'analyze'
+
+    def get_throttles(self):
+        from rest_framework.throttling import ScopedRateThrottle
+        return [ScopedRateThrottle()]
 
     HINDI_MAPPING = {
         'बुखार': 'fever',
@@ -156,6 +161,11 @@ class SymptomAnalysisView(APIView):
 class SkinAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    throttle_scope = 'analyze'
+
+    def get_throttles(self):
+        from rest_framework.throttling import ScopedRateThrottle
+        return [ScopedRateThrottle()]
 
     def post(self, request):
         uploaded = request.FILES.get("image") or request.FILES.get("file")
@@ -164,17 +174,15 @@ class SkinAnalysisView(APIView):
                 {"error": "Upload a skin photo as form field 'image'."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if uploaded.size and uploaded.size > MAX_SKIN_IMAGE_BYTES:
-            return Response(
-                {"error": "Image is too large. Maximum size is 3 MB."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        content_type = (uploaded.content_type or "").lower()
-        if content_type and not content_type.startswith("image/"):
-            return Response(
-                {"error": "File must be an image (jpeg, png, or webp)."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        from apps.common.uploads import validate_image_upload, safe_upload_name
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        try:
+            ext = validate_image_upload(uploaded, max_bytes=MAX_SKIN_IMAGE_BYTES)
+            uploaded.name = safe_upload_name(ext, prefix='skin')
+        except DjangoValidationError as exc:
+            return Response({"error": str(exc.message if hasattr(exc, 'message') else exc)}, status=400)
+        except Exception as exc:
+            return Response({"error": str(exc)}, status=400)
 
         _ensure_project_root()
         try:
@@ -184,9 +192,9 @@ class SkinAnalysisView(APIView):
             analysis_result = predict_skin(uploaded)
         except SkinModelNotTrained as exc:
             return Response({"error": str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        except Exception as exc:
+        except Exception:
             return Response(
-                {"error": f"Skin CNN error: {exc}"},
+                {"error": "Skin analysis failed. Please try again."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
