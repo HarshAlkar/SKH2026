@@ -559,6 +559,65 @@ class NotificationService {
     );
   }
 
+  Future<void> showAppointmentConfirmation({
+    required String doctorName,
+    required String date,
+    required String time,
+    required String specialty,
+  }) async {
+    final payload = jsonEncode({
+      'type': 'appointment',
+      'doctorName': doctorName,
+      'date': date,
+      'time': time,
+    });
+
+    await flutterLocalNotificationsPlugin.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      '🗓️ Appointment Confirmed',
+      'Your consultation with $doctorName ($specialty) is scheduled for $date at $time.',
+      const NotificationDetails(
+        android: _medicineAndroid,
+        iOS: _darwinDetails,
+        macOS: _darwinDetails,
+      ),
+      payload: payload,
+    );
+  }
+
+  Future<void> scheduleAppointmentReminder({
+    required int appointmentId,
+    required DateTime appointmentDateTime,
+    required String doctorName,
+    required String specialty,
+  }) async {
+    final payload = jsonEncode({
+      'type': 'appointment_reminder',
+      'appointmentId': appointmentId,
+      'doctorName': doctorName,
+    });
+
+    final scheduled = tz.TZDateTime.from(appointmentDateTime, tz.local);
+    final now = tz.TZDateTime.now(tz.local);
+    if (scheduled.isAfter(now)) {
+      await flutterLocalNotificationsPlugin.zonedSchedule(
+        700000000 + (appointmentId % 100000),
+        '🗓️ Upcoming Doctor Appointment',
+        'Reminder: You have a scheduled appointment with $doctorName ($specialty) today.',
+        scheduled,
+        const NotificationDetails(
+          android: _medicineAndroid,
+          iOS: _darwinDetails,
+          macOS: _darwinDetails,
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: payload,
+      );
+    }
+  }
+
   Future<void> cancelReminder(int id) async {
     await flutterLocalNotificationsPlugin.cancel(id);
   }
