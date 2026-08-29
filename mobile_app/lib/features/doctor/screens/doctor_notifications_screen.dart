@@ -100,7 +100,20 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> w
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => PatientDetailsScreen(patient: PatientData.getDummySarah()),
+                  builder: (context) => PatientDetailsScreen(
+                    patient: PatientData(
+                      name: 'John Doe',
+                      age: '35',
+                      gender: 'Male',
+                      village: 'Main Village',
+                      bloodType: 'O Positive',
+                      chronicConditions: 'Post-surgery follow-up',
+                      pastSurgeries: 'Recent abdominal procedure',
+                      allergies: 'None reported',
+                      symptoms: const [],
+                      aiInsights: 'Consultation request from notification.',
+                    ),
+                  ),
                 ),
               );
             }),
@@ -171,7 +184,20 @@ class _DoctorNotificationsScreenState extends State<DoctorNotificationsScreen> w
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => PatientDetailsScreen(patient: PatientData.getDummySarah()),
+                  builder: (context) => PatientDetailsScreen(
+                    patient: PatientData(
+                      name: 'John Doe',
+                      age: '35',
+                      gender: 'Male',
+                      village: 'Main Village',
+                      bloodType: 'O Positive',
+                      chronicConditions: 'Post-surgery follow-up',
+                      pastSurgeries: 'Recent abdominal procedure',
+                      allergies: 'None reported',
+                      symptoms: const [],
+                      aiInsights: 'Consultation request from notification.',
+                    ),
+                  ),
                 ),
               );
             }),

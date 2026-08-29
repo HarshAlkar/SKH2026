@@ -305,6 +305,8 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
       mainAxisSpacing: 16,
       childAspectRatio: 1.1,
       children: [
+        _buildActionCard('Book Appointment', Icons.calendar_month_outlined, AppRoutes.bookAppointment),
+        _buildActionCard('My Appointments', Icons.event_available_outlined, AppRoutes.patientAppointments),
         _buildActionCard('Medicine Tracker', Icons.medication_outlined, AppRoutes.medicineTracker),
         _buildActionCard('Nearby Clinics', Icons.location_on_outlined, AppRoutes.nearbyClinics),
         _buildActionCard('Consult Doctor', Icons.video_camera_front_outlined, AppRoutes.consultDoctor),

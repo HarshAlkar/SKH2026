@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../routes/app_routes.dart';
 import '../widgets/user_sidebar.dart';
 import '../services/doctor_service.dart';
 import '../../chat/widgets/contact_action_row.dart';
@@ -281,6 +282,26 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
             peerName: 'Dr. ${doctor['full_name'] ?? 'Doctor'}',
             peerUserId: parseContactId(doctor['user_id']) ?? parseContactId(doctor['id']) ?? 0,
             doctorId: parseContactId(doctor['id']),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.bookAppointment,
+                );
+              },
+              icon: const Icon(Icons.calendar_month, size: 16),
+              label: const Text('Book Appointment', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
           ),
         ],
       ),

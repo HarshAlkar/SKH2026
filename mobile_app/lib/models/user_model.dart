@@ -54,6 +54,12 @@ class UserModel {
     return [];
   }
 
+  dynamic getDetail(String key, {dynamic fallback}) {
+    final value = profileDetails[key];
+    if (value == null) return fallback;
+    return value;
+  }
+
   String detail(String key, {String fallback = ''}) {
     final value = profileDetails[key];
     if (value == null) return fallback;

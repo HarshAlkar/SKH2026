@@ -11,6 +11,7 @@ import '../../../providers/auth_provider.dart';
 import '../widgets/doctor_navigation_drawer.dart';
 import '../../../providers/consultation_provider.dart';
 import '../../../core/services/api_service.dart';
+import '../services/doctor_appointment_service.dart';
 import '../../../core/services/permission_dialog_service.dart';
 import '../../../core/widgets/sync_status_banner.dart';
 import '../../../routes/app_routes.dart';
@@ -30,7 +31,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   int _ashaCount = 0;
   int _pendingAlerts = 0;
   int _virtualCalls = 0;
+  List<DoctorAppointment> _upcomingAppointments = [];
   final ApiService _api = ApiService();
+  final DoctorAppointmentService _appointmentService = DoctorAppointmentService();
 
   @override
   void initState() {
@@ -53,6 +56,12 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
       final ashas = await _api.get('/users/asha-workers/');
       final alerts = await _api.get('/alerts/notifications/');
       final history = await _api.get('/consultations/history/');
+      List<DoctorAppointment> appointments = [];
+      try {
+        appointments = await _appointmentService.getTodayAppointments();
+      } catch (e) {
+        debugPrint('Error fetching dashboard appointments: $e');
+      }
       
       if (!mounted) return;
       setState(() {
@@ -60,6 +69,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         _ashaCount = ashas.length;
         _pendingAlerts = alerts.length;
         _virtualCalls = history is List ? history.length : 0;
+        _upcomingAppointments = appointments;
         _isLoading = false;
       });
     } catch (e) {
@@ -109,6 +119,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     return Column(
       children: [
         const SyncStatusBanner(),
+        _buildVerificationBanner(),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _fetchStats,
@@ -566,7 +577,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
                   ),
                 ),
                 InkWell(
-                  onTap: () => _navigateTo(const MyPatientsScreen()),
+                  onTap: () {
+                    setState(() => _selectedIndex = 3); // Switch to Schedule tab
+                  },
                   child: Text(
                     'View all',
                     style: TextStyle(
@@ -580,25 +593,58 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             ),
           ),
           const Divider(height: 1, color: Color(0xFFF1F5F9)),
-          _buildAppointmentItem(
-            name: 'Amitabh Bachchan',
-            condition: 'General Checkup',
-            time: '10:30 AM',
-            statusText: 'CONFIRMED',
-            statusColor: Colors.green.shade700,
-            statusBgColor: const Color(0xFFE8FDF0),
-            isLast: false,
-          ),
-          const Divider(height: 1, indent: 70, color: Color(0xFFF1F5F9)),
-          _buildAppointmentItem(
-            name: 'Priyanka Chopra',
-            condition: 'Fever & Cold',
-            time: '11:15 AM',
-            statusText: 'VIDEO CALL',
-            statusColor: primaryBlue,
-            statusBgColor: lightBlue,
-            isLast: true,
-          ),
+          if (_upcomingAppointments.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Center(
+                child: Text(
+                  'No appointments scheduled for today.',
+                  style: TextStyle(color: textSecondary, fontSize: 13),
+                ),
+              ),
+            )
+          else
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _upcomingAppointments.take(3).length,
+              separatorBuilder: (_, __) => const Divider(height: 1, indent: 70, color: Color(0xFFF1F5F9)),
+              itemBuilder: (context, index) {
+                final appt = _upcomingAppointments[index];
+                String statusLabel = 'SCHEDULED';
+                Color statusColor = Colors.green.shade700;
+                Color statusBg = const Color(0xFFE8FDF0);
+
+                if (appt.type == DoctorConsultationType.video) {
+                  statusLabel = 'VIDEO CALL';
+                  statusColor = primaryBlue;
+                  statusBg = lightBlue;
+                } else if (appt.type == DoctorConsultationType.audio) {
+                  statusLabel = 'AUDIO CALL';
+                  statusColor = const Color(0xFF10B981);
+                  statusBg = const Color(0xFFECFDF5);
+                } else if (appt.type == DoctorConsultationType.offline) {
+                  statusLabel = 'OFFLINE';
+                  statusColor = const Color(0xFFF59E0B);
+                  statusBg = const Color(0xFFFEF3C7);
+                }
+
+                return _buildAppointmentItem(
+                  name: appt.patientName,
+                  condition: appt.historySummary.isNotEmpty && !appt.historySummary.startsWith('No previous')
+                      ? appt.historySummary.split('\n').first
+                      : (appt.notes.isNotEmpty ? appt.notes : 'General Consultation'),
+                  time: appt.formattedTime,
+                  statusText: statusLabel,
+                  statusColor: statusColor,
+                  statusBgColor: statusBg,
+                  isLast: index == _upcomingAppointments.take(3).length - 1,
+                  onTap: () {
+                    setState(() => _selectedIndex = 3);
+                  },
+                );
+              },
+            ),
         ],
       ),
     );
@@ -612,65 +658,75 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     required Color statusColor,
     required Color statusBgColor,
     required bool isLast,
+    VoidCallback? onTap,
   }) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 16,
-        bottom: isLast ? 20 : 16,
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 22,
-            backgroundColor: Color(0xFF1E293B),
-            child: Icon(Icons.person, color: Colors.white70),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: TextStyle(
-                    color: textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$condition · $time',
-                  style: TextStyle(
-                    color: textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusBgColor,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              statusText,
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 16,
+          bottom: isLast ? 20 : 16,
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundColor: const Color(0xFF1E293B),
+              child: Text(
+                name.isNotEmpty ? name.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join('') : 'P',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: TextStyle(
+                      color: textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$condition · $time',
+                    style: TextStyle(
+                      color: textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: statusBgColor,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                statusText,
+                style: TextStyle(
+                  color: statusColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
 
   Widget _buildBottomNavigationBar() {
     return Container(
@@ -751,6 +807,98 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             ),
             label: 'PROFILE',
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationBanner() {
+    final user = context.watch<AuthProvider>().user;
+    if (user == null || user.role != 'doctor') return const SizedBox.shrink();
+
+    final status = user.detail('verification_status', fallback: 'INCOMPLETE');
+    if (status == 'VERIFIED') return const SizedBox.shrink();
+
+    Color bgColor;
+    Color textColor;
+    String title;
+    String message;
+    IconData icon;
+
+    switch (status) {
+      case 'PENDING_VERIFICATION':
+        bgColor = const Color(0xFFFFF3CD);
+        textColor = const Color(0xFF856404);
+        title = 'VERIFICATION PENDING';
+        message = 'Your medical credentials are currently being reviewed.';
+        icon = Icons.hourglass_empty;
+        break;
+      case 'REJECTED':
+        bgColor = const Color(0xFFFFE9E9);
+        textColor = const Color(0xFFD92D20);
+        title = 'VERIFICATION REJECTED';
+        message = 'Reason: ${user.detail('rejection_reason', fallback: 'Please check your documents.')}';
+        icon = Icons.error_outline;
+        break;
+      case 'INCOMPLETE':
+      default:
+        bgColor = const Color(0xFFFFE9E9);
+        textColor = const Color(0xFFD92D20);
+        title = 'UNVERIFIED';
+        message = 'Complete your professional profile to unlock appointment and consultation features.';
+        icon = Icons.warning_amber_rounded;
+        break;
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(left: 20, right: 20, top: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: textColor.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: textColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: TextStyle(
+              color: textColor.withValues(alpha: 0.9),
+              fontSize: 13,
+            ),
+          ),
+          if (status == 'INCOMPLETE' || status == 'REJECTED') ...[
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: () {
+                _onItemTapped(4); // Navigate to Profile tab
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: textColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                minimumSize: const Size(0, 36),
+              ),
+              child: Text(status == 'REJECTED' ? 'Resubmit Documents' : 'Complete Profile'),
+            ),
+          ],
         ],
       ),
     );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/auth_provider.dart';
 import 'patient_details_screen.dart';
 import '../widgets/doctor_navigation_drawer.dart';
 
@@ -74,6 +76,16 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
   }
 
   void _acceptRequest(String id) {
+    final user = Provider.of<AuthProvider>(context, listen: false).user;
+    final isVerified = user?.detail('verification_status', fallback: 'INCOMPLETE') == 'VERIFIED';
+    
+    if (!isVerified) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You must complete your professional profile and be verified by admin before accepting requests.')),
+      );
+      return;
+    }
+
     setState(() {
       final index = _requests.indexWhere((r) => r.id == id);
       if (index != -1) {
@@ -82,14 +94,18 @@ class _PatientRequestsScreenState extends State<PatientRequestsScreen>
     });
     // Navigation to patient details screen
     final request = _requests.firstWhere((r) => r.id == id);
-    PatientData patientData;
-    if (request.patientName.contains('Ramesh')) {
-      patientData = PatientData.getDummyRamesh();
-    } else if (request.patientName.contains('Sunita')) {
-      patientData = PatientData.getDummySunita();
-    } else {
-      patientData = PatientData.getDummySarah();
-    }
+    final patientData = PatientData(
+      name: request.patientName,
+      age: request.age.toString(),
+      gender: 'Not set',
+      village: request.village,
+      bloodType: 'Not set',
+      chronicConditions: request.symptoms,
+      pastSurgeries: 'Not recorded',
+      allergies: 'Not recorded',
+      symptoms: const [],
+      aiInsights: 'Priority: ${request.priority}. Review patient profile and schedule consultation.',
+    );
 
     Navigator.push(
       context,
