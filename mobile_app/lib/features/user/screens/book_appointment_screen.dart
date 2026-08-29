@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../core/theme/app_colors.dart';
 import '../services/doctor_service.dart';
 
@@ -11,69 +12,162 @@ class BookAppointmentScreen extends StatefulWidget {
 }
 
 class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
-  final _symptomsController = TextEditingController();
+  final TextEditingController _symptomsController = TextEditingController();
   final DoctorService _doctorService = DoctorService();
+  final stt.SpeechToText _speech = stt.SpeechToText();
 
+  bool _isListening = false;
+  bool _speechInitialized = false;
   bool _isAnalyzing = false;
   bool _isBooking = false;
   Map<String, dynamic>? _matchResult;
-  
+
   String? _selectedDate;
   String? _selectedTime;
 
   final List<String> _commonSymptoms = [
-    'Fever', 'Cough', 'Pain', 'Weakness',
-    'Breathing Problem', 'Stomach Problem', 'Headache', 'Skin Problem'
+    'Fever',
+    'Cough',
+    'Pain',
+    'Weakness',
+    'Breathing Problem',
+    'Stomach Problem',
+    'Headache',
+    'Skin Problem',
+    'Other'
   ];
 
-  void _addSymptom(String symptom) {
-    final currentText = _symptomsController.text;
-    if (currentText.isEmpty) {
-      _symptomsController.text = symptom;
-    } else {
-      _symptomsController.text = '$currentText, $symptom';
+  @override
+  void initState() {
+    super.initState();
+    _initSpeech();
+  }
+
+  @override
+  void dispose() {
+    _symptomsController.dispose();
+    if (_isListening) {
+      _speech.stop();
+    }
+    super.dispose();
+  }
+
+  Future<void> _initSpeech() async {
+    try {
+      _speechInitialized = await _speech.initialize(
+        onError: (err) {
+          if (mounted) setState(() => _isListening = false);
+        },
+        onStatus: (status) {
+          if (status == 'done' || status == 'notListening') {
+            if (mounted) setState(() => _isListening = false);
+          }
+        },
+      );
+    } catch (_) {
+      _speechInitialized = false;
     }
   }
 
-  void _simulateVoiceInput() {
+  Future<void> _toggleListening() async {
+    if (_isListening) {
+      await _speech.stop();
+      setState(() => _isListening = false);
+      return;
+    }
+
+    if (!_speechInitialized) {
+      await _initSpeech();
+    }
+
+    if (!_speechInitialized) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Speech recognition is not available. Please type your symptoms.')),
+      );
+      return;
+    }
+
+    setState(() => _isListening = true);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Listening... Please speak your symptoms.')),
+      const SnackBar(
+        content: Text('🎤 Listening... Please describe what is happening to you.'),
+        duration: Duration(seconds: 4),
+      ),
     );
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _symptomsController.text = 'I have a high fever and a bad cough since yesterday.';
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      }
-    });
+
+    try {
+      await _speech.listen(
+        onResult: (result) {
+          if (result.recognizedWords.isNotEmpty) {
+            setState(() {
+              _symptomsController.text = result.recognizedWords;
+            });
+          }
+        },
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 4),
+      );
+    } catch (_) {
+      setState(() => _isListening = false);
+    }
+  }
+
+  void _addSymptom(String symptom) {
+    if (symptom == 'Other') {
+      return;
+    }
+    final currentText = _symptomsController.text.trim();
+    if (currentText.isEmpty) {
+      _symptomsController.text = symptom;
+    } else if (!currentText.toLowerCase().contains(symptom.toLowerCase())) {
+      _symptomsController.text = '$currentText, $symptom';
+    }
   }
 
   void _showError(String rawError) {
     String message = 'Something went wrong on the server. Please try again.';
     final lowerError = rawError.toLowerCase();
-    
-    if (lowerError.contains('socketexception') || lowerError.contains('timeout') || lowerError.contains('network') || lowerError.contains('failed host lookup')) {
+
+    if (lowerError.contains('socketexception') ||
+        lowerError.contains('timeout') ||
+        lowerError.contains('network') ||
+        lowerError.contains('failed host lookup') ||
+        lowerError.contains('clientexception')) {
       message = 'Unable to connect.\nPlease check your internet connection and try again.';
     } else if (lowerError.contains('unauthorized') || lowerError.contains('token')) {
       message = 'Your session has expired.\nPlease log in again.';
-    } else if (lowerError.contains('valid patient') || lowerError.contains('valid doctor') || lowerError.contains('invalid request')) {
-      message = 'We could not book this appointment.\nPlease check the selected details.';
-    } else if (lowerError.contains('slot') || lowerError.contains('conflict') || lowerError.contains('available')) {
-      message = 'This appointment slot is no longer available.\nPlease choose another slot.';
-    } else if (rawError.replaceAll('Exception: ', '').trim().isNotEmpty && !lowerError.contains('server error')) {
+    } else if (lowerError.contains('slot') ||
+        lowerError.contains('conflict') ||
+        lowerError.contains('no longer available')) {
+      message = 'This appointment slot is no longer available.\nPlease choose another available time.';
+    } else if (lowerError.contains('doctor') && lowerError.contains('not find')) {
+      message = 'We could not find an available doctor at this moment. Please try again shortly.';
+    } else if (rawError.replaceAll('Exception: ', '').trim().isNotEmpty &&
+        !lowerError.contains('server error')) {
       message = rawError.replaceAll('Exception: ', '');
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
   Future<void> _submitSymptoms() async {
-    if (_symptomsController.text.trim().isEmpty) {
+    final text = _symptomsController.text.trim();
+    if (text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please describe what is happening to you.')),
       );
       return;
+    }
+
+    if (_isListening) {
+      await _speech.stop();
+      setState(() => _isListening = false);
     }
 
     setState(() {
@@ -81,9 +175,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       _selectedDate = null;
       _selectedTime = null;
     });
-    
+
     try {
-      final result = await _doctorService.smartMatch(_symptomsController.text.trim());
+      final result = await _doctorService.smartMatch(text);
       if (mounted) {
         setState(() {
           _matchResult = result;
@@ -102,12 +196,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
   Future<void> _confirmAppointment() async {
     if (_matchResult == null || _selectedDate == null || _selectedTime == null) return;
-    
+
     setState(() => _isBooking = true);
     try {
       final doctorId = _matchResult!['recommended_doctor']['id'];
-      final type = _matchResult!['recommended_type'];
-      final symptoms = _matchResult!['symptoms_analyzed'];
+      final type = _matchResult!['recommended_type'] ?? 'VIDEO';
+      final symptoms = _matchResult!['symptoms_analyzed'] ?? _symptomsController.text.trim();
 
       final response = await _doctorService.bookAppointment(
         doctorId: doctorId,
@@ -119,8 +213,20 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
       if (mounted) {
         setState(() => _isBooking = false);
-        if (response.containsKey('error') || response.isEmpty) {
-          _showError(response['error']?.toString() ?? 'Invalid request');
+        if (response.containsKey('error') && response['error'] != null) {
+          final err = response['error'].toString();
+          _showError(err);
+          // Re-fetch match to get updated non-conflicting slots
+          try {
+            final refreshed = await _doctorService.smartMatch(symptoms);
+            if (mounted) {
+              setState(() {
+                _matchResult = refreshed;
+                _selectedDate = refreshed['recommended_date'];
+                _selectedTime = refreshed['recommended_time'];
+              });
+            }
+          } catch (_) {}
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -162,9 +268,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Book Appointment', style: TextStyle(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text(
+          'Book Appointment',
+          style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 18),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.primary),
@@ -184,20 +293,23 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         children: [
           const Text(
             'What is happening to you?',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
           ),
           const SizedBox(height: 8),
           Text(
             'Tell us your symptoms or describe what you are feeling.',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
           ),
           const SizedBox(height: 24),
           TextField(
             controller: _symptomsController,
             maxLines: 4,
+            style: const TextStyle(fontSize: 16, color: Color(0xFF0F172A)),
             decoration: InputDecoration(
               hintText: 'Example: I have fever and cough since yesterday',
               hintStyle: TextStyle(color: Colors.grey.shade400),
+              filled: true,
+              fillColor: Colors.white,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide(color: Colors.grey.shade300),
@@ -208,24 +320,41 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
-                borderSide: const BorderSide(color: AppColors.primary),
+                borderSide: const BorderSide(color: AppColors.primary, width: 2),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Align(
             alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _simulateVoiceInput,
-              icon: const Icon(Icons.mic, color: AppColors.primary),
-              label: const Text('Speak your problem', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-              style: TextButton.styleFrom(
-                backgroundColor: AppColors.lightBlue,
+            child: ElevatedButton.icon(
+              onPressed: _toggleListening,
+              icon: Icon(
+                _isListening ? Icons.mic : Icons.mic_none,
+                color: _isListening ? Colors.white : AppColors.primary,
+                size: 20,
+              ),
+              label: Text(
+                _isListening ? 'Listening...' : 'Speak your problem',
+                style: TextStyle(
+                  color: _isListening ? Colors.white : AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _isListening ? Colors.red : AppColors.lightBlue,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
             ),
           ),
           const SizedBox(height: 24),
+          Text(
+            'Common Symptoms',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey.shade700),
+          ),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -233,6 +362,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               return ActionChip(
                 label: Text(symptom),
                 backgroundColor: Colors.white,
+                labelStyle: const TextStyle(color: Color(0xFF334155), fontWeight: FontWeight.w500),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                   side: BorderSide(color: Colors.grey.shade300),
@@ -241,7 +371,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               );
             }).toList(),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 40),
           SizedBox(
             width: double.infinity,
             height: 54,
@@ -250,7 +380,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
+                elevation: 2,
               ),
               child: _isAnalyzing
                   ? const Row(
@@ -258,10 +388,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       children: [
                         SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
                         SizedBox(width: 12),
-                        Text('Understanding your symptoms...', style: TextStyle(color: Colors.white, fontSize: 16)),
+                        Text('Understanding your symptoms...', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                       ],
                     )
-                  : const Text('Find the right care', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                  : const Text('Find the right care', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ),
         ],
@@ -270,21 +400,23 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   }
 
   Widget _buildConfirmationScreen() {
-    final doctorName = _matchResult!['recommended_doctor']['name'];
-    final specialization = _matchResult!['recommended_specialization'];
-    final type = _matchResult!['recommended_type'];
-    final urgency = _matchResult!['urgency'];
-    
+    final docData = _matchResult!['recommended_doctor'] ?? {};
+    final doctorName = docData['name'] ?? 'Doctor';
+    final hospitalName = docData['hospital_name'] ?? 'Kopargaon Rural Hospital';
+    final specialization = _matchResult!['recommended_specialization'] ?? 'General Physician';
+    final type = _matchResult!['recommended_type'] ?? 'VIDEO';
+    final urgency = _matchResult!['urgency'] ?? 'MODERATE';
+
     final List<String> altDates = List<String>.from(_matchResult!['alternative_dates'] ?? []);
     final List<String> altTimes = List<String>.from(_matchResult!['alternative_times'] ?? []);
     final recommendedDate = _matchResult!['recommended_date'];
     final recommendedTime = _matchResult!['recommended_time'];
 
     Widget urgencyBanner = const SizedBox.shrink();
-    if (urgency == 'EMERGENCY') {
+    if (urgency == 'EMERGENCY' || urgency == 'HIGH') {
       urgencyBanner = Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        margin: const EdgeInsets.only(bottom: 24),
+        margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
           color: Colors.red.shade50,
           border: Border.all(color: Colors.red.shade200),
@@ -296,8 +428,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Urgent medical attention recommended based on your symptoms.',
-                style: TextStyle(color: Colors.red.shade900, fontWeight: FontWeight.bold),
+                urgency == 'EMERGENCY'
+                    ? 'Urgent care needed. An immediate priority slot has been assigned.'
+                    : 'Priority care recommended for your condition.',
+                style: TextStyle(color: Colors.red.shade900, fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ),
           ],
@@ -312,45 +446,71 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         children: [
           const Text(
             'Your Appointment',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           const Text(
             'Recommended for your symptoms',
-            style: TextStyle(fontSize: 16, color: Colors.green, fontWeight: FontWeight.w600),
+            style: TextStyle(fontSize: 15, color: Colors.green, fontWeight: FontWeight.w600),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           urgencyBanner,
-          
-          // Doctor Info
+
+          // Recommended Doctor Card
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: Colors.grey.shade200),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
             ),
             child: Row(
               children: [
                 CircleAvatar(
                   backgroundColor: AppColors.lightBlue,
-                  radius: 24,
-                  child: const Icon(Icons.person, color: AppColors.primary),
+                  radius: 26,
+                  child: const Icon(Icons.person, color: AppColors.primary, size: 28),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(doctorName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text(specialization, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                      Text(doctorName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
+                      const SizedBox(height: 2),
+                      Text(specialization, style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600, fontSize: 13)),
+                      const SizedBox(height: 2),
+                      Text(hospitalName, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                     ],
                   ),
                 ),
-                Icon(
-                  type == 'VIDEO' ? Icons.videocam : (type == 'AUDIO' ? Icons.phone : Icons.home_work),
-                  color: AppColors.primary,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightBlue,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        type == 'VIDEO' ? Icons.videocam : (type == 'AUDIO' ? Icons.phone : Icons.local_hospital),
+                        color: AppColors.primary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        type == 'VIDEO' ? 'Video' : (type == 'AUDIO' ? 'Audio' : 'In-Person'),
+                        style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -358,8 +518,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           const SizedBox(height: 24),
 
           // Date Selection
-          const Text('Recommended Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 12),
+          const Text('Recommended Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
+          const SizedBox(height: 10),
           _buildSelectionChip(
             label: _formatDate(recommendedDate),
             isSelected: _selectedDate == recommendedDate,
@@ -368,8 +528,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           ),
           if (altDates.length > 1) ...[
             const SizedBox(height: 16),
-            const Text('Other Available Dates', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            const SizedBox(height: 12),
+            const Text('Other Available Dates', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF475569))),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -386,8 +546,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           const SizedBox(height: 24),
 
           // Time Selection
-          const Text('Recommended Time', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 12),
+          const Text('Recommended Time', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
+          const SizedBox(height: 10),
           _buildSelectionChip(
             label: _formatTime(recommendedTime),
             isSelected: _selectedTime == recommendedTime,
@@ -396,8 +556,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           ),
           if (altTimes.length > 1) ...[
             const SizedBox(height: 16),
-            const Text('Other Available Times', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            const SizedBox(height: 12),
+            const Text('Other Available Times', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF475569))),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -412,7 +572,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             ),
           ],
 
-          const SizedBox(height: 48),
+          const SizedBox(height: 40),
           SizedBox(
             width: double.infinity,
             height: 54,
@@ -421,7 +581,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
+                elevation: 2,
               ),
               child: _isBooking
                   ? const Row(
@@ -429,19 +589,19 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       children: [
                         SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
                         SizedBox(width: 12),
-                        Text('Booking appointment...', style: TextStyle(color: Colors.white, fontSize: 16)),
+                        Text('Booking appointment...', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                       ],
                     )
-                  : const Text('Confirm Appointment', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                  : const Text('Confirm Appointment', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.white)),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
-            height: 54,
+            height: 48,
             child: TextButton(
               onPressed: _isBooking ? null : () => setState(() => _matchResult = null),
-              child: const Text('Go Back', style: TextStyle(fontSize: 16, color: Colors.grey)),
+              child: const Text('Go Back', style: TextStyle(fontSize: 15, color: Color(0xFF64748B), fontWeight: FontWeight.w600)),
             ),
           ),
         ],
@@ -463,9 +623,16 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           color: isSelected ? AppColors.primary : Colors.white,
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.grey.shade300,
-            width: 2,
+            width: 1.5,
           ),
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            )
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -473,7 +640,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             if (isRecommended) ...[
               Icon(
                 isSelected ? Icons.check_circle : Icons.star,
-                color: isSelected ? Colors.white : Colors.amber,
+                color: isSelected ? Colors.white : Colors.amber.shade700,
                 size: 18,
               ),
               const SizedBox(width: 8),
@@ -481,8 +648,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Color(0xFF1E293B),
+                color: isSelected ? Colors.white : const Color(0xFF1E293B),
                 fontWeight: isSelected || isRecommended ? FontWeight.bold : FontWeight.normal,
+                fontSize: 14,
               ),
             ),
           ],
