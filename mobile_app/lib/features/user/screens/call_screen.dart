@@ -63,6 +63,7 @@ class _CallScreenState extends State<CallScreen> {
   bool _hasLocalVideo = false;
   String? _statusBanner;
   DateTime? _startedAt;
+  bool _mediaConnected = false;
 
   Timer? _disconnectTimer;
   Timer? _tick;
@@ -86,9 +87,8 @@ class _CallScreenState extends State<CallScreen> {
   @override
   void initState() {
     super.initState();
-    _startedAt = DateTime.now();
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted && !_inChat) setState(() {});
+      if (mounted && !_inChat && _startedAt != null) setState(() {});
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -105,12 +105,38 @@ class _CallScreenState extends State<CallScreen> {
     if (!mounted) return;
     _renderersReady = true;
 
+    void bindLocal(MediaStream? stream) {
+      if (stream != null && mounted && _showVideo) {
+        setState(() {
+          _localRenderer.srcObject = stream;
+          _hasLocalVideo = true;
+        });
+      }
+    }
+
+    void bindRemote(MediaStream? stream) {
+      if (stream != null && mounted && _showVideo) {
+        setState(() {
+          _remoteRenderer.srcObject = stream;
+          _mediaConnected = true;
+          _startedAt ??= DateTime.now();
+        });
+      }
+    }
+
+    // Subscribe BEFORE init so the answerer (usually patient) does not miss
+    // remote tracks that arrive while answering the buffered offer.
+    _localSub = _webrtcService.onLocalStream.listen(bindLocal);
+    _remoteSub = _webrtcService.onRemoteStream.listen(bindRemote);
+
     await _webrtcService.init(
       widget.consultationId,
       isOfferer: widget.isOfferer,
       video: widget.isVideo,
     );
+    if (!mounted) return;
 
+    // Register AFTER webrtc beginCallSession so hangup isn't wiped by session start.
     _signaling.onHangup((_) => _leaveCall(notifyPeer: false));
     _signaling.onRejected((_) => _leaveCall(notifyPeer: false));
     _signaling.onFallbackToChat((_) {
@@ -128,19 +154,14 @@ class _CallScreenState extends State<CallScreen> {
       });
     });
 
-    _localSub = _webrtcService.onLocalStream.listen((stream) {
-      if (stream != null && mounted && _showVideo) {
+    // If peer never joins (signaling down / Accept not pressed), surface a clear message.
+    Timer(const Duration(seconds: 20), () {
+      if (!mounted || _hasLeft || _inChat) return;
+      if (_remoteRenderer.srcObject == null) {
         setState(() {
-          _localRenderer.srcObject = stream;
-          _hasLocalVideo = true;
-        });
-      }
-    });
-
-    _remoteSub = _webrtcService.onRemoteStream.listen((stream) {
-      if (stream != null && mounted && _showVideo) {
-        setState(() {
-          _remoteRenderer.srcObject = stream;
+          _statusBanner = _signaling.isConnected
+              ? 'Waiting for peer… Ask them to Accept the call.'
+              : 'Signaling offline. Save server IP and ensure Node signaling is running on :5000.';
         });
       }
     });
@@ -158,6 +179,13 @@ class _CallScreenState extends State<CallScreen> {
         _switchToChat('Video failed. Switched to chat — call is not ended.');
       } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
         _disconnectTimer?.cancel();
+        if (mounted) {
+          setState(() {
+            _statusBanner = null;
+            _mediaConnected = true;
+            _startedAt ??= DateTime.now();
+          });
+        }
       }
     });
 
@@ -169,12 +197,9 @@ class _CallScreenState extends State<CallScreen> {
       }
     });
 
-    if (mounted && _webrtcService.localStream != null) {
-      setState(() {
-        _localRenderer.srcObject = _webrtcService.localStream;
-        _hasLocalVideo = true;
-      });
-    }
+    // Backfill streams that may have arrived during init (answerer race).
+    bindLocal(_webrtcService.localStream);
+    bindRemote(_webrtcService.remoteStream);
   }
 
   void _onIncomingChat(Map<String, dynamic> data) {
@@ -489,14 +514,16 @@ class _CallScreenState extends State<CallScreen> {
                     Container(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF10B981),
+                      decoration: BoxDecoration(
+                        color: _mediaConnected
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFFBBF24),
                         shape: BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '$_elapsed · Live',
+                      _mediaConnected ? '$_elapsed · Live' : 'Connecting…',
                       style: const TextStyle(
                         color: Color(0xFF6B7280),
                         fontSize: 12,

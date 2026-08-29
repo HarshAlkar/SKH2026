@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
 import 'app_routes.dart';
 import '../features/asha_worker/screens/login_screen.dart';
+import '../features/asha_worker/screens/asha_register_screen.dart';
 import '../features/doctor/screens/doctor_login_screen.dart';
+import '../features/doctor/screens/doctor_register.dart';
+import '../features/asha_worker/screens/asha_verification_screen.dart';
+import '../features/doctor/screens/doctor_verification_screen.dart';
+import '../features/patient/screens/patient_login_screen.dart';
+import '../features/patient/screens/patient_register_screen.dart';
 import '../features/asha_worker/screens/asha_dashboard.dart';
 import '../features/doctor/screens/doctor_dashboard.dart';
 import '../features/user/screens/user_dashboard_screen.dart';
 import '../features/auth/screens/role_selection_screen.dart';
-import '../features/auth/screens/register_screen.dart';
 import '../features/auth/screens/forgot_password_screen.dart';
-import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/otp_verification_screen.dart';
 import '../features/auth/screens/session_splash_screen.dart';
 
 import '../features/user/screens/symptom_checker_screen.dart';
+import '../features/one_health/screens/one_health_hub_screen.dart';
+import '../features/one_health/screens/livestock_screening_screen.dart';
+import '../features/one_health/screens/child_development_screen.dart';
 import '../features/user/screens/doctor_consult_screen.dart';
 import '../features/user/screens/medicine_tracker_screen.dart';
 import '../features/user/screens/add_medicine_screen.dart';
@@ -23,6 +30,8 @@ import '../features/user/screens/my_prescriptions_screen.dart';
 import '../features/user/screens/emergency_help_screen.dart';
 import '../features/user/screens/health_tips_screen.dart';
 import '../features/user/screens/patient_alerts_screen.dart';
+import '../features/user/screens/book_appointment_screen.dart';
+import '../features/user/screens/patient_appointments_screen.dart';
 
 // ASHA Feature Screens
 import '../features/reports/screens/village_health_report_screen.dart';
@@ -59,13 +68,21 @@ class RouteGenerator {
         return _fadeRoute(const RoleSelectionScreen());
       case AppRoutes.login:
       case AppRoutes.userLogin:
-        return _fadeRoute(const LoginScreen());
+        return _fadeRoute(const PatientLoginScreen());
+      case AppRoutes.userRegister:
+        return _fadeRoute(const PatientRegisterScreen());
       case AppRoutes.ashaLogin:
         return _fadeRoute(const AshaLoginScreen());
+      case AppRoutes.ashaRegister:
+        return _fadeRoute(const AshaRegisterScreen());
       case AppRoutes.doctorLogin:
         return _fadeRoute(const DoctorLoginScreen());
-      case AppRoutes.register:
-        return _fadeRoute(const RegisterScreen());
+      case AppRoutes.doctorRegister:
+        return _fadeRoute(const DoctorRegisterScreen());
+      case AppRoutes.doctorVerification:
+        return _fadeRoute(const DoctorVerificationScreen());
+      case AppRoutes.ashaVerification:
+        return _fadeRoute(const AshaVerificationScreen());
       case AppRoutes.userDashboard:
         return _fadeRoute(const UserDashboardScreen());
       case AppRoutes.ashaDashboard:
@@ -84,6 +101,12 @@ class RouteGenerator {
         return _fadeRoute(const ForgotPasswordScreen());
       case AppRoutes.symptomChecker:
         return _fadeRoute(const SymptomCheckerScreen());
+      case AppRoutes.oneHealthHub:
+        return _fadeRoute(const OneHealthHubScreen());
+      case AppRoutes.livestockScreening:
+        return _fadeRoute(const LivestockScreeningScreen());
+      case AppRoutes.childDevelopment:
+        return _fadeRoute(const ChildDevelopmentScreen());
       case AppRoutes.medicineTracker:
         return _fadeRoute(const MedicineTrackerScreen());
       case AppRoutes.addMedicine:
@@ -113,6 +136,10 @@ class RouteGenerator {
         return _fadeRoute(const MyPrescriptionsScreen());
       case AppRoutes.healthTips:
         return _fadeRoute(const HealthTipsScreen());
+      case AppRoutes.bookAppointment:
+        return _fadeRoute(const BookAppointmentScreen());
+      case AppRoutes.patientAppointments:
+        return _fadeRoute(const PatientAppointmentsScreen());
       case AppRoutes.patientAlerts:
         return _fadeRoute(const PatientAlertsScreen());
       case AppRoutes.emergencyHelp:

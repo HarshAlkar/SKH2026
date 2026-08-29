@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../config/app_config.dart';
 
@@ -11,6 +12,8 @@ class SignalingService {
   io.Socket? _socket;
   String? _connectedUserId;
   String? _activeConsultationId;
+  int _callEpoch = 0;
+  final ValueNotifier<bool> connectionNotifier = ValueNotifier<bool>(false);
 
   SignalingCallback? _onIncomingCall;
   SignalingCallback? _onPeerJoined;
@@ -19,6 +22,8 @@ class SignalingService {
   SignalingCallback? _onIceCandidate;
   SignalingCallback? _onHangup;
   SignalingCallback? _onRejected;
+  SignalingCallback? _onCallAccepted;
+  SignalingCallback? _onRequestOffer;
   SignalingCallback? _onNewMessage;
   SignalingCallback? _onFallbackToChat;
   final List<SignalingCallback> _chatListeners = [];
@@ -26,8 +31,10 @@ class SignalingService {
   void Function()? _onReconnected;
 
   String get serverUrl => AppConfig.signalingServerUrl;
-  bool get isConnected => _socket?.connected ?? false;
+  bool get isConnected => connectionNotifier.value && (_socket?.connected ?? false);
   String? get connectedUserId => _connectedUserId;
+  String? get activeConsultationId => _activeConsultationId;
+  int get callEpoch => _callEpoch;
 
   void connect(String userId) {
     if (_connectedUserId == userId && (_socket?.connected ?? false)) {
@@ -40,7 +47,7 @@ class SignalingService {
     _socket = io.io(
       serverUrl,
       io.OptionBuilder()
-          .setTransports(['websocket'])
+          .setTransports(['websocket', 'polling'])
           .setQuery({'userId': userId})
           .enableForceNew()
           .enableReconnection()
@@ -53,23 +60,33 @@ class SignalingService {
     _socket!.connect();
   }
 
+  void _setConnected(bool value) {
+    if (connectionNotifier.value == value) return;
+    connectionNotifier.value = value;
+  }
+
   void _bindEvents() {
     final socket = _socket;
     if (socket == null) return;
 
     socket.onConnect((_) {
-      print('Signaling connected for user $_connectedUserId');
+      debugPrint('Signaling connected for user $_connectedUserId at $serverUrl');
+      _setConnected(true);
       if (_activeConsultationId != null) {
         joinRoom(_activeConsultationId!);
       }
       _onReconnected?.call();
     });
     socket.onDisconnect((_) {
-      print('Signaling disconnected');
+      debugPrint('Signaling disconnected');
+      _setConnected(false);
       _onDisconnected?.call();
     });
-    socket.onConnectError((err) => print('Signaling Connect Error: $err'));
-    socket.onError((err) => print('Signaling Error: $err'));
+    socket.onConnectError((err) {
+      debugPrint('Signaling Connect Error: $err');
+      _setConnected(false);
+    });
+    socket.onError((err) => debugPrint('Signaling Error: $err'));
 
     socket.on('incoming-call', (data) {
       _onIncomingCall?.call(Map<String, dynamic>.from(data as Map));
@@ -92,6 +109,12 @@ class SignalingService {
     socket.on('call-rejected', (data) {
       _onRejected?.call(Map<String, dynamic>.from(data as Map));
     });
+    socket.on('call-accepted', (data) {
+      _onCallAccepted?.call(Map<String, dynamic>.from(data as Map));
+    });
+    socket.on('request-offer', (data) {
+      _onRequestOffer?.call(Map<String, dynamic>.from(data as Map));
+    });
     socket.on('new-message', (data) {
       _onNewMessage?.call(Map<String, dynamic>.from(data as Map));
     });
@@ -106,9 +129,48 @@ class SignalingService {
     });
   }
 
+  /// Starts a new call media session. Invalidates any previous call's handlers
+  /// so a late [endCallSession] from the old CallScreen cannot wipe the new one.
+  int beginCallSession() {
+    _callEpoch++;
+    _clearMediaListeners();
+    debugPrint('Signaling: begin call session $_callEpoch');
+    return _callEpoch;
+  }
+
+  /// Clears media listeners only if [epoch] is still the active call.
+  void endCallSession(int epoch) {
+    if (epoch != _callEpoch) {
+      debugPrint('Signaling: skip end session $epoch (active=$_callEpoch)');
+      return;
+    }
+    _clearMediaListeners();
+    if (_activeConsultationId != null) {
+      final room = _activeConsultationId!;
+      _activeConsultationId = null;
+      _socket?.emit('leave-consultation', room);
+    }
+    debugPrint('Signaling: ended call session $epoch');
+  }
+
+  void _clearMediaListeners() {
+    _onPeerJoined = null;
+    _onOffer = null;
+    _onAnswer = null;
+    _onIceCandidate = null;
+    _onHangup = null;
+    _onRejected = null;
+    _onCallAccepted = null;
+    _onRequestOffer = null;
+    _onNewMessage = null;
+    _onFallbackToChat = null;
+    _onDisconnected = null;
+    _onReconnected = null;
+  }
+
   void joinRoom(String roomId) {
     _activeConsultationId = roomId;
-    print('Joining room: $roomId');
+    debugPrint('Joining room: $roomId');
     _socket?.emit('join-consultation', roomId);
   }
 
@@ -131,6 +193,13 @@ class SignalingService {
       'consultationId': consultationId,
       'callerName': callerName,
       'callType': callType,
+      if (callerUserId != null) 'callerUserId': callerUserId,
+    });
+  }
+
+  void emitAccept(String roomId, {String? callerUserId}) {
+    _socket?.emit('accept-call', {
+      'consultationId': roomId,
       if (callerUserId != null) 'callerUserId': callerUserId,
     });
   }
@@ -201,18 +270,25 @@ class SignalingService {
   void onIceCandidate(SignalingCallback callback) => _onIceCandidate = callback;
   void onHangup(SignalingCallback callback) => _onHangup = callback;
   void onRejected(SignalingCallback callback) => _onRejected = callback;
+  void onCallAccepted(SignalingCallback callback) => _onCallAccepted = callback;
+  void onRequestOffer(SignalingCallback callback) => _onRequestOffer = callback;
   void onNewMessage(SignalingCallback callback) => _onNewMessage = callback;
   void onFallbackToChat(SignalingCallback callback) => _onFallbackToChat = callback;
   void onDisconnected(void Function() callback) => _onDisconnected = callback;
   void onReconnected(void Function() callback) => _onReconnected = callback;
 
+  void emitRequestOffer(String roomId) {
+    debugPrint('Requesting offer for room: $roomId');
+    _socket?.emit('request-offer', {'consultationId': roomId});
+  }
+
   void emitOffer(String roomId, Map<String, dynamic> offer) {
-    print('Emitting offer for room: $roomId');
+    debugPrint('Emitting offer for room: $roomId');
     _socket?.emit('offer', {'consultationId': roomId, 'offer': offer});
   }
 
   void emitAnswer(String roomId, Map<String, dynamic> answer) {
-    print('Emitting answer for room: $roomId');
+    debugPrint('Emitting answer for room: $roomId');
     _socket?.emit('answer', {'consultationId': roomId, 'answer': answer});
   }
 
@@ -220,22 +296,12 @@ class SignalingService {
     _socket?.emit('ice-candidate', {'consultationId': roomId, 'candidate': candidate});
   }
 
-  /// Drop in-call listeners so a disposed CallScreen cannot pop routes later.
-  void clearCallListeners() {
-    _onPeerJoined = null;
-    _onOffer = null;
-    _onAnswer = null;
-    _onIceCandidate = null;
-    _onHangup = null;
-    _onRejected = null;
-    _onNewMessage = null;
-    _onFallbackToChat = null;
-    _onDisconnected = null;
-    _onReconnected = null;
-  }
+  @Deprecated('Use beginCallSession / endCallSession')
+  void clearCallListeners() => _clearMediaListeners();
 
   void disconnect() {
     _activeConsultationId = null;
+    _setConnected(false);
     _socket?.dispose();
     _socket = null;
     _connectedUserId = null;

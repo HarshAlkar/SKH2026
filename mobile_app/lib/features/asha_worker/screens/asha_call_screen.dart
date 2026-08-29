@@ -171,8 +171,7 @@ class _AshaCallScreenState extends State<AshaCallScreen>
               itemCount: _doctors.length,
               itemBuilder: (context, index) {
                 final doctor = _doctors[index];
-                final peerId = parseContactId(doctor['user_id']) ??
-                    parseContactId(doctor['id']);
+                final peerId = parseContactId(doctor['user_id']);
                 if (peerId == null) return const SizedBox.shrink();
                 return DirectoryContactCard(
                   name: 'Dr. ${doctor['full_name'] ?? doctor['name'] ?? 'Doctor'}',

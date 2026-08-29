@@ -6,11 +6,13 @@ import '../core/services/storage_service.dart';
 import '../core/utils/network_errors.dart';
 import '../features/ai_symptom_checker/services/skin_cnn_service.dart';
 import '../features/ai_symptom_checker/services/symptom_dataset_service.dart';
+import '../features/ai_symptom_checker/services/symptom_ml_service.dart';
+import '../features/one_health/screening_persistence.dart';
 
 class SymptomProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
   final StorageService _storageService = StorageService();
-  List<SymptomModel> _symptoms = [];
+  final List<SymptomModel> _symptoms = [];
   bool _isLoading = false;
   Map<String, dynamic>? _lastAnalysis;
 
@@ -23,6 +25,7 @@ class SymptomProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// [selectedTokens] = chip tokens + confirmed free-text extractions (already merged).
   Future<Map<String, dynamic>?> analyzeSymptoms({
     String? symptomsText,
     String? recognizedText,
@@ -32,7 +35,70 @@ class SymptomProvider extends ChangeNotifier {
     _isLoading = true;
     _lastAnalysis = null;
     notifyListeners();
-    
+
+    final localInputs = <String>[
+      if (selectedTokens != null && selectedTokens.isNotEmpty) ...selectedTokens,
+      if (symptomsText != null && symptomsText.trim().isNotEmpty)
+        symptomsText.trim(),
+      if (recognizedText != null && recognizedText.trim().isNotEmpty)
+        recognizedText.trim(),
+    ];
+    final inputText = localInputs.join(', ');
+
+    // Prefer chip/confirmed tokens alone for the multi-hot vector when provided.
+    final mlInputs = (selectedTokens != null && selectedTokens.isNotEmpty)
+        ? selectedTokens
+        : localInputs;
+
+    Map<String, dynamic>? local =
+        await SymptomMlService.instance.tryPredict(mlInputs, language: language);
+
+    if (local == null) {
+      final csv = await SymptomDatasetService.instance.predict(
+        mlInputs,
+        language: language,
+      );
+      if (csv != null) {
+        local = {
+          ...csv,
+          'ml_error': SymptomMlService.instance.lastError,
+        };
+      }
+    }
+
+    if (local != null) {
+      if (local['insufficient_symptoms'] == true) {
+        _lastAnalysis = local;
+        _isLoading = false;
+        notifyListeners();
+        return _lastAnalysis;
+      }
+
+      await ScreeningPersistence.instance.enqueueHuman(
+        inputType: 'symptoms',
+        inputText: inputText,
+        result: local,
+      );
+      try {
+        final token = _storageService.getString('token');
+        await _apiService.post(
+          '/symptoms/analyze/',
+          headers: token != null ? {'Authorization': 'Token $token'} : null,
+          body: {
+            'symptoms': symptomsText ?? recognizedText ?? inputText,
+            if (recognizedText != null) 'recognized_text': recognizedText,
+            'language': language,
+          },
+          timeout: const Duration(seconds: 12),
+        );
+      } catch (_) {}
+
+      _lastAnalysis = local;
+      _isLoading = false;
+      notifyListeners();
+      return _lastAnalysis;
+    }
+
     try {
       final token = _storageService.getString('token');
       final response = await _apiService.post(
@@ -45,26 +111,16 @@ class SymptomProvider extends ChangeNotifier {
         },
         timeout: const Duration(seconds: 60),
       );
-      _lastAnalysis = response;
+      final map = response is Map<String, dynamic>
+          ? response
+          : Map<String, dynamic>.from(response as Map);
+      map['source'] = map['source'] ?? 'server_ml';
+      map['score_type'] = map['score_type'] ?? 'model_probability';
+      _lastAnalysis = map;
       _isLoading = false;
       notifyListeners();
       return response;
     } catch (e) {
-      final localInputs = <String>[
-        if (selectedTokens != null && selectedTokens.isNotEmpty) ...selectedTokens,
-        if (symptomsText != null && symptomsText.trim().isNotEmpty) symptomsText.trim(),
-        if (recognizedText != null && recognizedText.trim().isNotEmpty) recognizedText.trim(),
-      ];
-      final local = await SymptomDatasetService.instance.predict(
-        localInputs,
-        language: language,
-      );
-      if (local != null) {
-        _lastAnalysis = local;
-        _isLoading = false;
-        notifyListeners();
-        return _lastAnalysis;
-      }
       _isLoading = false;
       _lastAnalysis = null;
       notifyListeners();
@@ -81,8 +137,28 @@ class SymptomProvider extends ChangeNotifier {
     _lastAnalysis = null;
     notifyListeners();
 
-    Object remoteError = SkinCnnService.missingMessage;
     if (imageFile != null) {
+      final local = await SkinCnnService.instance.tryPredict(imageFile);
+      if (local != null) {
+        await ScreeningPersistence.instance.enqueueHuman(
+          inputType: 'image',
+          inputText: 'skin_photo:${imageFile.path.split(RegExp(r"[\\/]")).last}',
+          result: local,
+        );
+        try {
+          await _apiService.postMultipart(
+            '/symptoms/analyze-skin/',
+            file: imageFile,
+            fields: {'language': language},
+            timeout: const Duration(seconds: 12),
+          );
+        } catch (_) {}
+        _lastAnalysis = local;
+        _isLoading = false;
+        notifyListeners();
+        return _lastAnalysis;
+      }
+
       try {
         final response = await _apiService.postMultipart(
           '/symptoms/analyze-skin/',
@@ -96,26 +172,25 @@ class SymptomProvider extends ChangeNotifier {
         _isLoading = false;
         notifyListeners();
         return _lastAnalysis;
-      } catch (e) {
-        remoteError = e;
-      }
-
-      final local = await SkinCnnService.instance.tryPredict(imageFile);
-      if (local != null) {
-        _lastAnalysis = local;
-        _isLoading = false;
-        notifyListeners();
-        return _lastAnalysis;
-      }
+      } catch (_) {}
     }
 
     if (skinSymptomTokens != null && skinSymptomTokens.isNotEmpty) {
-      final dataset = await SymptomDatasetService.instance.predict(
-        skinSymptomTokens,
-        skinOnly: true,
-        language: language,
-      );
+      final dataset = await SymptomMlService.instance.tryPredict(
+            skinSymptomTokens,
+            language: language,
+          ) ??
+          await SymptomDatasetService.instance.predict(
+            skinSymptomTokens,
+            skinOnly: true,
+            language: language,
+          );
       if (dataset != null) {
+        await ScreeningPersistence.instance.enqueueHuman(
+          inputType: 'symptoms',
+          inputText: skinSymptomTokens.join(', '),
+          result: dataset,
+        );
         _lastAnalysis = dataset;
         _isLoading = false;
         notifyListeners();
@@ -124,8 +199,7 @@ class SymptomProvider extends ChangeNotifier {
     }
 
     _isLoading = false;
-    _lastAnalysis = null;
     notifyListeners();
-    throw Exception(friendlyNetworkError(remoteError, kind: NetworkErrorKind.ai));
+    throw Exception(SkinCnnService.missingMessage);
   }
 }

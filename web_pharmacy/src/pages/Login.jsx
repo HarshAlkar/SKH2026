@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Pill } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ConnectionSwitcher from '../components/connection/ConnectionSwitcher';
 
 export default function Login() {
   const { isAuthed, login } = useAuth();
@@ -86,6 +87,10 @@ export default function Login() {
 
         <p className="text-xs text-muted text-center">
           Demo: pharmacist / pharma123 (Medical Staff)
+        </p>
+        <ConnectionSwitcher />
+        <p className="text-[11px] text-muted text-center">
+          Auto uses the PC Wi-Fi Django server when it is running, otherwise cloud.
         </p>
       </form>
     </div>

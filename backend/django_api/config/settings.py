@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     'apps.chat',
     'apps.inventory.apps.InventoryConfig',
     'apps.admin_api.apps.AdminApiConfig',
+    'apps.one_health.apps.OneHealthConfig',
     'rest_framework.authtoken',
 ]
 
@@ -110,6 +111,9 @@ except ImportError:
     pass
 
 CORS_ALLOW_ALL_ORIGINS = True # For development
+CORS_ALLOW_CREDENTIALS = True
+DATA_UPLOAD_MAX_MEMORY_SIZE = 15 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 15 * 1024 * 1024
 
 
 ROOT_URLCONF = 'config.urls'

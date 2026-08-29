@@ -30,6 +30,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   Future<void> _saveHost() async {
     final value = _hostController.text.trim();
     if (value.isEmpty) return;
+    // Signaling always follows the API host (LAN :5000 or cloud signaling URL).
+    await AppConfig.clearSignalingUrl();
+    if (!mounted) return;
     await ServerHostHelper.saveHost(context, value);
     if (!mounted) return;
     setState(() {});
@@ -58,6 +61,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           Text(
             'Active API: ${AppConfig.baseUrl}',
             style: const TextStyle(fontSize: 11, color: AppColors.primary),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Calls auto: ${AppConfig.signalingServerUrl}',
+            style: const TextStyle(fontSize: 11, color: Color(0xFF0F766E)),
           ),
           const SizedBox(height: 4),
           const Text(
@@ -109,7 +117,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
           padding: const EdgeInsets.all(8.0),
           child: Container(
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Image.asset(
@@ -230,12 +238,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.08),
+                color: color.withValues(alpha: 0.08),
                 blurRadius: 15,
                 offset: const Offset(0, 8),
               ),
             ],
-            border: Border.all(color: color.withOpacity(0.1)),
+            border: Border.all(color: color.withValues(alpha: 0.1)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +253,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(icon, color: color, size: 28),

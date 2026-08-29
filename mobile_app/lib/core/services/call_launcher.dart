@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../features/user/screens/call_screen.dart';
 import '../../features/user/services/doctor_service.dart';
 import '../../providers/auth_provider.dart';
+import '../config/app_config.dart';
 import 'permission_dialog_service.dart';
 import 'signaling_service.dart';
 
@@ -23,6 +24,28 @@ class CallLauncher {
     );
     if (!allowed || !context.mounted) return;
 
+    final signaling = SignalingService();
+    if (!signaling.isConnected) {
+      final auth = context.read<AuthProvider>();
+      final uid = auth.user?.id.toString();
+      if (uid != null) signaling.connect(uid);
+      for (var i = 0; i < 15 && !signaling.isConnected; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+      if (!signaling.isConnected && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Calls server offline (${AppConfig.signalingServerUrl}). '
+              'Check signaling is running, save your server IP, then log in again.',
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    if (!context.mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -40,7 +63,7 @@ class CallLauncher {
 
       if (!context.mounted) return;
       final auth = context.read<AuthProvider>();
-      SignalingService().sendCallRequest(
+      signaling.sendCallRequest(
         receiverId: receiverUserId,
         consultationId: consultation['id'].toString(),
         callerName: auth.user?.name ?? 'Caller',
@@ -64,8 +87,12 @@ class CallLauncher {
     } catch (e) {
       if (context.mounted) {
         Navigator.pop(context);
+        final msg = e.toString().toLowerCase();
+        final friendly = msg.contains('invalid token') || msg.contains('unauthorized')
+            ? 'Session expired. Log out and log in again, then retry the call.'
+            : 'Could not start call: $e';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not start call: $e')),
+          SnackBar(content: Text(friendly)),
         );
       }
     }

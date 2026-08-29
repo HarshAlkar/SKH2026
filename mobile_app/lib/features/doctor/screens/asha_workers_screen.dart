@@ -134,6 +134,8 @@ class _DoctorAshaWorkersScreenState extends State<DoctorAshaWorkersScreen> {
                               final village =
                                   details['assigned_village'] ?? asha['village'] ?? '—';
                               final district = details['district']?.toString() ?? '';
+                              final ashaProfileId = parseContactId(details['asha_id']) ??
+                                  parseContactId(details['id']);
                               return DirectoryContactCard(
                                 name: contactName(asha),
                                 subtitle: [
@@ -142,7 +144,7 @@ class _DoctorAshaWorkersScreenState extends State<DoctorAshaWorkersScreen> {
                                 ].join(' · '),
                                 phone: contactPhone(asha),
                                 peerUserId: peerId,
-                                ashaId: peerId,
+                                ashaId: ashaProfileId ?? peerId,
                                 avatarIcon: Icons.health_and_safety_outlined,
                                 accentColor: const Color(0xFF0F766E),
                               );

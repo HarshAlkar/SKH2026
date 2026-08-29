@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Stethoscope, UserCheck, Users } from 'lucide-react';
 import { adminApi } from '../../services/apiService';
 import { useResource } from '../../hooks/useResource';
@@ -11,6 +12,8 @@ import { DataTable } from '../../components/ui/DataTable';
 import { Badge } from '../../components/ui/Badge';
 import { Modal, Field, inputClass } from '../../components/ui/Modal';
 import { toast } from '../../components/ui/Toast';
+import DoctorVerification from './DoctorVerification';
+import VerificationStatusBadge from '../../components/verification/VerificationStatusBadge';
 
 const empty = {
   name: '',
@@ -27,17 +30,29 @@ const empty = {
 export default function DoctorsPage() {
   const fetchList = useCallback(() => adminApi.doctors(), []);
   const { rows, loading, error, reload } = useResource(fetchList);
+  const [searchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState(null);
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
   const [spec, setSpec] = useState('');
+  const [verStatus, setVerStatus] = useState(searchParams.get('verification') || '');
+  const [verifyDoctor, setVerifyDoctor] = useState(null);
 
   const specs = useMemo(() => [...new Set(rows.map((r) => r.specialization).filter(Boolean))], [rows]);
-  const filtered = useMemo(
-    () => (spec ? rows.filter((r) => r.specialization === spec) : rows),
-    [rows, spec],
-  );
+  const pendingCount = rows.filter((r) => r.verification_status === 'PENDING_VERIFICATION').length;
+  const filtered = useMemo(() => {
+    return rows.filter((r) => {
+      if (spec && r.specialization !== spec) return false;
+      if (verStatus) {
+        const vs = r.verification_status || 'INCOMPLETE';
+        if (verStatus === 'PENDING' && vs !== 'PENDING_VERIFICATION') return false;
+        if (verStatus === 'VERIFIED' && vs !== 'VERIFIED') return false;
+        if (verStatus === 'REJECTED' && vs !== 'REJECTED') return false;
+      }
+      return true;
+    });
+  }, [rows, spec, verStatus]);
   const activeCount = rows.filter((r) => r.is_available).length;
 
   const save = async (e) => {
@@ -90,7 +105,7 @@ export default function DoctorsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <StatCard title="Total Doctors" value={rows.length} sub="Registered on VitalReach" icon={Stethoscope} color="bg-primary" />
         <StatCard title="Available Now" value={activeCount} sub="Ready for consults" icon={UserCheck} color="bg-secondary" />
-        <StatCard title="Specializations" value={specs.length} sub="Unique fields" icon={Users} color="bg-violet-500" />
+        <StatCard title="Pending review" value={pendingCount} sub="Documents waiting for admin" icon={Users} color="bg-amber-500" />
       </div>
       <FilterBar hideSearch>
         <FilterSelect
@@ -98,6 +113,17 @@ export default function DoctorsPage() {
           value={spec}
           onChange={setSpec}
           options={[['', 'All specializations'], ...specs.map((s) => [s, s])]}
+        />
+        <FilterSelect
+          label="Verification"
+          value={verStatus}
+          onChange={setVerStatus}
+          options={[
+            ['', 'All Statuses'],
+            ['PENDING', 'Pending Verification'],
+            ['VERIFIED', 'Verified'],
+            ['REJECTED', 'Rejected']
+          ]}
         />
       </FilterBar>
       <ErrorBanner error={error} onRetry={reload} />
@@ -136,20 +162,38 @@ export default function DoctorsPage() {
             render: (r) => <Badge tone={r.is_available ? 'green' : 'slate'}>{r.is_available ? 'Available' : 'Offline'}</Badge>,
           },
           {
+            key: 'verification',
+            header: 'Verification',
+            render: (r) => <VerificationStatusBadge status={r.verification_status || 'INCOMPLETE'} />,
+          },
+          {
             key: 'a',
             header: '',
             render: (r) => (
-              <button
-                type="button"
-                className="text-primary text-xs font-semibold"
-                onClick={() => {
-                  setEdit(r);
-                  setForm({ ...empty, ...r, name: r.full_name });
-                  setOpen(true);
-                }}
-              >
-                Edit
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={`text-xs font-bold px-2 py-1 rounded ${
+                    r.verification_status === 'PENDING_VERIFICATION'
+                      ? 'text-orange-600 bg-orange-50 hover:bg-orange-100'
+                      : 'text-slate-600 bg-slate-50 hover:bg-slate-100'
+                  }`}
+                  onClick={() => setVerifyDoctor(r)}
+                >
+                  {r.verification_status === 'PENDING_VERIFICATION' ? 'Review' : 'View'}
+                </button>
+                <button
+                  type="button"
+                  className="text-primary text-xs font-semibold px-2 py-1"
+                  onClick={() => {
+                    setEdit(r);
+                    setForm({ ...empty, ...r, name: r.full_name });
+                    setOpen(true);
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
             ),
           },
         ]}
@@ -197,6 +241,16 @@ export default function DoctorsPage() {
           </button>
         </form>
       </Modal>
+
+      <DoctorVerification
+        isOpen={!!verifyDoctor}
+        onClose={() => setVerifyDoctor(null)}
+        doctor={verifyDoctor}
+        onVerified={() => {
+          setVerifyDoctor(null);
+          reload();
+        }}
+      />
     </div>
   );
 }

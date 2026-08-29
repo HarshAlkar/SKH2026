@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Users, Stethoscope, Clock, AlertCircle, UserRound, Brain, Video } from 'lucide-react';
+import { Users, Stethoscope, AlertCircle, UserRound, Brain, Video, ShieldAlert } from 'lucide-react';
 import { adminApi } from '../../services/apiService';
 import { usePolling } from '../../hooks/usePolling';
 import { useMapMarkers } from '../../hooks/useMapMarkers';
@@ -9,18 +9,23 @@ import StatCard from '../../components/ui/StatCard';
 import LiveBadge from '../../components/ui/LiveBadge';
 import { Badge, statusTone } from '../../components/ui/Badge';
 import EmergencyMap from '../../components/map/EmergencyMap';
+import VerificationStatusBadge from '../../components/verification/VerificationStatusBadge';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const fetchStats = useCallback(() => adminApi.stats(), []);
-  const { data: stats, error, reload } = usePolling(fetchStats, 15000);
+  const { data: stats, error, reload, realtimeConnected } = usePolling(fetchStats, 15000);
   const { data: mapData } = useMapMarkers(true);
 
   return (
     <div>
       <PageHeader
         title="Healthcare Operations Overview"
-        subtitle="Live counts from the VitalReach Django API."
+        subtitle={
+          realtimeConnected
+            ? 'Live counts from the VitalReach API + signaling.'
+            : 'Live counts from the VitalReach Django API (polling fallback).'
+        }
         actions={
           <div className="flex items-center gap-2">
             <LiveBadge />
@@ -39,10 +44,34 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
         <StatCard title="Total Patients" value={stats?.patients} sub="Registered village patients" icon={Users} color="bg-primary" to="/patients" />
         <StatCard title="Doctors" value={stats?.doctors} sub={`${stats?.active_doctors ?? 0} available now`} icon={Stethoscope} color="bg-secondary" to="/doctors" />
+        <StatCard
+          title="Pending verification"
+          value={stats?.pending_verifications ?? 0}
+          sub={`${stats?.pending_doctor_verifications ?? 0} doctors · ${stats?.pending_asha_verifications ?? 0} ASHA`}
+          icon={ShieldAlert}
+          color="bg-amber-500"
+          to="/doctors?verification=PENDING"
+        />
         <StatCard title="ASHA Workers" value={stats?.asha_workers} sub="Community health workers" icon={UserRound} color="bg-violet-500" to="/asha-workers" />
         <StatCard title="Consultations" value={stats?.pending_consultations} sub="Pending or ongoing" icon={Video} color="bg-accent" to="/consultations" />
         <StatCard title="Emergency Alerts" value={stats?.emergency_alerts} sub="Unresolved" icon={AlertCircle} color="bg-rose-500" to="/alerts" />
         <StatCard title="AI Analyses" value={stats?.symptom_analyses} sub="Symptom screenings" icon={Brain} color="bg-slate-600" to="/symptoms" />
+        <StatCard
+          title="Human screenings"
+          value={stats?.human_screenings ?? stats?.symptom_analyses}
+          sub="One Health · people"
+          icon={Users}
+          color="bg-primary"
+          to="/symptoms"
+        />
+        <StatCard
+          title="Livestock screenings"
+          value={stats?.animal_screenings ?? 0}
+          sub={`${stats?.livestock_cases ?? 0} animals · ${stats?.veterinarians ?? 0} vets`}
+          icon={Stethoscope}
+          color="bg-amber-600"
+          to="/symptoms"
+        />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
@@ -76,6 +105,49 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
           <div className="flex justify-between items-center mb-4">
+            <h2 className="font-bold">Pending verifications</h2>
+            <div className="flex gap-3">
+              <Link to="/doctors?verification=PENDING" className="text-sm text-primary font-medium">Doctors</Link>
+              <Link to="/asha-workers?verification=PENDING" className="text-sm text-primary font-medium">ASHA</Link>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {!(stats?.pending_doctor_queue || []).length && !(stats?.pending_asha_queue || []).length ? (
+              <p className="text-sm text-muted py-6 text-center">No pending doctor or ASHA documents to review.</p>
+            ) : (
+              <>
+                {(stats.pending_doctor_queue || []).map((d) => (
+                  <Link
+                    key={`doc-${d.id}`}
+                    to="/doctors?verification=PENDING"
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50"
+                  >
+                    <div>
+                      <p className="font-medium">{d.full_name}</p>
+                      <p className="text-xs text-muted">Doctor · {d.specialization || '—'} · {d.phone_number}</p>
+                    </div>
+                    <VerificationStatusBadge status={d.verification_status} />
+                  </Link>
+                ))}
+                {(stats.pending_asha_queue || []).map((a) => (
+                  <Link
+                    key={`asha-${a.id}`}
+                    to="/asha-workers?verification=PENDING"
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50"
+                  >
+                    <div>
+                      <p className="font-medium">{a.full_name}</p>
+                      <p className="text-xs text-muted">ASHA · {a.assigned_village || '—'} · {a.phone_number}</p>
+                    </div>
+                    <VerificationStatusBadge status={a.verification_status} />
+                  </Link>
+                ))}
+              </>
+            )}
+          </div>
+        </section>
+        <section className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
+          <div className="flex justify-between items-center mb-4">
             <h2 className="font-bold">Recent Consultations</h2>
             <Link to="/consultations" className="text-sm text-primary font-medium">View all</Link>
           </div>
@@ -95,6 +167,9 @@ export default function Dashboard() {
             )}
           </div>
         </section>
+      </div>
+
+      <div className="mt-6">
         <section className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-bold">ASHA Activity</h2>

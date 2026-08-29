@@ -77,7 +77,7 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
       final success = await authProvider.register(registrationData);
       
       if (success && mounted) {
-        Navigator.pushReplacementNamed(context, AppRoutes.doctorDashboard);
+        Navigator.pushReplacementNamed(context, AppRoutes.doctorVerification);
       } else if (mounted) {
         Helpers.showSnackBar(
           context,

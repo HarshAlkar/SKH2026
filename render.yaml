@@ -22,3 +22,15 @@ services:
         fromDatabase:
           name: vitalreach-db
           property: connectionString
+      - key: SIGNALING_NOTIFY_URL
+        value: "https://vitalreach-signaling.onrender.com/notify"
+
+  - type: web
+    name: vitalreach-signaling
+    runtime: docker
+    dockerfilePath: ./realtime_server/node_signaling_server/Dockerfile
+    dockerContext: ./realtime_server/node_signaling_server
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: "production"

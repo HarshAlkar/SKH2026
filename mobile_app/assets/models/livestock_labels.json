@@ -1,0 +1,78 @@
+{
+  "classes": [
+    "Gastrointestinal",
+    "Mastitis_Udder",
+    "Neurological",
+    "Other",
+    "Respiratory",
+    "Skin_Parasite",
+    "Systemic_Infectious",
+    "Zoonotic_HighRisk"
+  ],
+  "features": [
+    "species_Cat",
+    "species_Cow",
+    "species_Dog",
+    "species_Goat",
+    "species_Horse",
+    "species_Pig",
+    "species_Rabbit",
+    "species_Sheep",
+    "Appetite_Loss",
+    "Vomiting",
+    "Diarrhea",
+    "Coughing",
+    "Labored_Breathing",
+    "Lameness",
+    "Skin_Lesions",
+    "Nasal_Discharge",
+    "Eye_Discharge",
+    "age_norm",
+    "weight_norm",
+    "temp_norm",
+    "hr_norm"
+  ],
+  "species": [
+    "Cat",
+    "Cow",
+    "Dog",
+    "Goat",
+    "Horse",
+    "Pig",
+    "Rabbit",
+    "Sheep"
+  ],
+  "binary_cols": [
+    "Appetite_Loss",
+    "Vomiting",
+    "Diarrhea",
+    "Coughing",
+    "Labored_Breathing",
+    "Lameness",
+    "Skin_Lesions",
+    "Nasal_Discharge",
+    "Eye_Discharge"
+  ],
+  "severity": {
+    "Gastrointestinal": "Moderate",
+    "Mastitis_Udder": "High",
+    "Neurological": "High",
+    "Other": "Moderate",
+    "Respiratory": "High",
+    "Skin_Parasite": "Moderate",
+    "Systemic_Infectious": "High",
+    "Zoonotic_HighRisk": "Critical"
+  },
+  "disclaimer": "Livestock screening indicates decision support only and is not a veterinary diagnosis. Consult a qualified veterinarian.",
+  "screening_wording": "Livestock screening indicates elevated risk for {condition}. This result is decision support and not a veterinary diagnosis. Consult a qualified veterinarian.",
+  "display_names": {
+    "Zoonotic_HighRisk": "Possible zoonotic / high-risk infectious signs",
+    "Respiratory": "Respiratory illness signs",
+    "Gastrointestinal": "Digestive / GI illness signs",
+    "Skin_Parasite": "Skin / parasite concern",
+    "Neurological": "Neurological concern",
+    "Mastitis_Udder": "Udder / mastitis concern",
+    "Systemic_Infectious": "Systemic infectious signs",
+    "Other": "Non-specific illness signs"
+  }
+}

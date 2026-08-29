@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LineChart,
@@ -14,34 +13,24 @@ import { Pill, Boxes, AlertTriangle, Siren } from 'lucide-react';
 import { stockApi } from '../services/apiService';
 import StatCard from '../components/ui/StatCard';
 import { PageHeader, ErrorBanner } from '../components/ui/PageHeader';
+import { usePolling } from '../hooks/useRealtime';
 
 export default function Dashboard() {
-  const [data, setData] = useState(null);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const d = await stockApi.dashboard();
-        if (alive) setData(d);
-      } catch (e) {
-        if (alive) setError(e.message);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
+  const { data, error, loading, realtimeConnected } = usePolling(
+    () => stockApi.dashboard(),
+    15000,
+    true,
+  );
 
   return (
     <div>
       <PageHeader
         title="Pharmacy Dashboard"
-        subtitle="Real-time inventory metrics and urgent stock alerts"
+        subtitle={
+          realtimeConnected
+            ? 'Live updates connected · inventory metrics and stock alerts'
+            : 'Polling every 15s · connect signaling for instant updates'
+        }
       />
       <ErrorBanner error={error} />
 

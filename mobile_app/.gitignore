@@ -46,3 +46,13 @@ app.*.map.json
 
 # On-device skin CNN (copied after training)
 assets/models/*.tflite
+
+# Prefer --dart-define=GEMINI_API_KEY for release; local override file optional
+.env
+.env.*
+
+# Large local ML/image datasets — keep on disk, never push to GitHub
+lib/dataset/
+
+# Local-only Gemini key (never commit)
+lib/core/config/gemini_local_key.dart

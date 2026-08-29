@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Users, MapPin, CheckCircle } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Users, CheckCircle } from 'lucide-react';
 import { adminApi } from '../../services/apiService';
 import { useResource } from '../../hooks/useResource';
 import { PageHeader, ErrorBanner } from '../../components/ui/PageHeader';
@@ -11,6 +12,8 @@ import { DataTable } from '../../components/ui/DataTable';
 import { Badge } from '../../components/ui/Badge';
 import { Modal, Field, inputClass } from '../../components/ui/Modal';
 import { toast } from '../../components/ui/Toast';
+import VerificationStatusBadge from '../../components/verification/VerificationStatusBadge';
+import VerificationModal from '../../components/verification/VerificationModal';
 
 const empty = {
   name: '',
@@ -25,18 +28,30 @@ const empty = {
 export default function AshaPage() {
   const fetchList = useCallback(() => adminApi.ashaWorkers(), []);
   const { rows, loading, error, reload } = useResource(fetchList);
+  const [searchParams] = useSearchParams();
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState(null);
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
   const [village, setVillage] = useState('');
+  const [verStatus, setVerStatus] = useState(searchParams.get('verification') || '');
+  const [verifyAsha, setVerifyAsha] = useState(null);
 
   const villages = useMemo(() => [...new Set(rows.map((r) => r.assigned_village).filter(Boolean))], [rows]);
-  const filtered = useMemo(
-    () => (village ? rows.filter((r) => r.assigned_village === village) : rows),
-    [rows, village],
-  );
+  const filtered = useMemo(() => {
+    return rows.filter((r) => {
+      if (village && r.assigned_village !== village) return false;
+      if (verStatus) {
+        const vs = r.verification_status || 'INCOMPLETE';
+        if (verStatus === 'PENDING' && vs !== 'PENDING_VERIFICATION') return false;
+        if (verStatus === 'VERIFIED' && vs !== 'VERIFIED') return false;
+        if (verStatus === 'REJECTED' && vs !== 'REJECTED') return false;
+      }
+      return true;
+    });
+  }, [rows, village, verStatus]);
   const activeCount = rows.filter((r) => r.is_active).length;
+  const pendingCount = rows.filter((r) => r.verification_status === 'PENDING_VERIFICATION').length;
 
   const save = async (e) => {
     e.preventDefault();
@@ -86,7 +101,7 @@ export default function AshaPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <StatCard title="Total Workers" value={rows.length} sub="Registered ASHA staff" icon={Users} color="bg-primary" />
         <StatCard title="Active" value={activeCount} sub="Currently active" icon={CheckCircle} color="bg-secondary" />
-        <StatCard title="Villages Covered" value={villages.length} sub="Assigned villages" icon={MapPin} color="bg-violet-500" />
+        <StatCard title="Pending review" value={pendingCount} sub="Documents waiting for admin" icon={CheckCircle} color="bg-amber-500" />
       </div>
       <FilterBar hideSearch>
         <FilterSelect
@@ -94,6 +109,17 @@ export default function AshaPage() {
           value={village}
           onChange={setVillage}
           options={[['', 'All villages'], ...villages.map((v) => [v, v])]}
+        />
+        <FilterSelect
+          label="Verification"
+          value={verStatus}
+          onChange={setVerStatus}
+          options={[
+            ['', 'All Statuses'],
+            ['PENDING', 'Pending Verification'],
+            ['VERIFIED', 'Verified'],
+            ['REJECTED', 'Rejected']
+          ]}
         />
       </FilterBar>
       <ErrorBanner error={error} onRetry={reload} />
@@ -134,20 +160,38 @@ export default function AshaPage() {
             render: (r) => <Badge tone={r.is_active ? 'green' : 'rose'}>{r.is_active ? 'Active' : 'Inactive'}</Badge>,
           },
           {
+            key: 'verification',
+            header: 'Verification',
+            render: (r) => <VerificationStatusBadge status={r.verification_status || 'INCOMPLETE'} />,
+          },
+          {
             key: 'a',
             header: '',
             render: (r) => (
-              <button
-                type="button"
-                className="text-primary text-xs font-semibold"
-                onClick={() => {
-                  setEdit(r);
-                  setForm({ ...empty, ...r, name: r.full_name });
-                  setOpen(true);
-                }}
-              >
-                Edit
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className={`text-xs font-bold px-2 py-1 rounded ${
+                    r.verification_status === 'PENDING_VERIFICATION'
+                      ? 'text-orange-600 bg-orange-50 hover:bg-orange-100'
+                      : 'text-slate-600 bg-slate-50 hover:bg-slate-100'
+                  }`}
+                  onClick={() => setVerifyAsha(r)}
+                >
+                  {r.verification_status === 'PENDING_VERIFICATION' ? 'Review' : 'View'}
+                </button>
+                <button
+                  type="button"
+                  className="text-primary text-xs font-semibold px-2 py-1"
+                  onClick={() => {
+                    setEdit(r);
+                    setForm({ ...empty, ...r, name: r.full_name });
+                    setOpen(true);
+                  }}
+                >
+                  Edit
+                </button>
+              </div>
             ),
           },
         ]}
@@ -186,6 +230,31 @@ export default function AshaPage() {
           </button>
         </form>
       </Modal>
+
+      <VerificationModal
+        isOpen={!!verifyAsha}
+        onClose={() => setVerifyAsha(null)}
+        data={verifyAsha}
+        title={`Verify ASHA: ${verifyAsha?.full_name || verifyAsha?.name}`}
+        profileFields={[
+          { label: 'Full Name', value: verifyAsha?.full_name || verifyAsha?.name },
+          { label: 'Worker ID', value: verifyAsha?.worker_id },
+          { label: 'Phone', value: verifyAsha?.phone_number },
+          { label: 'Village', value: verifyAsha?.assigned_village },
+          { label: 'PHC Center', value: verifyAsha?.phc_center },
+          { label: 'District', value: verifyAsha?.district },
+        ]}
+        onApprove={async (id) => {
+          await adminApi.approveAsha(id);
+          setVerifyAsha(null);
+          reload();
+        }}
+        onReject={async (id, reason) => {
+          await adminApi.rejectAsha(id, reason);
+          setVerifyAsha(null);
+          reload();
+        }}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/sync/offline_api.dart';
 
 class CreatePrescriptionScreen extends StatefulWidget {
   final String? patientName;
@@ -117,7 +118,22 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
         'notes': _diagnosisController.text,
       };
 
-      await _api.post('/prescriptions/', body: body);
+      try {
+        await _api.post('/prescriptions/', body: body);
+      } catch (_) {
+        await OfflineApi.instance.post('/prescriptions/', body: body);
+        if (!mounted) return;
+        Navigator.pop(context);
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Prescription queued offline — will sync when online'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
 
       if (!mounted) return;
       Navigator.pop(context); // Close dialog

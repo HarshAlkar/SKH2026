@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getApiBaseUrl, subscribeConnection } from './apiHost';
 
 const TOKEN_KEY = 'vr_admin_token';
 const USER_KEY = 'vr_admin_user';
@@ -13,11 +14,16 @@ export const getStoredUser = () => {
 };
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://skh2026.onrender.com/api',
+  baseURL: getApiBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
 });
 
+subscribeConnection((snap) => {
+  api.defaults.baseURL = snap.apiBase;
+});
+
 api.interceptors.request.use((config) => {
+  config.baseURL = getApiBaseUrl();
   const token = getToken();
   if (token) {
     config.headers.Authorization = `Token ${token}`;
@@ -65,10 +71,14 @@ export const adminApi = {
   doctors: (params) => unwrap(api.get('/admin/doctors/', { params })),
   createDoctor: (body) => unwrap(api.post('/admin/doctors/', body)),
   patchDoctor: (id, body) => unwrap(api.patch(`/admin/doctors/${id}/`, body)),
+  approveDoctor: (id) => unwrap(api.post(`/admin/doctors/${id}/approve/`)),
+  rejectDoctor: (id, reason) => unwrap(api.post(`/admin/doctors/${id}/reject/`, { reason })),
 
   ashaWorkers: (params) => unwrap(api.get('/admin/asha-workers/', { params })),
   createAsha: (body) => unwrap(api.post('/admin/asha-workers/', body)),
   patchAsha: (id, body) => unwrap(api.patch(`/admin/asha-workers/${id}/`, body)),
+  approveAsha: (id) => unwrap(api.post(`/admin/asha-workers/${id}/approve/`)),
+  rejectAsha: (id, reason) => unwrap(api.post(`/admin/asha-workers/${id}/reject/`, { reason })),
 
   consultations: (params) => unwrap(api.get('/admin/consultations/', { params })),
   patchConsultation: (id, body) => unwrap(api.patch(`/admin/consultations/${id}/`, body)),

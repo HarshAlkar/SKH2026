@@ -10,6 +10,7 @@ import '../../profile/widgets/profile_avatar.dart';
 import '../../../providers/consultation_provider.dart';
 import '../../../core/sync/offline_api.dart';
 import '../../../core/widgets/sync_status_banner.dart';
+import '../../../core/widgets/signaling_status_chip.dart';
 import '../../../core/services/permission_dialog_service.dart';
 import 'asha_workers_screen.dart';
 
@@ -67,6 +68,10 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: Center(child: SignalingStatusChip(compact: true)),
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_none_outlined, color: AppColors.primary),
             onPressed: () => Navigator.pushNamed(context, AppRoutes.patientAlerts),
@@ -304,12 +309,16 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
       mainAxisSpacing: 16,
       childAspectRatio: 1.1,
       children: [
+        _buildActionCard('One Health', Icons.spa_outlined, AppRoutes.oneHealthHub),
         _buildActionCard('Medicine Tracker', Icons.medication_outlined, AppRoutes.medicineTracker),
         _buildActionCard('Nearby Clinics', Icons.location_on_outlined, AppRoutes.nearbyClinics),
-        _buildActionCard('Consult Doctor', Icons.video_camera_front_outlined, AppRoutes.consultDoctor),
+        _buildActionCard('Book Appointment', Icons.video_camera_front_outlined, AppRoutes.bookAppointment),
+        _buildActionCard('My Appointments', Icons.event_available, AppRoutes.patientAppointments),
         _buildActionCard('ASHA Workers', Icons.health_and_safety_outlined, AppRoutes.ashaWorkers),
         _buildActionCard('My Prescriptions', Icons.description_outlined, AppRoutes.myPrescriptions),
         _buildActionCard('Health Tips', Icons.lightbulb_outline, AppRoutes.healthTips),
+        _buildActionCard('Child check', Icons.child_care_outlined, AppRoutes.childDevelopment),
+        _buildActionCard('Livestock', Icons.pets_outlined, AppRoutes.livestockScreening),
       ],
     );
   }

@@ -44,12 +44,14 @@ def api_root_view(request):
             "/api/chat/",
             "/api/stock/",
             "/api/admin/",
+            "/api/one-health/",
         ]
     })
 
 urlpatterns = [
     path('', api_root_view, name='api_root'),
     path('health/', health_view, name='health'),
+    path('api/health/', health_view, name='api_health'),
     path('admin/', admin.site.urls),
     path('api/auth/', include('apps.users.urls')), # login/register are actions in UserViewSet
     path('api/users/', include('apps.users.urls')),
@@ -62,9 +64,11 @@ urlpatterns = [
     path('api/records/', include('apps.health_records.urls')),
     path('api/patients/', include('apps.patients.urls')),
     path('api/asha/', include('apps.asha_workers.urls')),
+    path('api/asha_workers/', include('apps.asha_workers.urls')),
     path('api/chat/', include('apps.chat.urls')),
     path('api/stock/', include('apps.inventory.urls')),
     path('api/admin/', include('apps.admin_api.urls')),
+    path('api/one-health/', include('apps.one_health.urls')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

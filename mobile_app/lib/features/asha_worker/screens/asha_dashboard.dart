@@ -10,6 +10,7 @@ import '../../../models/user_model.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/sync/offline_api.dart';
 import '../../../core/widgets/sync_status_banner.dart';
+import '../../../core/widgets/signaling_status_chip.dart';
 import '../../../providers/consultation_provider.dart';
 import '../../../core/services/permission_dialog_service.dart';
 import '../../../routes/app_routes.dart';
@@ -113,6 +114,10 @@ class _AshaDashboardState extends State<AshaDashboard> {
               elevation: 0,
               iconTheme: const IconThemeData(color: Colors.black87),
               actions: [
+                const Padding(
+                  padding: EdgeInsets.only(right: 4),
+                  child: Center(child: SignalingStatusChip(compact: true)),
+                ),
                 IconButton(
                   icon: const Icon(Icons.refresh),
                   onPressed: _fetchDashboardData,
@@ -165,7 +170,15 @@ class _AshaDashboardState extends State<AshaDashboard> {
     );
   }
 
+  void _showUnverifiedMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please verify your profile to unlock this feature.')),
+    );
+  }
+
   Widget _buildHomeBody(UserModel? user) {
+    final isVerified = user?.getDetail('verification_status', fallback: 'INCOMPLETE') == 'VERIFIED';
+
     return SafeArea(
       child: RefreshIndicator(
         onRefresh: _fetchDashboardData,
@@ -175,6 +188,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildVerificationBanner(user),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -283,7 +297,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                         child: QuickActionButton(
                           icon: Icons.person_add_outlined,
                           label: "List Patients",
-                          onTap: () => setState(() => _selectedIndex = 1),
+                          onTap: isVerified ? () => setState(() => _selectedIndex = 1) : _showUnverifiedMessage,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -291,7 +305,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                         child: QuickActionButton(
                           icon: Icons.edit_document,
                           label: "Update Health",
-                          onTap: () => _openAndRefresh(AppRoutes.updateHealth),
+                          onTap: isVerified ? () => _openAndRefresh(AppRoutes.updateHealth) : _showUnverifiedMessage,
                         ),
                       ),
                     ],
@@ -303,7 +317,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                         child: QuickActionButton(
                           icon: Icons.warning_amber_rounded,
                           label: "View Alerts",
-                          onTap: () => _openAndRefresh(AppRoutes.riskAlerts),
+                          onTap: isVerified ? () => _openAndRefresh(AppRoutes.riskAlerts) : _showUnverifiedMessage,
                         ),
                       ),
                       const SizedBox(width: 16),
@@ -311,7 +325,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                         child: QuickActionButton(
                           icon: Icons.call_outlined,
                           label: "Call / Chat",
-                          onTap: () => setState(() => _selectedIndex = 2),
+                          onTap: isVerified ? () => setState(() => _selectedIndex = 2) : _showUnverifiedMessage,
                         ),
                       ),
                     ],
@@ -332,7 +346,7 @@ class _AshaDashboardState extends State<AshaDashboard> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => _openAndRefresh(AppRoutes.villageVisits),
+                    onPressed: isVerified ? () => _openAndRefresh(AppRoutes.villageVisits) : null,
                     child: const Text("View All"),
                   ),
                 ],
@@ -431,6 +445,88 @@ class _AshaDashboardState extends State<AshaDashboard> {
               child: Icon(Icons.person),
             ),
             label: 'PROFILE',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerificationBanner(UserModel? user) {
+    if (user == null || user.role != 'asha_worker') return const SizedBox.shrink();
+
+    final status = user.getDetail('verification_status', fallback: 'INCOMPLETE');
+    if (status == 'VERIFIED') return const SizedBox.shrink();
+
+    Color bgColor;
+    Color textColor;
+    IconData icon;
+    String title;
+    String message;
+    String buttonText = 'Complete Profile';
+    VoidCallback onTap = () => _openAndRefresh(AppRoutes.ashaVerification);
+
+    switch (status) {
+      case 'PENDING_VERIFICATION':
+        bgColor = Colors.orange.shade50;
+        textColor = Colors.orange.shade900;
+        icon = Icons.pending_actions;
+        title = 'VERIFICATION PENDING';
+        message = 'Your ASHA Worker credentials are being reviewed.';
+        buttonText = 'View Status';
+        break;
+      case 'REJECTED':
+        bgColor = Colors.red.shade50;
+        textColor = Colors.red.shade900;
+        icon = Icons.error_outline;
+        title = 'VERIFICATION REJECTED';
+        message = 'Reason: ${user.getDetail('rejection_reason', fallback: 'Unknown')}';
+        buttonText = 'Update Documents';
+        break;
+      case 'INCOMPLETE':
+      default:
+        bgColor = Colors.red.shade50;
+        textColor = Colors.red.shade900;
+        icon = Icons.warning_amber_rounded;
+        title = 'UNVERIFIED';
+        message = 'Complete your profile to unlock professional ASHA Worker features.';
+        break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: textColor.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: textColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(color: textColor, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(message, style: TextStyle(color: textColor, fontSize: 13)),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onTap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: textColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: Text(buttonText),
+            ),
           ),
         ],
       ),

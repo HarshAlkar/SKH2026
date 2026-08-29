@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { ToastHost } from '../ui/Toast';
+import ConnectionSwitcher from '../connection/ConnectionSwitcher';
 
 const items = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -103,6 +104,7 @@ export default function AdminLayout() {
         </nav>
 
         <div className="p-3 space-y-2 border-t border-slate-100">
+          <ConnectionSwitcher />
           <button
             type="button"
             onClick={() => navigate('/alerts')}

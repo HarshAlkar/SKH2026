@@ -16,6 +16,7 @@ class SettingsStore {
   bool get medicineEnabled => StorageService.getBoolSync(_medicineKey, defaultValue: true);
   String get language => StorageService.getStringSync(_languageKey) ?? 'en';
   bool get isHindi => language == 'hi';
+  bool get isMarathi => language == 'mr';
   String? get emergencyMode => StorageService.getStringSync(_emergencyModeKey);
   String? get emergencyGatewayHost => StorageService.getStringSync(_emergencyGatewayKey);
 
@@ -27,5 +28,8 @@ class SettingsStore {
   Future<void> setEmergencyGatewayHost(String value) =>
       StorageService.saveStringSync(_emergencyGatewayKey, value);
 
-  String t(String en, String hi) => isHindi ? hi : en;
+  String t(String en, String hi, [String? mr]) {
+    if (isMarathi && mr != null) return mr;
+    return isHindi ? hi : en;
+  }
 }

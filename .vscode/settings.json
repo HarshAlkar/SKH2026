@@ -4,5 +4,9 @@
         "backend/django_api",
         "backend/django_api/venv/Lib/site-packages"
     ],
-    "python.terminal.activateEnvironment": true
+    "python.terminal.activateEnvironment": true,
+    "cursorpyright.analysis.extraPaths": [
+        "backend/django_api",
+        "backend/django_api/venv/Lib/site-packages"
+    ]
 }

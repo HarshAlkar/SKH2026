@@ -11,12 +11,45 @@ import sys
 
 MAX_SKIN_IMAGE_BYTES = 3 * 1024 * 1024
 
+HUMAN_DISCLAIMER = (
+    'AI-assisted screening only. This result is not a medical diagnosis. '
+    'Please consult a qualified healthcare professional.'
+)
+
 
 def _ensure_project_root():
     project_root = str(settings.BASE_DIR.parent.parent)
     if project_root not in sys.path:
         sys.path.append(project_root)
     return project_root
+
+
+def _record_human_screening(
+    user,
+    symptoms_text,
+    predicted_disease,
+    severity,
+    confidence,
+    result,
+    input_type='symptoms',
+    client_id=None,
+):
+    try:
+        from apps.one_health.models import ScreeningEvent
+        ScreeningEvent.objects.create(
+            domain='HUMAN',
+            user=user,
+            input_type=input_type,
+            input_text=symptoms_text,
+            possible_condition=predicted_disease,
+            severity_level=severity,
+            confidence=float(confidence or 0),
+            advice=(result.get('advice') if isinstance(result, dict) else '') or '',
+            result_json=result if isinstance(result, dict) else {},
+            client_id=client_id or None,
+        )
+    except Exception:
+        pass
 
 class SymptomAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
@@ -93,25 +126,30 @@ class SymptomAnalysisView(APIView):
             severity_level=severity
         )
 
+        _record_human_screening(user, symptoms_text, predicted_disease, severity, confidence, analysis_result)
+
         # 5. Alert village ASHA + doctor for High/Critical screening results
         alert_sent = False
         if severity in ['High', 'Critical']:
             _, alert_sent = notify_village_care_team(user, predicted_disease, severity)
 
         localized = localize_analysis(analysis_result, language=language, alert_sent=alert_sent)
+        disclaimer = localized.get("disclaimer") or HUMAN_DISCLAIMER
 
         return Response({
             "analysis_id": analysis.id,
             "disease": predicted_disease,
             "disease_display": localized["disease_display"],
+            "possible_condition": localized["disease_display"],
             "severity": severity,
             "severity_display": localized["severity_display"],
             "confidence": confidence,
             "top_predictions": localized["top_predictions"],
             "alert_sent": alert_sent,
             "advice": localized["advice"],
-            "disclaimer": localized["disclaimer"],
+            "disclaimer": disclaimer,
             "language": localized["language"],
+            "domain": "HUMAN",
         }, status=status.HTTP_200_OK)
 
 
@@ -163,6 +201,18 @@ class SkinAnalysisView(APIView):
             severity_level=severity,
         )
 
+        client_id = request.data.get("client_id")
+        _record_human_screening(
+            request.user,
+            "skin_image",
+            predicted_disease,
+            severity,
+            confidence,
+            analysis_result,
+            input_type="image",
+            client_id=client_id,
+        )
+
         alert_sent = False
         if severity in ["High", "Critical"]:
             _, alert_sent = notify_village_care_team(
@@ -171,22 +221,33 @@ class SkinAnalysisView(APIView):
 
         language = request.data.get("language", "en")
         localized = localize_analysis(analysis_result, language=language, alert_sent=alert_sent)
+        disclaimer = localized.get("disclaimer") or (
+            "AI-assisted skin screening only. Screening confidence is not a confirmed diagnosis. "
+            "Professional evaluation is recommended."
+        )
 
         return Response(
             {
                 "analysis_id": analysis.id,
                 "disease": predicted_disease,
                 "disease_display": localized["disease_display"],
+                "possible_condition": localized["disease_display"],
                 "code": analysis_result.get("code"),
                 "severity": severity,
                 "severity_display": localized["severity_display"],
                 "confidence": confidence,
                 "top_predictions": localized["top_predictions"],
                 "alert_sent": alert_sent,
-                "source": "skin_cnn",
+                "source": analysis_result.get("source") or "skin_cnn",
                 "advice": localized["advice"],
-                "disclaimer": localized["disclaimer"],
+                "disclaimer": disclaimer,
+                "message": analysis_result.get("message")
+                or (
+                    f"AI-assisted skin screening suggests possible elevated risk for "
+                    f"{localized['disease_display']}. Screening confidence is not a confirmed diagnosis."
+                ),
                 "language": localized["language"],
+                "domain": "HUMAN",
             },
             status=status.HTTP_200_OK,
         )

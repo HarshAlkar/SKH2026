@@ -153,7 +153,7 @@ class _RegisteredDoctorsScreenState extends State<RegisteredDoctorsScreen> {
                           const SizedBox(height: 16),
                           ContactActionRow(
                             peerName: doctor['full_name']?.toString() ?? doctor['name']?.toString() ?? 'Doctor',
-                            peerUserId: parseContactId(doctor['user_id']) ?? parseContactId(doctor['id']) ?? 0,
+                            peerUserId: parseContactId(doctor['user_id']) ?? 0,
                             doctorId: parseContactId(doctor['id']),
                             patientId: widget.forPatientId,
                           ),

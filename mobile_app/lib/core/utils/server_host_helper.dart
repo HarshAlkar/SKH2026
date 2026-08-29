@@ -24,13 +24,16 @@ class ServerHostHelper {
     final hostChanged = _normalize(oldHost) != _normalize(trimmed);
 
     await AppConfig.setHost(trimmed);
+    // Always derive signaling from the API host (ignore any old manual override).
+    await AppConfig.clearSignalingUrl();
 
     if (!context.mounted) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          savedMessage ?? 'Server saved. API: ${AppConfig.baseUrl}',
+          savedMessage ??
+              'Server saved. API: ${AppConfig.baseUrl} · Calls: ${AppConfig.signalingServerUrl}',
         ),
       ),
     );

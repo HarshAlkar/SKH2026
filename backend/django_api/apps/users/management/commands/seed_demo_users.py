@@ -42,9 +42,10 @@ class Command(BaseCommand):
             )
 
         doctors_data = [
-            {'name': 'Rajesh Sharma', 'specialization': 'General Physician', 'phone': '9999999990', 'exp': 10, 'hospital': 'Apollo Hospital'},
-            {'name': 'Anjali Verma', 'specialization': 'Dermatologist', 'phone': '9999999991', 'exp': 8, 'hospital': 'Max Healthcare'},
-            {'name': 'Vivek Patel', 'specialization': 'Cardiologist', 'phone': '9999999992', 'exp': 15, 'hospital': 'Fortis Hospital'},
+            {'name': 'Rajesh Sharma', 'specialization': 'General Physician', 'phone': '9999999990', 'exp': 10, 'hospital': 'Apollo Hospital', 'is_veterinarian': False},
+            {'name': 'Anjali Verma', 'specialization': 'Dermatologist', 'phone': '9999999991', 'exp': 8, 'hospital': 'Max Healthcare', 'is_veterinarian': False},
+            {'name': 'Vivek Patel', 'specialization': 'Cardiologist', 'phone': '9999999992', 'exp': 15, 'hospital': 'Fortis Hospital', 'is_veterinarian': False},
+            {'name': 'Meera Kulkarni', 'specialization': 'Veterinarian', 'phone': '9999999993', 'exp': 12, 'hospital': 'Kopargaon Animal Husbandry Centre', 'is_veterinarian': True},
         ]
 
         for data in doctors_data:
@@ -61,14 +62,25 @@ class Command(BaseCommand):
                 user.set_password('password123')
                 user.save()
                 self.stdout.write(self.style.SUCCESS(f'Created doctor: {data["name"]}'))
-            Doctor.objects.get_or_create(
+            doctor, _ = Doctor.objects.get_or_create(
                 user=user,
                 defaults={
                     'specialization': data['specialization'],
                     'experience_years': data['exp'],
                     'hospital_name': data['hospital'],
+                    'verification_status': 'VERIFIED',
+                    'is_veterinarian': data.get('is_veterinarian', False),
                 },
             )
+            updates = []
+            if doctor.verification_status != 'VERIFIED':
+                doctor.verification_status = 'VERIFIED'
+                updates.append('verification_status')
+            if data.get('is_veterinarian') and not doctor.is_veterinarian:
+                doctor.is_veterinarian = True
+                updates.append('is_veterinarian')
+            if updates:
+                doctor.save(update_fields=updates)
 
         asha_data = [
             {'name': 'Sunita Devi', 'village': 'Rampur Village', 'phone': '8888888880', 'phc': 'Rampur PHC'},
@@ -90,12 +102,16 @@ class Command(BaseCommand):
                 user.set_password('password123')
                 user.save()
                 self.stdout.write(self.style.SUCCESS(f'Created ASHA worker: {data["name"]}'))
-            ASHAWorker.objects.get_or_create(
+            asha, _ = ASHAWorker.objects.get_or_create(
                 user=user,
                 defaults={
                     'assigned_village': data['village'],
                     'phc_center': data['phc'],
+                    'verification_status': 'VERIFIED',
                 },
             )
+            if asha.verification_status != 'VERIFIED':
+                asha.verification_status = 'VERIFIED'
+                asha.save(update_fields=['verification_status'])
 
         self.stdout.write(self.style.SUCCESS('Demo users ready (password123 for all).'))

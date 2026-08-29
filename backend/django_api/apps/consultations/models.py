@@ -55,3 +55,41 @@ class Consultation(models.Model):
 
     def __str__(self):
         return f"Consultation {self.id} ({self.call_type})"
+
+
+class Appointment(models.Model):
+    STATUS_CHOICES = (
+        ('SCHEDULED', 'Scheduled'),
+        ('ACCEPTED', 'Accepted'),
+        ('COMPLETED', 'Completed'),
+        ('CANCELLED', 'Cancelled'),
+    )
+    TYPE_CHOICES = (
+        ('VIDEO', 'Video'),
+        ('AUDIO', 'Audio'),
+        ('OFFLINE', 'Offline'),
+    )
+
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name='appointments',
+    )
+    doctor = models.ForeignKey(
+        Doctor,
+        on_delete=models.CASCADE,
+        related_name='appointments',
+    )
+    appointment_date = models.DateField()
+    appointment_time = models.TimeField()
+    consultation_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='VIDEO')
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='SCHEDULED')
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['appointment_date', 'appointment_time']
+
+    def __str__(self):
+        return f"Appointment {self.id}: {self.patient.user.name or self.patient.user.username} with Dr. {self.doctor.user.name or self.doctor.user.username} on {self.appointment_date} at {self.appointment_time}"
+

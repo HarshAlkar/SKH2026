@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getApiBaseUrl, subscribeConnection } from './apiHost';
 
 const TOKEN_KEY = 'vr_pharmacy_token';
 const USER_KEY = 'vr_pharmacy_user';
@@ -13,11 +14,16 @@ export const getStoredUser = () => {
 };
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://skh2026.onrender.com/api',
+  baseURL: getApiBaseUrl(),
   headers: { 'Content-Type': 'application/json' },
 });
 
+subscribeConnection((snap) => {
+  api.defaults.baseURL = snap.apiBase;
+});
+
 api.interceptors.request.use((config) => {
+  config.baseURL = getApiBaseUrl();
   const token = getToken();
   if (token) config.headers.Authorization = `Token ${token}`;
   return config;

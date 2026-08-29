@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 
 /// Loads `lib/dataset/disease/dataset.csv` and runs on-device screening
@@ -233,35 +235,47 @@ class SymptomDatasetService {
     }
 
     final ranked = scores.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-    final top = ranked
-        .where((entry) => entry.value >= _confidenceFloor)
-        .take(3)
-        .map((entry) => {
-              'disease': entry.key,
-              'confidence': _round3(entry.value),
-              'severity': _severityFor(entry.key),
-            })
-        .toList();
-
-    if (top.isEmpty) {
+    // Softmax over top coverages so UI never shows multiple 100% "confidences".
+    final topRaw = ranked.where((entry) => entry.value >= _confidenceFloor).take(5).toList();
+    if (topRaw.isEmpty) {
       return _undetermined(tokens, language: language, skinOnly: skinOnly);
     }
-
     final onlyCommon = present.isNotEmpty && present.every(_commonRespiratory.contains);
     if (onlyCommon && !skinOnly) {
       return _undetermined(tokens, language: language, skinOnly: false);
     }
 
+    final exps = topRaw.map((e) => math.exp((e.value * 3).clamp(-20.0, 20.0))).toList();
+    final eSum = exps.fold<double>(0, (a, b) => a + b);
+    final top = <Map<String, dynamic>>[];
+    for (var i = 0; i < topRaw.length && top.length < 3; i++) {
+      final entry = topRaw[i];
+      final displayScore = eSum > 0 ? exps[i] / eSum : 0.0;
+      top.add({
+        'disease': entry.key,
+        'confidence': _round3(displayScore),
+        'match_coverage': _round3(entry.value),
+        'severity': _severityFor(entry.key),
+      });
+    }
+
     final best = top.first;
     return {
       'disease': best['disease'],
+      'possible_condition': 'Elevated-risk screening result (fallback)',
+      'disease_display': 'Elevated-risk screening result (fallback)',
       'severity': best['severity'],
       'confidence': best['confidence'],
       'top_predictions': top,
       'alert_sent': false,
       'source': skinOnly ? 'dataset_skin' : 'dataset_local',
+      'score_type': 'symptom_match_fallback',
+      'headline': 'Symptom-match screening (fallback)',
       'advice': _adviceFor(best['disease'] as String, language: language),
       'disclaimer': _disclaimer(language),
+      'message':
+          'On-device ML was unavailable; this ranked list uses symptom matching only — '
+          'not model probabilities. AI-assisted screening only. This is not a medical diagnosis.',
       'language': language.startsWith('hi') ? 'hi' : 'en',
     };
   }

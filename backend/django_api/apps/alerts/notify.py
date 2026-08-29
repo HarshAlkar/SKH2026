@@ -54,3 +54,41 @@ def notify_village_care_team(patient_user, disease, severity, dedupe_minutes=30)
         severity=severity or "Moderate",
     )
     return notification, True
+
+
+def notify_livestock_care_team(owner_user, condition, severity, species='', dedupe_minutes=30):
+    """Escalate animal screening High/Critical to ASHA + veterinarian (or any doctor)."""
+    if owner_user is None:
+        return None, False
+
+    label = f"[Livestock/{species or 'ANIMAL'}] {condition}"
+    cutoff = timezone.now() - timedelta(minutes=dedupe_minutes)
+    existing = (
+        AlertNotification.objects.filter(
+            patient=owner_user,
+            disease=label,
+            created_at__gte=cutoff,
+        )
+        .order_by("-created_at")
+        .first()
+    )
+    if existing:
+        return existing, False
+
+    village = getattr(owner_user, "village", None)
+    asha = find_asha_for_village(village)
+    vet = (
+        Doctor.objects.filter(is_veterinarian=True, is_available=True).first()
+        or Doctor.objects.filter(is_veterinarian=True).first()
+        or Doctor.objects.filter(specialization__icontains='veterinar').first()
+        or Doctor.objects.filter(is_available=True).first()
+        or Doctor.objects.first()
+    )
+    notification = AlertNotification.objects.create(
+        patient=owner_user,
+        doctor=vet,
+        asha_worker=asha,
+        disease=label[:200],
+        severity=severity or "Moderate",
+    )
+    return notification, True

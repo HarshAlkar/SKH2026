@@ -1,8 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getStoredUser, getToken, persistSession, clearSession, setUnauthorizedHandler, stockApi } from '../services/apiService';
+import { getApiBaseUrl, subscribeConnection } from '../services/apiHost';
 
 const AuthContext = createContext(null);
-
+const LAST_API_KEY = 'vr_pharmacy_last_api';
 const ALLOWED_ROLES = ['medical_staff', 'asha_worker'];
 
 export function AuthProvider({ children }) {
@@ -10,14 +11,30 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(getToken);
   const [ready, setReady] = useState(false);
 
+  const logout = useCallback(() => {
+    clearSession();
+    setToken(null);
+    setUser(null);
+  }, []);
+
   useEffect(() => {
-    setUnauthorizedHandler(() => {
-      clearSession();
-      setUser(null);
-      setToken(null);
+    setUnauthorizedHandler(logout);
+    const current = getApiBaseUrl();
+    const previous = sessionStorage.getItem(LAST_API_KEY);
+    if (previous && previous !== current && getToken()) {
+      logout();
+    }
+    sessionStorage.setItem(LAST_API_KEY, current);
+    const unsub = subscribeConnection((snap) => {
+      const last = sessionStorage.getItem(LAST_API_KEY);
+      if (last && last !== snap.apiBase) {
+        logout();
+      }
+      sessionStorage.setItem(LAST_API_KEY, snap.apiBase);
     });
     setReady(true);
-  }, []);
+    return unsub;
+  }, [logout]);
 
   const login = useCallback(async (identifier, password, role) => {
     const data = await stockApi.login({
@@ -33,12 +50,6 @@ export function AuthProvider({ children }) {
     setToken(data.token);
     setUser(data.user);
     return data.user;
-  }, []);
-
-  const logout = useCallback(() => {
-    clearSession();
-    setToken(null);
-    setUser(null);
   }, []);
 
   const value = useMemo(

@@ -1,44 +1,43 @@
 import 'package:flutter/material.dart';
+import '../../one_health/screening_disclaimer.dart';
+import '../../../routes/app_routes.dart';
 
+/// Legacy stub — kept safe for accidental navigation. Prefer SymptomCheckerScreen.
 class SymptomPredictionScreen extends StatelessWidget {
   const SymptomPredictionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Analysis')),
+      appBar: AppBar(title: const Text('AI Screening')),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.analytics, size: 80, color: Colors.blue),
+              const Icon(Icons.health_and_safety_outlined, size: 80, color: Colors.teal),
               const SizedBox(height: 24),
-              const Text('Possible Diagnosis:', style: TextStyle(fontSize: 18)),
+              Text(
+                ScreeningDisclaimer.possibleConditionLabel('en'),
+                style: const TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              const SizedBox(height: 8),
               const Text(
-                'Mild Seasonal Flu',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.green,
-                ),
+                'Open the Symptom Checker for live screening.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Confidence Score: 87%',
-                style: TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 32),
-              const Text(
-                'Please consult a doctor for official advice.',
+              Text(
+                ScreeningDisclaimer.enHuman,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontStyle: FontStyle.italic),
+                style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.black54),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {},
-                child: const Text('Talk to Doctor'),
+                onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.symptomChecker),
+                child: const Text('Open Symptom Checker'),
               ),
             ],
           ),

@@ -4,8 +4,8 @@ from django.db.models import Q
 from apps.users.models import User
 from apps.users.views import UserSerializer, RegisterSerializer, normalize_identifier
 from apps.patients.models import Patient
-from apps.doctors.models import Doctor
-from apps.asha_workers.models import ASHAWorker, VillageVisit
+from apps.doctors.models import Doctor, DoctorDocument
+from apps.asha_workers.models import ASHAWorker, VillageVisit, ASHADocument
 from apps.consultations.models import Consultation
 from apps.prescriptions.models import Prescription
 from apps.alerts.models import EmergencyAlert, AlertNotification, EmergencyReferral
@@ -72,6 +72,40 @@ class AdminPatientSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
+class AdminDoctorDocumentSerializer(serializers.ModelSerializer):
+    file = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DoctorDocument
+        fields = ['id', 'document_type', 'file', 'uploaded_at']
+
+    def get_file(self, obj):
+        if not obj.file:
+            return ''
+        request = self.context.get('request')
+        url = obj.file.url
+        if request and url and not url.startswith('http'):
+            return request.build_absolute_uri(url)
+        return url
+
+
+class AdminAshaDocumentSerializer(serializers.ModelSerializer):
+    file = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ASHADocument
+        fields = ['id', 'document_type', 'file', 'uploaded_at']
+
+    def get_file(self, obj):
+        if not obj.file:
+            return ''
+        request = self.context.get('request')
+        url = obj.file.url
+        if request and url and not url.startswith('http'):
+            return request.build_absolute_uri(url)
+        return url
+
+
 class AdminDoctorSerializer(serializers.ModelSerializer):
     full_name = serializers.CharField(source='user.name', required=False)
     phone_number = serializers.CharField(source='user.phone_number', read_only=True)
@@ -79,6 +113,7 @@ class AdminDoctorSerializer(serializers.ModelSerializer):
     village = serializers.CharField(source='user.village', required=False)
     is_active = serializers.BooleanField(source='user.is_active', required=False)
     user_id = serializers.IntegerField(source='user.id', read_only=True)
+    documents = AdminDoctorDocumentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Doctor
@@ -86,6 +121,7 @@ class AdminDoctorSerializer(serializers.ModelSerializer):
             'id', 'user_id', 'full_name', 'phone_number', 'email', 'village',
             'specialization', 'qualification', 'experience_years',
             'hospital_name', 'license_number', 'bio', 'is_available', 'is_active',
+            'verification_status', 'rejection_reason', 'documents',
         ]
 
     def update(self, instance, validated_data):
@@ -109,12 +145,14 @@ class AdminAshaSerializer(serializers.ModelSerializer):
     village = serializers.CharField(source='user.village', required=False)
     is_active = serializers.BooleanField(source='user.is_active', required=False)
     user_id = serializers.IntegerField(source='user.id', read_only=True)
+    documents = AdminAshaDocumentSerializer(many=True, read_only=True)
 
     class Meta:
         model = ASHAWorker
         fields = [
             'id', 'user_id', 'full_name', 'phone_number', 'email', 'village',
             'assigned_village', 'phc_center', 'worker_id', 'district', 'is_active',
+            'verification_status', 'rejection_reason', 'documents',
         ]
 
     def update(self, instance, validated_data):

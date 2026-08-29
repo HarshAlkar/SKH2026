@@ -10,8 +10,8 @@ import numpy as np
 from PIL import Image
 
 from ai_engine.skin.labels import (
-    HAM10000_CODES,
     INPUT_SIZE,
+    SKIN_DISEASE_CODES,
     display_name,
     labels_payload,
     severity_for,
@@ -25,7 +25,7 @@ _LABELS = None
 
 MODEL_MISSING_MESSAGE = (
     "Skin CNN is not trained yet. Run: python -m ai_engine.skin.train "
-    "--data-dir ai_engine/data/ham10000"
+    "--data-dir \"mobile_app/lib/dataset/archive (1)/SkinDisease/SkinDisease\""
 )
 
 
@@ -89,7 +89,9 @@ def _open_image(image_input):
 
 
 def preprocess_image(image_input):
-    image = _open_image(image_input).resize((INPUT_SIZE, INPUT_SIZE))
+    """Match Keras MobileNetV2/V3 preprocess_input (mode=tf): x/127.5 - 1."""
+    size = int(_load_labels().get("input_size") or INPUT_SIZE)
+    image = _open_image(image_input).resize((size, size))
     array = np.asarray(image, dtype=np.float32)
     array = (array / 127.5) - 1.0
     return np.expand_dims(array, axis=0)
@@ -97,7 +99,9 @@ def preprocess_image(image_input):
 
 def predict_skin(image_input, top_k=3):
     labels = _load_labels()
-    codes = labels.get("classes") or HAM10000_CODES
+    codes = labels.get("classes") or SKIN_DISEASE_CODES
+    display_map = labels.get("display_names") or {}
+    severity_map = labels.get("severity") or {}
     interpreter = _load_interpreter()
     tensor = preprocess_image(image_input)
     input_detail = _INPUT_DETAILS[0]
@@ -113,13 +117,13 @@ def predict_skin(image_input, top_k=3):
         if index >= len(codes):
             continue
         code = codes[index]
-        name = display_name(code)
+        name = display_map.get(code) or display_name(code)
         top_predictions.append(
             {
                 "code": code,
                 "disease": name,
                 "confidence": round(float(score), 3),
-                "severity": severity_for(code),
+                "severity": severity_map.get(code) or severity_for(code),
             }
         )
     if not top_predictions:
@@ -132,6 +136,9 @@ def predict_skin(image_input, top_k=3):
         "confidence": best["confidence"],
         "top_predictions": top_predictions,
         "source": "skin_cnn",
-        "disclaimer": labels.get("disclaimer")
-        or labels_payload()["disclaimer"],
+        "disclaimer": labels.get("disclaimer") or labels_payload()["disclaimer"],
+        "message": (
+            f"AI-assisted skin screening suggests possible elevated risk for {best['disease']}. "
+            "Screening confidence is not a confirmed diagnosis. Professional evaluation recommended."
+        ),
     }

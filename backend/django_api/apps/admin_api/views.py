@@ -19,6 +19,7 @@ from apps.alerts.models import EmergencyAlert, AlertNotification, EmergencyRefer
 from apps.health_records.models import HealthRecord
 from apps.medicine_tracker.models import MedicineSchedule
 from apps.symptom_analysis.models import SymptomAnalysis
+from apps.one_health.models import ScreeningEvent, LivestockCase
 from apps.chat.models import ChatThread, ChatMessage
 from apps.inventory.models import (
     HealthcareFacility,
@@ -129,6 +130,13 @@ class AdminStatsView(APIView):
                     visit_date=timezone.now().date(),
                 ).count(),
             })
+        pending_doctors = Doctor.objects.select_related('user').prefetch_related('documents').filter(
+            verification_status='PENDING_VERIFICATION',
+        )
+        pending_asha = ASHAWorker.objects.select_related('user').prefetch_related('documents').filter(
+            verification_status='PENDING_VERIFICATION',
+        )
+        ctx = {'request': request}
         return Response({
             'patients': Patient.objects.count(),
             'doctors': Doctor.objects.count(),
@@ -138,11 +146,20 @@ class AdminStatsView(APIView):
             'emergency_alerts': EmergencyAlert.objects.filter(is_resolved=False).count(),
             'prescriptions': Prescription.objects.count(),
             'symptom_analyses': SymptomAnalysis.objects.count(),
+            'human_screenings': ScreeningEvent.objects.filter(domain='HUMAN').count(),
+            'animal_screenings': ScreeningEvent.objects.filter(domain='ANIMAL').count(),
+            'livestock_cases': LivestockCase.objects.count(),
+            'veterinarians': Doctor.objects.filter(is_veterinarian=True).count(),
             'visits': VillageVisit.objects.count(),
             'chat_threads': ChatThread.objects.count(),
             'recent_consultations': recent_consults,
             'open_alerts': open_alerts,
             'asha_activity': asha_rows,
+            'pending_doctor_verifications': pending_doctors.count(),
+            'pending_asha_verifications': pending_asha.count(),
+            'pending_verifications': pending_doctors.count() + pending_asha.count(),
+            'pending_doctor_queue': AdminDoctorSerializer(pending_doctors[:8], many=True, context=ctx).data,
+            'pending_asha_queue': AdminAshaSerializer(pending_asha[:8], many=True, context=ctx).data,
         })
 
 
@@ -335,8 +352,13 @@ class AdminPatientViewSet(viewsets.ModelViewSet):
 class AdminDoctorViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     serializer_class = AdminDoctorSerializer
-    queryset = Doctor.objects.select_related('user').all().order_by('-id')
+    queryset = Doctor.objects.select_related('user').prefetch_related('documents').all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'head', 'options']
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -347,6 +369,9 @@ class AdminDoctorViewSet(viewsets.ModelViewSet):
                 | Q(specialization__icontains=q)
                 | Q(hospital_name__icontains=q)
             )
+        vs = (self.request.query_params.get('verification_status') or '').strip()
+        if vs:
+            qs = qs.filter(verification_status=vs)
         return qs
 
     def create(self, request, *args, **kwargs):
@@ -357,16 +382,49 @@ class AdminDoctorViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response(
-            AdminDoctorSerializer(user.doctor_profile).data,
+            AdminDoctorSerializer(user.doctor_profile, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        doctor = self.get_object()
+        doctor.verification_status = 'VERIFIED'
+        doctor.verified_at = timezone.now()
+        doctor.verified_by = request.user
+        doctor.rejection_reason = None
+        doctor.save()
+        return Response({'status': 'Doctor verified successfully.'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        doctor = self.get_object()
+        reason = request.data.get('reason')
+        if not reason:
+            return Response({'error': 'Reason is required for rejection.'}, status=status.HTTP_400_BAD_REQUEST)
+        doctor.verification_status = 'REJECTED'
+        doctor.rejection_reason = reason
+        doctor.save()
+        return Response({'status': 'Doctor verification rejected.'})
 
 
 class AdminAshaViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminUser]
     serializer_class = AdminAshaSerializer
-    queryset = ASHAWorker.objects.select_related('user').all().order_by('-id')
+    queryset = ASHAWorker.objects.select_related('user').prefetch_related('documents').all().order_by('-id')
     http_method_names = ['get', 'post', 'patch', 'head', 'options']
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        vs = (self.request.query_params.get('verification_status') or '').strip()
+        if vs:
+            qs = qs.filter(verification_status=vs)
+        return qs
 
     def create(self, request, *args, **kwargs):
         payload = {**request.data, 'role': 'asha_worker'}
@@ -378,9 +436,30 @@ class AdminAshaViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response(
-            AdminAshaSerializer(user.asha_profile).data,
+            AdminAshaSerializer(user.asha_profile, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
         )
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        asha = self.get_object()
+        asha.verification_status = 'VERIFIED'
+        asha.verified_at = timezone.now()
+        asha.verified_by = request.user
+        asha.rejection_reason = None
+        asha.save()
+        return Response({'status': 'ASHA worker verified successfully.'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        asha = self.get_object()
+        reason = request.data.get('reason')
+        if not reason:
+            return Response({'error': 'Reason is required for rejection.'}, status=status.HTTP_400_BAD_REQUEST)
+        asha.verification_status = 'REJECTED'
+        asha.rejection_reason = reason
+        asha.save()
+        return Response({'status': 'ASHA worker verification rejected.'})
 
 
 class AdminConsultationViewSet(viewsets.ModelViewSet):

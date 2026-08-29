@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRealtime } from './useRealtime';
 
-export function usePolling(fetchFn, intervalMs = 15000, enabled = true) {
+/**
+ * HTTP polling with Socket.IO refresh when events arrive.
+ */
+export function usePolling(fetchFn, intervalMs = 15000, enabled = true, realtimeEvents = []) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -21,6 +25,16 @@ export function usePolling(fetchFn, intervalMs = 15000, enabled = true) {
     }
   }, []);
 
+  const onRealtime = useCallback(() => {
+    reload().catch(() => {});
+  }, [reload]);
+
+  const { connected: realtimeConnected } = useRealtime(
+    realtimeEvents.length ? realtimeEvents : ['consultation-updated', 'appointment-updated', 'verification-updated'],
+    onRealtime,
+    'admin',
+  );
+
   useEffect(() => {
     if (!enabled) return undefined;
     let cancelled = false;
@@ -35,12 +49,14 @@ export function usePolling(fetchFn, intervalMs = 15000, enabled = true) {
       }
     };
     tick();
-    const id = setInterval(tick, intervalMs);
+    // Slow polling when socket is live; keep 15s as fallback when offline.
+    const ms = realtimeConnected ? Math.max(intervalMs, 30000) : intervalMs;
+    const id = setInterval(tick, ms);
     return () => {
       cancelled = true;
       clearInterval(id);
     };
-  }, [intervalMs, enabled, reload]);
+  }, [intervalMs, enabled, reload, realtimeConnected]);
 
-  return { data, error, loading, reload };
+  return { data, error, loading, reload, realtimeConnected };
 }

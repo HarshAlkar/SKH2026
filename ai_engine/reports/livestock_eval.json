@@ -1,0 +1,206 @@
+{
+  "title": "Livestock Condition-Family Screening Evaluation",
+  "dataset": "cleaned_animal_disease_prediction.csv (deduped, collapsed families)",
+  "n_samples": 421,
+  "n_classes": 8,
+  "family_counts": {
+    "Other": 157,
+    "Respiratory": 117,
+    "Neurological": 44,
+    "Gastrointestinal": 39,
+    "Systemic_Infectious": 30,
+    "Zoonotic_HighRisk": 25,
+    "Mastitis_Udder": 6,
+    "Skin_Parasite": 3
+  },
+  "n_raw_diseases": 139,
+  "split": "60/20/20 approx stratified where possible",
+  "best_model": "random_forest",
+  "model_comparison": [
+    {
+      "name": "logistic_regression",
+      "error": "No module named '_posixsubprocess'"
+    },
+    {
+      "name": "random_forest",
+      "f1_macro": 0.2504140210446069,
+      "accuracy": 0.40476190476190477,
+      "high_risk_recall": 0.23671497584541062,
+      "selection_score": 0.3451000113827712
+    },
+    {
+      "name": "gradient_boosting",
+      "f1_macro": 0.236913821472645,
+      "accuracy": 0.42857142857142855,
+      "high_risk_recall": 0.24758454106280192,
+      "selection_score": 0.33594763789776577
+    },
+    {
+      "name": "xgboost",
+      "f1_macro": 0.22097630718954248,
+      "accuracy": 0.36904761904761907,
+      "high_risk_recall": 0.23719806763285023,
+      "selection_score": 0.3158555342426826
+    }
+  ],
+  "test_metrics": {
+    "accuracy": 0.4588235294117647,
+    "precision_macro": 0.42122758194186766,
+    "recall_macro": 0.3237103174603175,
+    "f1_macro": 0.3264918248000955,
+    "precision_weighted": 0.475974025974026,
+    "recall_weighted": 0.4588235294117647,
+    "f1_weighted": 0.44302766720723386,
+    "per_class": {
+      "Gastrointestinal": {
+        "precision": 0.45454545454545453,
+        "recall": 0.625,
+        "f1-score": 0.5263157894736842,
+        "support": 8.0
+      },
+      "Mastitis_Udder": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 1.0
+      },
+      "Neurological": {
+        "precision": 0.2857142857142857,
+        "recall": 0.2222222222222222,
+        "f1-score": 0.25,
+        "support": 9.0
+      },
+      "Other": {
+        "precision": 0.5,
+        "recall": 0.59375,
+        "f1-score": 0.5428571428571428,
+        "support": 32.0
+      },
+      "Respiratory": {
+        "precision": 0.4583333333333333,
+        "recall": 0.4583333333333333,
+        "f1-score": 0.4583333333333333,
+        "support": 24.0
+      },
+      "Skin_Parasite": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 0.0
+      },
+      "Systemic_Infectious": {
+        "precision": 1.0,
+        "recall": 0.16666666666666666,
+        "f1-score": 0.2857142857142857,
+        "support": 6.0
+      },
+      "Zoonotic_HighRisk": {
+        "precision": 0.25,
+        "recall": 0.2,
+        "f1-score": 0.2222222222222222,
+        "support": 5.0
+      },
+      "accuracy": 0.4588235294117647,
+      "macro avg": {
+        "precision": 0.3685741341991342,
+        "recall": 0.2832465277777778,
+        "f1-score": 0.2856803467000835,
+        "support": 85.0
+      },
+      "weighted avg": {
+        "precision": 0.475974025974026,
+        "recall": 0.4588235294117647,
+        "f1-score": 0.44302766720723374,
+        "support": 85.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        5,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        2,
+        5,
+        0,
+        0,
+        0
+      ],
+      [
+        5,
+        0,
+        2,
+        19,
+        5,
+        0,
+        0,
+        1
+      ],
+      [
+        1,
+        0,
+        1,
+        10,
+        11,
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        5,
+        0,
+        0,
+        1,
+        0
+      ],
+      [
+        0,
+        0,
+        2,
+        0,
+        2,
+        0,
+        0,
+        1
+      ]
+    ],
+    "high_risk_recall_mean": 0.22013888888888888
+  },
+  "model_size_bytes": 7870609,
+  "tflite_size_bytes": 8264,
+  "inference_ms_approx": 2.489648593655147,
+  "offline_compatible": true,
+  "limitations": "Original 139 disease labels are too sparse; predictions are condition-family screening only. Critical keyword rules remain as safety override. Not a veterinary diagnosis."
+}

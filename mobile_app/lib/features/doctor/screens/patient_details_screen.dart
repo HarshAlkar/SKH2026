@@ -34,80 +34,8 @@ class PatientData {
     this.userId,
     this.patientId,
   });
-
-  static PatientData getDummySarah() {
-    return PatientData(
-      name: 'Sarah Jenkins',
-      age: '28',
-      gender: 'Female',
-      village: 'Green Valley, North District',
-      bloodType: 'O Positive',
-      chronicConditions: 'No known chronic conditions reported.',
-      pastSurgeries: 'Appendectomy (2018)',
-      allergies: 'Penicillin, Peanuts',
-      symptoms: [
-        SymptomData(label: 'High Fever (102°F)', bgColor: const Color(0xFFFFE4E6), textColor: const Color(0xFFE11D48)),
-        SymptomData(label: 'Persistent Cough', bgColor: const Color(0xFFFFEDD5), textColor: const Color(0xFFEA580C)),
-        SymptomData(label: 'Shortness of breath', bgColor: const Color(0xFFF1F5F9), textColor: const Color(0xFF475569)),
-      ],
-      aiInsights: 'Symptoms reported 48 hours ago. Pattern suggests upper respiratory infection. Recommended immediate vitals check and chest auscultation.',
-    );
-  }
-
-  static PatientData getDummyRamesh() {
-    return PatientData(
-      name: 'Ramesh Patil',
-      age: '45',
-      gender: 'Male',
-      village: 'Kaman Village, Sector 2',
-      bloodType: 'A Positive',
-      chronicConditions: 'Type 2 Diabetes (Managed)',
-      pastSurgeries: 'None',
-      allergies: 'Dust, Pollen',
-      symptoms: [
-        SymptomData(label: 'Joint Pain', bgColor: const Color(0xFFE0F2FE), textColor: const Color(0xFF0369A1)),
-        SymptomData(label: 'Mild Fever', bgColor: const Color(0xFFFEF3C7), textColor: const Color(0xFFB45309)),
-      ],
-      aiInsights: 'History of diabetes. Recent joint pains could indicate inflammatory response. Monitor blood sugar levels and markers for rheumatoid factors.',
-    );
-  }
-
-  static PatientData getDummyAmitabh() {
-    return PatientData(
-      name: 'Amitabh Bachchan',
-      age: '78',
-      gender: 'Male',
-      village: 'Mumbai South, Juhu',
-      bloodType: 'B Positive',
-      chronicConditions: 'Hypertension, Asthma',
-      pastSurgeries: 'Abdominal Surgery (2005)',
-      allergies: 'None reported',
-      symptoms: [
-        SymptomData(label: 'Dizziness', bgColor: const Color(0xFFF3E8FF), textColor: const Color(0xFF7E22CE)),
-        SymptomData(label: 'Chest Tightness', bgColor: const Color(0xFFFEE2E2), textColor: const Color(0xFFDC2626)),
-      ],
-      aiInsights: 'Patient is high-risk due to age and respiratory history. Chest tightness requires immediate ECG and vital monitoring.',
-    );
-  }
-
-  static PatientData getDummySunita() {
-    return PatientData(
-      name: 'Sunita Deshmukh',
-      age: '32',
-      gender: 'Female',
-      village: 'Pelhar, East District',
-      bloodType: 'AB Positive',
-      chronicConditions: 'None reported',
-      pastSurgeries: 'C-Section (2020)',
-      allergies: 'Sulfa Drugs',
-      symptoms: [
-        SymptomData(label: 'Headache', bgColor: const Color(0xFFF1F5F9), textColor: const Color(0xFF475569)),
-        SymptomData(label: 'Nausea', bgColor: const Color(0xFFECFDF5), textColor: const Color(0xFF059669)),
-      ],
-      aiInsights: 'Possible migraine or hormonal imbalance. Check blood pressure and stress levels.',
-    );
-  }
 }
+
 
 class SymptomData {
   final String label;
@@ -265,19 +193,18 @@ class PatientDetailsScreen extends StatelessWidget {
 
   Future<void> _startCall(BuildContext context, {required bool isVideo}) async {
     final userId = patient.userId;
-    final patientId = patient.patientId;
-    if (userId == null && patientId == null) {
+    if (userId == null || userId <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('This patient cannot receive a call yet.')),
+        const SnackBar(content: Text('This patient cannot receive a call yet (missing user id).')),
       );
       return;
     }
     await CallLauncher.start(
       context: context,
       peerName: patient.name,
-      receiverUserId: (userId ?? patientId).toString(),
+      receiverUserId: userId.toString(),
       isVideo: isVideo,
-      patientId: patientId ?? userId,
+      patientId: patient.patientId ?? userId,
     );
   }
 

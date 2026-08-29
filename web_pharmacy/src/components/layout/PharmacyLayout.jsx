@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSync } from '../../context/SyncContext';
+import ConnectionSwitcher from '../connection/ConnectionSwitcher';
 
 const items = [
   { title: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -86,6 +87,7 @@ export default function PharmacyLayout() {
         </nav>
 
         <div className="p-4 border-t border-white/10 space-y-3">
+          <ConnectionSwitcher variant="dark" />
           <Link
             to="/update-stock?add=1"
             className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-sky-400 text-navy font-semibold text-sm hover:bg-sky-300"

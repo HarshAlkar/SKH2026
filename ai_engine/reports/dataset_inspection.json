@@ -1,0 +1,294 @@
+{
+  "title": "VitalReach Dataset Inspection",
+  "human_symptoms": {
+    "name": "disease/dataset.csv (Kaggle-style 41-disease symptom table)",
+    "path": "C:\\Users\\HARSH\\OneDrive\\Desktop\\HARSH\\SKH\\SKH2026\\mobile_app\\lib\\dataset\\disease\\dataset.csv",
+    "n_records": 4920,
+    "n_unique_disease_symptom_sets": 304,
+    "n_duplicate_rows": 4616,
+    "n_diseases": 41,
+    "class_counts": {
+      "Fungal infection": 120,
+      "Allergy": 120,
+      "GERD": 120,
+      "Chronic cholestasis": 120,
+      "Drug Reaction": 120,
+      "Peptic ulcer diseae": 120,
+      "AIDS": 120,
+      "Diabetes ": 120,
+      "Gastroenteritis": 120,
+      "Bronchial Asthma": 120,
+      "Hypertension ": 120,
+      "Migraine": 120,
+      "Cervical spondylosis": 120,
+      "Paralysis (brain hemorrhage)": 120,
+      "Jaundice": 120,
+      "Malaria": 120,
+      "Chicken pox": 120,
+      "Dengue": 120,
+      "Typhoid": 120,
+      "hepatitis A": 120,
+      "Hepatitis B": 120,
+      "Hepatitis C": 120,
+      "Hepatitis D": 120,
+      "Hepatitis E": 120,
+      "Alcoholic hepatitis": 120,
+      "Tuberculosis": 120,
+      "Common Cold": 120,
+      "Pneumonia": 120,
+      "Dimorphic hemmorhoids(piles)": 120,
+      "Heart attack": 120,
+      "Varicose veins": 120,
+      "Hypothyroidism": 120,
+      "Hyperthyroidism": 120,
+      "Hypoglycemia": 120,
+      "Osteoarthristis": 120,
+      "Arthritis": 120,
+      "(vertigo) Paroymsal  Positional Vertigo": 120,
+      "Acne": 120,
+      "Urinary tract infection": 120,
+      "Psoriasis": 120,
+      "Impetigo": 120
+    },
+    "missing_cells": 46992,
+    "features": "Disease + Symptom_1..Symptom_17 (sparse string lists)",
+    "target": "Disease",
+    "suitable_for_symptom_screening": true,
+    "notes": "High duplicate rate; train on deduplicated rows. Synthetic/balanced 120 rows per disease before dedupe.",
+    "precaution_csv_exists": true,
+    "description_csv_exists": true
+  },
+  "livestock": {
+    "name": "cleaned_animal_disease_prediction.csv",
+    "path": "C:\\Users\\HARSH\\OneDrive\\Desktop\\HARSH\\SKH\\SKH2026\\mobile_app\\lib\\dataset\\1234\\dataset\\cleaned_animal_disease_prediction.csv",
+    "n_records": 431,
+    "n_duplicate_rows": 10,
+    "missing_cells": 0,
+    "animal_types": {
+      "Dog": 75,
+      "Cat": 72,
+      "Cow": 68,
+      "Horse": 66,
+      "Sheep": 39,
+      "Goat": 39,
+      "Pig": 38,
+      "Rabbit": 34
+    },
+    "n_diseases": 139,
+    "diseases_with_lt3_samples": 87,
+    "diseases_with_1_sample": 57,
+    "top_diseases": {
+      "Bovine Tuberculosis": 15,
+      "Bovine Respiratory Disease": 14,
+      "Equine Influenza": 13,
+      "Canine Parvovirus": 12,
+      "Caprine Arthritis Encephalitis": 12,
+      "Scrapie": 10,
+      "Swine Influenza": 10,
+      "Canine Distemper": 10,
+      "Kennel Cough": 9,
+      "Gastroenteritis": 9,
+      "Parvovirus": 9,
+      "Equine Infectious Anemia": 9,
+      "Feline Calicivirus": 8,
+      "Feline Infectious Peritonitis": 8,
+      "Feline Herpesvirus": 7,
+      "Equine Herpesvirus": 7,
+      "Actinobacillus Pleuropneumonia": 7,
+      "Pneumonia": 7,
+      "Foot-and-Mouth Disease": 6,
+      "Rabbit Hemorrhagic Disease": 6
+    },
+    "columns": [
+      "Animal_Type",
+      "Breed",
+      "Age",
+      "Gender",
+      "Weight",
+      "Symptom_1",
+      "Symptom_2",
+      "Symptom_3",
+      "Symptom_4",
+      "Duration",
+      "Appetite_Loss",
+      "Vomiting",
+      "Diarrhea",
+      "Coughing",
+      "Labored_Breathing",
+      "Lameness",
+      "Skin_Lesions",
+      "Nasal_Discharge",
+      "Eye_Discharge",
+      "Body_Temperature",
+      "Heart_Rate",
+      "Disease_Prediction"
+    ],
+    "suitable_for_fine_grained_disease_ml": false,
+    "suitable_for_condition_family_screening": true,
+    "notes": "139 diseases on 431 rows is too sparse for reliable disease ID; collapse to condition families + severity."
+  },
+  "skin": {
+    "name": "archive (1) SkinDisease 22-class clinical set",
+    "path": "C:\\Users\\HARSH\\OneDrive\\Desktop\\HARSH\\SKH\\SKH2026\\mobile_app\\lib\\dataset\\archive (1)\\SkinDisease\\SkinDisease",
+    "is_ham10000": false,
+    "n_classes": 22,
+    "classes": [
+      "Acne",
+      "Actinic_Keratosis",
+      "Benign_tumors",
+      "Bullous",
+      "Candidiasis",
+      "DrugEruption",
+      "Eczema",
+      "Infestations_Bites",
+      "Lichen",
+      "Lupus",
+      "Moles",
+      "Psoriasis",
+      "Rosacea",
+      "Seborrh_Keratoses",
+      "SkinCancer",
+      "Sun_Sunlight_Damage",
+      "Tinea",
+      "Unknown_Normal",
+      "Vascular_Tumors",
+      "Vasculitis",
+      "Vitiligo",
+      "Warts"
+    ],
+    "train_counts": {
+      "Acne": 593,
+      "Actinic_Keratosis": 748,
+      "Benign_tumors": 1093,
+      "Bullous": 504,
+      "Candidiasis": 248,
+      "DrugEruption": 547,
+      "Eczema": 1010,
+      "Infestations_Bites": 524,
+      "Lichen": 553,
+      "Lupus": 311,
+      "Moles": 361,
+      "Psoriasis": 820,
+      "Rosacea": 254,
+      "Seborrh_Keratoses": 455,
+      "SkinCancer": 693,
+      "Sun_Sunlight_Damage": 312,
+      "Tinea": 923,
+      "Unknown_Normal": 1651,
+      "Vascular_Tumors": 543,
+      "Vasculitis": 461,
+      "Vitiligo": 714,
+      "Warts": 580
+    },
+    "test_counts": {
+      "Acne": 65,
+      "Actinic_Keratosis": 83,
+      "Benign_tumors": 121,
+      "Bullous": 55,
+      "Candidiasis": 27,
+      "DrugEruption": 61,
+      "Eczema": 112,
+      "Infestations_Bites": 60,
+      "Lichen": 61,
+      "Lupus": 34,
+      "Moles": 40,
+      "Psoriasis": 88,
+      "Rosacea": 28,
+      "Seborrh_Keratoses": 51,
+      "SkinCancer": 77,
+      "Sun_Sunlight_Damage": 34,
+      "Tinea": 102,
+      "Unknown_Normal": 189,
+      "Vascular_Tumors": 60,
+      "Vasculitis": 52,
+      "Vitiligo": 82,
+      "Warts": 64
+    },
+    "n_train": 13898,
+    "n_test": 1546,
+    "sample_image_sizes": [
+      {
+        "path": "07Acne081101.jpeg",
+        "size": [
+          720,
+          472
+        ],
+        "mode": "RGB"
+      },
+      {
+        "path": "07AcnePittedScars.jpeg",
+        "size": [
+          720,
+          472
+        ],
+        "mode": "RGB"
+      },
+      {
+        "path": "07AcnePittedScars1.jpeg",
+        "size": [
+          720,
+          472
+        ],
+        "mode": "RGB"
+      },
+      {
+        "path": "135213399.jpeg",
+        "size": [
+          750,
+          510
+        ],
+        "mode": "RGB"
+      },
+      {
+        "path": "20230720_Actinic-Keratoses_Cheek.jpeg",
+        "size": [
+          788,
+          587
+        ],
+        "mode": "RGB"
+      },
+      {
+        "path": "232__ProtectWyJQcm90ZWN0Il0_FocusFillWzI5NCwyMjIsInkiLDM2XQ.jpeg",
+        "size": [
+          294,
+          222
+        ],
+        "mode": "RGB"
+      },
+      {
+        "path": "07GiantComedone.jpeg",
+        "size": [
+          720,
+          472
+        ],
+        "mode": "RGB"
+      },
+      {
+        "path": "20cystAnal053104.jpeg",
+        "size": [
+          720,
+          472
+        ],
+        "mode": "RGB"
+      },
+      {
+        "path": "20cystAnal0531041.jpeg",
+        "size": [
+          720,
+          472
+        ],
+        "mode": "RGB"
+      },
+      {
+        "path": "-bullous-pemphigoid-but-in-skin-biopsy-it-is-diagnosed-as-discoid-1785140108.jpeg",
+        "size": [
+          1125,
+          1600
+        ],
+        "mode": "RGB"
+      }
+    ],
+    "corrupt_samples_checked": 0,
+    "suitable_for_image_screening": true
+  }
+}

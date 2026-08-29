@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/services/api_service.dart';
 
 class PatientSelector extends StatefulWidget {
   final Function(String) onPatientSelected;
@@ -10,15 +11,36 @@ class PatientSelector extends StatefulWidget {
 }
 
 class _PatientSelectorState extends State<PatientSelector> {
+  final ApiService _api = ApiService();
   String? _selectedPatient;
+  List<Map<String, dynamic>> _patients = [];
+  bool _isLoading = true;
 
-  // Mock patient list
-  final List<Map<String, String>> _patients = [
-    {"name": "Ramesh Patil", "age": "45", "village": "Kaman"},
-    {"name": "Sita Devi", "age": "38", "village": "Rampur"},
-    {"name": "Arjun Kumar", "age": "29", "village": "Vikhroli"},
-    {"name": "Shanti Devi", "age": "62", "village": "Kaman"},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchPatients();
+  }
+
+  Future<void> _fetchPatients() async {
+    try {
+      final data = await _api.get('/users/patients/');
+      if (mounted) {
+        setState(() {
+          _patients = data is List
+              ? List<Map<String, dynamic>>.from(data)
+              : [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,32 +64,49 @@ class _PatientSelectorState extends State<PatientSelector> {
             border: Border.all(color: Colors.grey.shade300),
           ),
           child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedPatient,
-              hint: const Text(
-                "Search patient...",
-                style: TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-              isExpanded: true,
-              icon: const Icon(Icons.search, color: Colors.grey),
-              items: _patients.map((patient) {
-                return DropdownMenuItem<String>(
-                  value: patient['name'],
-                  child: Text(
-                    "\${patient['name']} – Age \${patient['age']} – \${patient['village']}",
-                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+            child: _isLoading
+                ? const SizedBox(
+                    height: 48,
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                  )
+                : DropdownButton<String>(
+                    value: _selectedPatient,
+                    hint: const Text(
+                      "Search patient...",
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    isExpanded: true,
+                    icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                    items: _patients.map((patient) {
+                      final name = patient['name']?.toString() ?? 'Patient';
+                      final details = patient['profile_details'] is Map
+                          ? Map<String, dynamic>.from(patient['profile_details'] as Map)
+                          : <String, dynamic>{};
+                      final age = details['age']?.toString() ?? '—';
+                      final village = patient['village']?.toString() ?? details['address']?.toString() ?? '—';
+                      return DropdownMenuItem<String>(
+                        value: name,
+                        child: Text(
+                          "$name – Age $age – $village",
+                          style: const TextStyle(fontSize: 14, color: Colors.black87),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedPatient = value;
+                      });
+                      if (value != null) {
+                        widget.onPatientSelected(value);
+                      }
+                    },
                   ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedPatient = value;
-                });
-                if (value != null) {
-                  widget.onPatientSelected(value);
-                }
-              },
-            ),
           ),
         ),
       ],

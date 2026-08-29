@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Video, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 import { adminApi } from '../../services/apiService';
 import { useResource } from '../../hooks/useResource';
+import { useRealtime } from '../../hooks/useRealtime';
 import { PageHeader, ErrorBanner } from '../../components/ui/PageHeader';
 import StatCard from '../../components/ui/StatCard';
 import LiveBadge from '../../components/ui/LiveBadge';
@@ -18,6 +19,8 @@ export default function ConsultationsPage() {
     const id = setInterval(reload, 15000);
     return () => clearInterval(id);
   }, [reload]);
+
+  useRealtime(['consultation-updated', 'appointment-updated'], reload, 'admin');
 
   const stats = useMemo(() => ({
     ongoing: rows.filter((r) => r.status === 'ONGOING').length,

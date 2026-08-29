@@ -13,15 +13,18 @@ class SkinCnnService {
   static const _modelAsset = 'assets/models/skin_cnn.tflite';
   static const _labelsAsset = 'assets/models/skin_labels.json';
   static const missingMessage =
-      'Skin CNN is not trained yet. Run: python -m ai_engine.skin.train --data-dir ai_engine/data/ham10000';
+      'Skin CNN is not trained yet. Run: python -m ai_engine.skin.train';
 
   Interpreter? _interpreter;
   List<String> _codes = const [];
   Map<String, String> _displayNames = const {};
   Map<String, String> _severity = const {};
+  int _inputSize = 224;
   String _disclaimer =
-      'Screening suggestion only, not a medical diagnosis. HAM10000-style models are biased toward lighter skin tones.';
+      'AI-assisted skin screening only. Screening confidence is not a confirmed diagnosis. '
+      'Professional evaluation is recommended.';
   bool _loadAttempted = false;
+  bool _loadSucceeded = false;
 
   Future<Map<String, dynamic>?> tryPredict(File imageFile) async {
     try {
@@ -60,8 +63,10 @@ class SkinCnnService {
       throw Exception('Skin CNN returned an empty prediction.');
     }
     final best = top.first;
+    final condition = best['disease'].toString();
     return {
-      'disease': best['disease'],
+      'disease': condition,
+      'possible_condition': condition,
       'code': best['code'],
       'severity': best['severity'],
       'confidence': best['confidence'],
@@ -69,10 +74,19 @@ class SkinCnnService {
       'alert_sent': false,
       'source': 'skin_cnn_ondevice',
       'disclaimer': _disclaimer,
+      'message':
+          'AI-assisted skin screening suggests possible elevated risk for $condition. '
+          'Screening confidence is not a confirmed diagnosis. '
+          'Professional evaluation recommended.',
     };
   }
 
   Future<void> _ensureLoaded() async {
+    if (_loadSucceeded && _interpreter != null) return;
+    if (_loadAttempted && _interpreter == null) {
+      // Allow one retry after a failed load (e.g. asset race on first open).
+      _loadAttempted = false;
+    }
     if (_loadAttempted) return;
     _loadAttempted = true;
     try {
@@ -88,8 +102,9 @@ class SkinCnnService {
           entry.key.toString(): entry.value.toString(),
       };
       _disclaimer = labels['disclaimer']?.toString() ?? _disclaimer;
+      _inputSize = int.tryParse('${labels['input_size'] ?? 224}') ?? 224;
     } catch (_) {
-      _codes = const ['akiec', 'bcc', 'bkl', 'df', 'nv', 'mel', 'vasc'];
+      _codes = const [];
     }
 
     try {
@@ -101,6 +116,7 @@ class SkinCnnService {
         _interpreter = null;
       }
     }
+    _loadSucceeded = _interpreter != null;
   }
 
   Future<List<List<List<List<double>>>>> _preprocess(File file) async {
@@ -109,10 +125,12 @@ class SkinCnnService {
     if (decoded == null) {
       throw Exception('Could not read the selected image.');
     }
-    final resized = img.copyResize(decoded, width: 224, height: 224);
+    final size = _inputSize;
+    final resized = img.copyResize(decoded, width: size, height: size);
+    // MobileNetV2/V3 Keras preprocess_input (mode=tf): x/127.5 - 1
     return [
-      List.generate(224, (y) {
-        return List.generate(224, (x) {
+      List.generate(size, (y) {
+        return List.generate(size, (x) {
           final pixel = resized.getPixel(x, y);
           return [
             (pixel.r.toDouble() / 127.5) - 1.0,

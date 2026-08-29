@@ -4,11 +4,13 @@ import re
 
 import pandas as pd
 
+from ai_engine.common.risk import HUMAN_DISCLAIMER, screening_wording, severity_for_human_disease
 from ai_engine.utils import dataset_path, model_path, normalize_symptom
 
 _MODEL_BUNDLE = None
 
 CONFIDENCE_FLOOR = 0.35
+
 
 # Map user language to dataset tokens. Do not upgrade plain fever to high_fever.
 SYMPTOM_ALIASES = {
@@ -82,6 +84,10 @@ SEVERITY_MAP = {
 }
 
 
+def _severity_for(disease):
+    return severity_for_human_disease(disease)
+
+
 def _load_bundle():
     global _MODEL_BUNDLE
     if _MODEL_BUNDLE is not None:
@@ -105,7 +111,6 @@ def _normalize_inputs(symptoms_list):
         symptoms_list = re.findall(r"[\w]+", symptoms_list.lower())
     normalized = []
     raw = [normalize_symptom(item) for item in (symptoms_list or []) if str(item).strip()]
-    # Rebuild "chest pain" style pairs that were split into words.
     joined = list(raw)
     for i in range(len(raw) - 1):
         pair = f"{raw[i]}_{raw[i + 1]}"
@@ -121,14 +126,6 @@ def _normalize_inputs(symptoms_list):
             if part in SYMPTOM_ALIASES and SYMPTOM_ALIASES[part] != "abdominal_pain":
                 normalized.append(SYMPTOM_ALIASES[part])
     return list(dict.fromkeys(normalized))
-
-
-def _severity_for(disease):
-    lowered = disease.lower()
-    for level, diseases in SEVERITY_MAP.items():
-        if any(name.lower() in lowered for name in diseases):
-            return level
-    return "Low"
 
 
 def _match_features(tokens, features):
@@ -180,6 +177,9 @@ def _undetermined(tokens, extras=None):
         "top_predictions": [
             {"disease": disease, "confidence": confidence, "severity": severity},
         ],
+        "disclaimer": HUMAN_DISCLAIMER,
+        "message": screening_wording(disease, "HUMAN"),
+        "source": "symptom_ml",
     }
     if extras:
         payload.update(extras)
@@ -224,6 +224,9 @@ def _sanitize(result, tokens):
         "severity": best["severity"],
         "confidence": best["confidence"],
         "top_predictions": safe[:3],
+        "disclaimer": HUMAN_DISCLAIMER,
+        "message": screening_wording(best["disease"], "HUMAN"),
+        "source": "symptom_ml",
     }
 
 

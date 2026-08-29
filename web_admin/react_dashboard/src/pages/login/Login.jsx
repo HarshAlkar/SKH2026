@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import ConnectionSwitcher from '../../components/connection/ConnectionSwitcher';
 
 export default function LoginPage() {
   const { isAuthed, login } = useAuth();
@@ -67,8 +68,12 @@ export default function LoginPage() {
           </button>
           <p className="text-xs text-muted mt-4 text-center">
             Default staff account: <span className="font-semibold">admin / admin123</span>
-            <br />
-            Django must be running on port 8000.
+          </p>
+          <div className="mt-4">
+            <ConnectionSwitcher />
+          </div>
+          <p className="text-[11px] text-muted mt-3 text-center">
+            Auto uses the PC Wi-Fi Django server when it is running, otherwise cloud.
           </p>
         </form>
       </div>

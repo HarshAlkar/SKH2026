@@ -10,8 +10,8 @@ from django.db.models import Q
 from django.utils import timezone
 from .models import User, OTPVerification
 from .sms import send_otp_sms
-from apps.doctors.models import Doctor
-from apps.asha_workers.models import ASHAWorker
+from apps.doctors.models import Doctor, DoctorDocument
+from apps.asha_workers.models import ASHAWorker, ASHADocument
 from apps.patients.models import Patient
 from apps.inventory.models import MedicalStaffProfile, HealthcareFacility
 import json
@@ -30,6 +30,21 @@ def normalize_identifier(value):
     if len(digits) == 10:
         return digits
     return value
+
+
+def _document_payload(documents, request=None):
+    rows = []
+    for doc in documents:
+        file_url = doc.file.url if doc.file else ''
+        if request and file_url and not file_url.startswith('http'):
+            file_url = request.build_absolute_uri(file_url)
+        rows.append({
+            'id': doc.id,
+            'document_type': doc.document_type,
+            'file': file_url,
+            'uploaded_at': doc.uploaded_at.isoformat() if doc.uploaded_at else None,
+        })
+    return rows
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -60,23 +75,32 @@ class UserSerializer(serializers.ModelSerializer):
             return None
 
     def get_profile_details(self, obj):
+        request = self.context.get('request')
         if obj.role == "doctor" and hasattr(obj, "doctor_profile"):
+            profile = obj.doctor_profile
             return {
-                "specialization": obj.doctor_profile.specialization,
-                "experience_years": obj.doctor_profile.experience_years,
-                "hospital_name": obj.doctor_profile.hospital_name,
-                "qualification": obj.doctor_profile.qualification,
-                "license_number": obj.doctor_profile.license_number,
-                "bio": obj.doctor_profile.bio,
-                "is_available": obj.doctor_profile.is_available,
+                "specialization": profile.specialization,
+                "experience_years": profile.experience_years,
+                "hospital_name": profile.hospital_name,
+                "qualification": profile.qualification,
+                "license_number": profile.license_number,
+                "bio": profile.bio,
+                "is_available": profile.is_available,
+                "verification_status": profile.verification_status,
+                "rejection_reason": profile.rejection_reason,
+                "documents": _document_payload(profile.documents.all(), request),
             }
         if obj.role == "asha_worker" and hasattr(obj, "asha_profile"):
+            profile = obj.asha_profile
             return {
-                "asha_id": obj.asha_profile.id,
-                "assigned_village": obj.asha_profile.assigned_village,
-                "phc_center": obj.asha_profile.phc_center,
-                "worker_id": obj.asha_profile.worker_id,
-                "district": obj.asha_profile.district,
+                "asha_id": profile.id,
+                "assigned_village": profile.assigned_village,
+                "phc_center": profile.phc_center,
+                "worker_id": profile.worker_id,
+                "district": profile.district,
+                "verification_status": profile.verification_status,
+                "rejection_reason": profile.rejection_reason,
+                "documents": _document_payload(profile.documents.all(), request),
             }
         if obj.role == "user" and hasattr(obj, "patient_profile"):
             return {
