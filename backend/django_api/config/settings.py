@@ -31,8 +31,10 @@ ALLOWED_HOSTS = [
     for h in os.environ.get('ALLOWED_HOSTS', _default_hosts).split(',')
     if h.strip()
 ]
-if not DEBUG and '*' in ALLOWED_HOSTS:
-    raise RuntimeError('ALLOWED_HOSTS must not contain * when DEBUG=False.')
+# Production must not use wildcard Host matching. Older Render envs still have
+# ALLOWED_HOSTS=*; strip it and rely on RENDER_EXTERNAL_HOSTNAME instead.
+if not DEBUG:
+    ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h != '*']
 # .env often lists only localhost; phones on Wi-Fi use the PC LAN IP and would
 # otherwise get DisallowedHost (a huge HTML 400 that looks like a timeout).
 if DEBUG and '*' not in ALLOWED_HOSTS:
@@ -41,6 +43,15 @@ if DEBUG and '*' not in ALLOWED_HOSTS:
 _render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if _render_host and _render_host not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(_render_host)
+# Known public API host (custom Render service name may differ).
+for _extra in ('skh2026.onrender.com',):
+    if not DEBUG and _extra not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_extra)
+if not DEBUG and not ALLOWED_HOSTS:
+    raise RuntimeError(
+        'ALLOWED_HOSTS is empty when DEBUG=False. '
+        'Set ALLOWED_HOSTS to your API hostname (e.g. skh2026.onrender.com).'
+    )
 
 CSRF_TRUSTED_ORIGINS = [
     o.strip()
