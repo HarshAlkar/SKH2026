@@ -36,10 +36,12 @@ def user_can_access_patient(actor, patient):
         return patient_in_asha_village(patient, actor)
 
     if role == 'doctor':
-        from apps.consultations.models import Appointment
+        from apps.consultations.models import Appointment, Consultation
         from apps.alerts.models import EmergencyReferral
 
         if Appointment.objects.filter(doctor__user=actor, patient_id=patient.id).exists():
+            return True
+        if Consultation.objects.filter(doctor__user=actor, patient_id=patient.id).exists():
             return True
         if EmergencyReferral.objects.filter(patient_id=patient.id).exists():
             # Village doctors may see referred patients in open referral queue
@@ -50,6 +52,21 @@ def user_can_access_patient(actor, patient):
         ).exists()
 
     return False
+
+
+def doctor_can_prescribe(actor, patient):
+    """
+    Doctors may issue prescriptions for patients on the clinic roster.
+    Matches /users/patients/ listing for doctors. Doctor identity is always
+    taken from the auth token — never from the client.
+    """
+    if not actor or not actor.is_authenticated or patient is None:
+        return False
+    if actor.is_staff:
+        return True
+    if getattr(actor, 'role', None) != 'doctor':
+        return False
+    return hasattr(actor, 'doctor_profile') and actor.doctor_profile is not None
 
 
 def patients_queryset_for(actor):

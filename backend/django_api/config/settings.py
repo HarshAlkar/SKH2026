@@ -88,6 +88,8 @@ X_FRAME_OPTIONS = 'DENY'
 EXPOSE_OTP_FOR_DEV = os.environ.get('EXPOSE_OTP_FOR_DEV', '0').lower() in ('1', 'true', 'yes')
 TOKEN_TTL_HOURS = int(os.environ.get('TOKEN_TTL_HOURS', '72'))
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '').strip()
+GOOGLE_PLACES_API_KEY = os.environ.get('GOOGLE_PLACES_API_KEY', '').strip()
+NEARBY_RADIUS_M = int(os.environ.get('NEARBY_RADIUS_M', '5000'))
 SYNC_TIMESTAMP_MAX_SKEW_DAYS = int(os.environ.get('SYNC_TIMESTAMP_MAX_SKEW_DAYS', '30'))
 SIGNALING_ALLOWED_ORIGINS = [
     o.strip()
@@ -120,6 +122,7 @@ INSTALLED_APPS = [
     'apps.one_health.apps.OneHealthConfig',
     'apps.security_audit.apps.SecurityAuditConfig',
     'apps.ai_proxy.apps.AiProxyConfig',
+    'apps.places_proxy.apps.PlacesProxyConfig',
     'rest_framework.authtoken',
 ]
 
@@ -144,6 +147,7 @@ REST_FRAMEWORK = {
         'upload': os.environ.get('THROTTLE_UPLOAD', '20/min'),
         'sync': os.environ.get('THROTTLE_SYNC', '60/min'),
         'gemini': os.environ.get('THROTTLE_GEMINI', '20/min'),
+        'places': os.environ.get('THROTTLE_PLACES', '30/min'),
     },
     'EXCEPTION_HANDLER': 'apps.common.exceptions.safe_exception_handler',
 }

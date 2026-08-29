@@ -9,7 +9,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.alerts.notify import notify_patient_prescription
-from apps.common.ownership import strip_client_identity_fields, user_can_access_patient
+from apps.common.ownership import doctor_can_prescribe, strip_client_identity_fields
 from apps.common.uploads import safe_upload_name, validate_document_upload
 from apps.security_audit.audit import log_security_event
 from .models import Prescription
@@ -79,7 +79,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         except (Patient.DoesNotExist, ValueError, TypeError):
             return Response({'error': 'Patient not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-        if not user_can_access_patient(request.user, patient):
+        if not doctor_can_prescribe(request.user, patient):
             log_security_event(
                 request,
                 action='prescription_handwritten_upload',
@@ -143,7 +143,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         patient = serializer.validated_data.get('patient')
         if not patient:
             raise PermissionDenied('patient is required.')
-        if not user_can_access_patient(user, patient):
+        if not doctor_can_prescribe(user, patient):
             log_security_event(
                 self.request,
                 action='prescription_create',

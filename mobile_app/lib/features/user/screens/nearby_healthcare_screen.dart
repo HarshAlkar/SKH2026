@@ -1,13 +1,12 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/sync/offline_api.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
+import '../models/nearby_place.dart';
+import '../services/nearby_places_service.dart';
 import '../widgets/user_sidebar.dart';
 
 class NearbyHealthcareScreen extends StatefulWidget {
@@ -18,19 +17,24 @@ class NearbyHealthcareScreen extends StatefulWidget {
 }
 
 class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
-  String _selectedCategory = 'Hospitals';
+  static const _categories = [
+    ('All', Icons.health_and_safety_outlined),
+    ('Hospitals', Icons.local_hospital),
+    ('Clinics', Icons.medical_services),
+    ('Labs', Icons.science),
+    ('Pharmacies', Icons.medication),
+  ];
+
+  final NearbyPlacesService _service = NearbyPlacesService();
   final TextEditingController _searchController = TextEditingController();
+  GoogleMapController? _mapController;
 
-  List<Map<String, dynamic>> _nearbyPlaces = [];
+  String _selectedCategory = 'All';
+  List<NearbyPlace> _allPlaces = [];
   Position? _currentPosition;
-  bool _isLoading = false;
-
-  final Map<String, String> _categoryToAmenity = {
-    'Hospitals': 'hospital',
-    'Clinics': 'clinic',
-    'Medical Stores': 'pharmacy',
-    'Laboratories': 'laboratory',
-  };
+  NearbyLoadState _state = NearbyLoadState.loading;
+  String? _errorMessage;
+  bool _offlineBanner = false;
 
   @override
   void initState() {
@@ -41,173 +45,151 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _mapController?.dispose();
     super.dispose();
   }
 
-  Future<void> _initLocationAndFetch() async {
-    setState(() => _isLoading = true);
+  Future<void> _initLocationAndFetch({bool forceRefresh = false}) async {
+    setState(() {
+      _state = NearbyLoadState.loading;
+      _errorMessage = null;
+      _offlineBanner = false;
+    });
+
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        throw 'Location services are disabled.';
+        setState(() {
+          _state = NearbyLoadState.locationDisabled;
+          _errorMessage =
+              'Location services are turned off. Enable GPS to find nearby healthcare.';
+        });
+        return;
       }
 
       var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw 'Location permissions are denied.';
-        }
       }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw 'Location permissions are permanently denied.';
-      }
-
-      final position = await Geolocator.getCurrentPosition();
-      setState(() => _currentPosition = position);
-      await _fetchPlaces();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchVitalReachFacilities() async {
-    if (_currentPosition == null || _selectedCategory != 'Medical Stores') {
-      return [];
-    }
-    try {
-      final data = await OfflineApi.instance.get('/stock/map/');
-      final list = data is List ? data : <dynamic>[];
-      final out = <Map<String, dynamic>>[];
-      for (final raw in list) {
-        if (raw is! Map) continue;
-        final lat = double.tryParse('${raw['lat'] ?? ''}');
-        final lng = double.tryParse('${raw['lng'] ?? ''}');
-        if (lat == null || lng == null) continue;
-        final distanceInMeters = Geolocator.distanceBetween(
-          _currentPosition!.latitude,
-          _currentPosition!.longitude,
-          lat,
-          lng,
-        );
-        if (distanceInMeters > 25000) continue;
-        final low = int.tryParse('${raw['low_stock'] ?? 0}') ?? 0;
-        final outStock = int.tryParse('${raw['out_of_stock'] ?? 0}') ?? 0;
-        String badge = 'In Stock';
-        if (outStock > 0 && low == 0) badge = 'Some Out';
-        if (low > 0) badge = 'Low Stock';
-        if ((int.tryParse('${raw['total_batches'] ?? 0}') ?? 0) == 0) {
-          badge = 'No Stock Data';
-        }
-        out.add({
-          'id': 'vr-${raw['id']}',
-          'name': '${raw['label'] ?? 'VitalReach Facility'} (VitalReach)',
-          'category': 'Medical Stores',
-          'distance': '${(distanceInMeters / 1000).toStringAsFixed(1)} km away',
-          'address': '${raw['village'] ?? ''} · Low:$low Out:$outStock · $badge',
-          'lat': lat,
-          'lng': lng,
-          'phone': '',
-          'stock_badge': badge,
-          'vitalreach': true,
+      if (permission == LocationPermission.denied) {
+        setState(() {
+          _state = NearbyLoadState.permissionDenied;
+          _errorMessage =
+              'Location permission is required to find hospitals, clinics, labs, and pharmacies near you.';
         });
+        return;
       }
-      return out;
-    } catch (e) {
-      debugPrint('VitalReach facilities: $e');
-      return [];
-    }
-  }
-
-  Future<void> _fetchPlaces() async {
-    if (_currentPosition == null) return;
-
-    final amenity = _categoryToAmenity[_selectedCategory] ?? 'hospital';
-    final query = _selectedCategory == 'Clinics'
-        ? '["amenity"~"clinic|doctors"]'
-        : '["amenity"="$amenity"]';
-
-    final url =
-        'https://overpass-api.de/api/interpreter?data=[out:json];node(around:5000,${_currentPosition!.latitude},${_currentPosition!.longitude})$query;out;';
-
-    try {
-      final response = await http.get(Uri.parse(url));
-      final places = <Map<String, dynamic>>[];
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final List nodes = data['elements'];
-
-        places.addAll(nodes.map((node) {
-          final lat = node['lat'] as double;
-          final lon = node['lon'] as double;
-          final distanceInMeters = Geolocator.distanceBetween(
-            _currentPosition!.latitude,
-            _currentPosition!.longitude,
-            lat,
-            lon,
-          );
-
-          return {
-            'id': node['id'].toString(),
-            'name': node['tags']['name'] ??
-                'Unnamed ${_selectedCategory.substring(0, _selectedCategory.length - 1)}',
-            'category': _selectedCategory,
-            'distance': '${(distanceInMeters / 1000).toStringAsFixed(1)} km away',
-            'address': node['tags']['addr:street'] ??
-                'Nearby ${_currentPosition!.latitude.toStringAsFixed(2)}, ${_currentPosition!.longitude.toStringAsFixed(2)}',
-            'lat': lat,
-            'lng': lon,
-            'phone': node['tags']['phone'] ?? node['tags']['contact:phone'] ?? '',
-            'vitalreach': false,
-          };
-        }));
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          _state = NearbyLoadState.permissionDenied;
+          _errorMessage =
+              'Location permission is permanently denied. Open settings to enable it.';
+        });
+        return;
       }
 
-      final vr = await _fetchVitalReachFacilities();
-      places.insertAll(0, vr);
-      places.sort((a, b) {
-        final da = double.tryParse('${a['distance']}'.split(' ').first) ?? 999;
-        final db = double.tryParse('${b['distance']}'.split(' ').first) ?? 999;
-        return da.compareTo(db);
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 20),
+        ),
+      );
+      if (!mounted) return;
+      setState(() => _currentPosition = position);
+      _animateToUser(position);
+
+      final result = await _service.fetchNearby(
+        lat: position.latitude,
+        lng: position.longitude,
+        forceRefresh: forceRefresh,
+        position: position,
+      );
+      if (!mounted) return;
+
+      setState(() {
+        _allPlaces = result.places;
+        _state = result.state;
+        _errorMessage = result.error;
+        _offlineBanner = result.offline || result.state == NearbyLoadState.offlineCached;
       });
-
-      setState(() => _nearbyPlaces = places);
     } catch (e) {
-      debugPrint('Error fetching places: $e');
-      final vr = await _fetchVitalReachFacilities();
-      if (vr.isNotEmpty) setState(() => _nearbyPlaces = vr);
+      if (!mounted) return;
+      setState(() {
+        _state = NearbyLoadState.locationUnavailable;
+        _errorMessage =
+            'Could not get your current location. Check GPS signal and try again.';
+      });
     }
   }
 
-  List<Map<String, dynamic>> get _filteredPlaces {
-    final query = _searchController.text.toLowerCase().trim();
-    return _nearbyPlaces.where((loc) {
-      if (query.isEmpty) return true;
-      final name = loc['name']?.toString().toLowerCase() ?? '';
-      final address = loc['address']?.toString().toLowerCase() ?? '';
-      return name.contains(query) || address.contains(query);
-    }).toList();
+  void _animateToUser(Position position) {
+    if (_mapController == null) return;
+    _mapController!.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(position.latitude, position.longitude),
+        13.5,
+      ),
+    );
   }
 
-  Future<void> _openDirections(Map<String, dynamic> loc) async {
-    final lat = loc['lat'];
-    final lng = loc['lng'];
-    if (lat is! num || lng is! num) return;
+  List<NearbyPlace> get _visiblePlaces {
+    var list = _service.filterByCategory(_allPlaces, _selectedCategory);
+    final query = _searchController.text.toLowerCase().trim();
+    if (query.isNotEmpty) {
+      list = list
+          .where((p) =>
+              p.name.toLowerCase().contains(query) ||
+              p.address.toLowerCase().contains(query) ||
+              p.categoryLabel.toLowerCase().contains(query))
+          .toList();
+    }
+    return list;
+  }
+
+  Set<Marker> get _markers {
+    final places = _visiblePlaces;
+    final markers = <Marker>{};
+    for (var i = 0; i < places.length; i++) {
+      final p = places[i];
+      markers.add(
+        Marker(
+          markerId: MarkerId(p.id.isNotEmpty ? p.id : 'p$i'),
+          position: LatLng(p.lat, p.lng),
+          infoWindow: InfoWindow(
+            title: p.name,
+            snippet: '${p.categoryLabel} · ${p.distanceLabel}',
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(_hueForCategory(p.category)),
+        ),
+      );
+    }
+    return markers;
+  }
+
+  double _hueForCategory(String category) {
+    switch (category) {
+      case 'hospitals':
+        return BitmapDescriptor.hueRed;
+      case 'clinics':
+        return BitmapDescriptor.hueAzure;
+      case 'labs':
+        return BitmapDescriptor.hueViolet;
+      case 'pharmacies':
+        return BitmapDescriptor.hueGreen;
+      default:
+        return BitmapDescriptor.hueOrange;
+    }
+  }
+
+  Future<void> _openDirections(NearbyPlace place) async {
     final uri = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+      'https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}',
     );
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
-  Future<void> _callPlace(Map<String, dynamic> loc) async {
-    final phone = (loc['phone'] ?? '').toString().replaceAll(RegExp(r'[^0-9+]'), '');
+  Future<void> _callPlace(NearbyPlace place) async {
+    final phone = place.phone.replaceAll(RegExp(r'[^0-9+]'), '');
     if (phone.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -218,9 +200,22 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
     await launchUrl(Uri(scheme: 'tel', path: phone));
   }
 
+  Future<void> _openAppSettings() async {
+    await Geolocator.openAppSettings();
+  }
+
+  Future<void> _openLocationSettings() async {
+    await Geolocator.openLocationSettings();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final places = _filteredPlaces;
+    final places = _visiblePlaces;
+    final showMap = _currentPosition != null &&
+        _state != NearbyLoadState.permissionDenied &&
+        _state != NearbyLoadState.locationDisabled &&
+        _state != NearbyLoadState.locationUnavailable;
+
     return Scaffold(
       drawer: const UserSidebar(),
       backgroundColor: const Color(0xFFF8FAFC),
@@ -245,12 +240,13 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
         actions: [
           IconButton(
             tooltip: 'Medicine availability',
-            onPressed: () => Navigator.pushNamed(context, AppRoutes.medicineAvailability),
+            onPressed: () =>
+                Navigator.pushNamed(context, AppRoutes.medicineAvailability),
             icon: const Icon(Icons.inventory_2_outlined, color: AppColors.primary),
           ),
           IconButton(
-            tooltip: 'Refresh location',
-            onPressed: _initLocationAndFetch,
+            tooltip: 'Recenter / Search Nearby',
+            onPressed: () => _initLocationAndFetch(forceRefresh: true),
             icon: const Icon(Icons.my_location, color: AppColors.primary),
           ),
         ],
@@ -279,83 +275,184 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
               children: [
-                _buildFilterChip('Hospitals', Icons.local_hospital),
-                const SizedBox(width: 12),
-                _buildFilterChip('Clinics', Icons.medical_services),
-                const SizedBox(width: 12),
-                _buildFilterChip('Medical Stores', Icons.medication),
-                const SizedBox(width: 12),
-                _buildFilterChip('Laboratories', Icons.science),
+                for (var i = 0; i < _categories.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 12),
+                  _buildFilterChip(_categories[i].$1, _categories[i].$2),
+                ],
               ],
             ),
           ),
-          if (_isLoading)
-            const Expanded(child: Center(child: CircularProgressIndicator()))
-          else if (places.isEmpty)
-            const Expanded(
-              child: Center(child: Text('No places found nearby. Try another category.')),
-            )
-          else
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                itemCount: places.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final loc = places[index];
-                  final badge = loc['stock_badge']?.toString();
-                  return Material(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      title: Text(
-                        loc['name']?.toString() ?? '',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+          if (_offlineBanner)
+            Material(
+              color: const Color(0xFFFFF7ED),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.cloud_off_outlined, size: 18, color: Colors.orange.shade800),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Offline — showing saved nearby results',
+                        style: TextStyle(
+                          color: Colors.orange.shade900,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
                       ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${loc['distance'] ?? ''} · ${loc['address'] ?? ''}'),
-                          if (badge != null && badge.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                badge,
-                                style: TextStyle(
-                                  color: badge.contains('Low') || badge.contains('Out')
-                                      ? Colors.orange.shade800
-                                      : Colors.green.shade700,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      isThreeLine: badge != null,
-                      trailing: Wrap(
-                        spacing: 4,
-                        children: [
-                          IconButton(
-                            tooltip: 'Directions',
-                            onPressed: () => _openDirections(loc),
-                            icon: const Icon(Icons.directions_outlined, color: AppColors.primary),
-                          ),
-                          IconButton(
-                            tooltip: 'Call',
-                            onPressed: () => _callPlace(loc),
-                            icon: const Icon(Icons.phone_outlined, color: AppColors.primary),
-                          ),
-                        ],
-                      ),
-                      onTap: () => _openDirections(loc),
                     ),
-                  );
-                },
+                  ],
+                ),
               ),
             ),
+          if (showMap)
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.32,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(0),
+                child: Stack(
+                  children: [
+                    GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: LatLng(
+                          _currentPosition!.latitude,
+                          _currentPosition!.longitude,
+                        ),
+                        zoom: 13.5,
+                      ),
+                      myLocationEnabled: true,
+                      myLocationButtonEnabled: false,
+                      zoomControlsEnabled: false,
+                      markers: _markers,
+                      onMapCreated: (controller) {
+                        _mapController = controller;
+                        if (_currentPosition != null) {
+                          _animateToUser(_currentPosition!);
+                        }
+                      },
+                    ),
+                    if (_state == NearbyLoadState.loading)
+                      const Positioned.fill(
+                        child: ColoredBox(
+                          color: Color(0x66FFFFFF),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          Expanded(child: _buildListArea(places)),
         ],
+      ),
+    );
+  }
+
+  Widget _buildListArea(List<NearbyPlace> places) {
+    if (_state == NearbyLoadState.loading && _allPlaces.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_state == NearbyLoadState.permissionDenied ||
+        _state == NearbyLoadState.locationDisabled ||
+        _state == NearbyLoadState.locationUnavailable) {
+      return _buildErrorState(
+        icon: _state == NearbyLoadState.locationDisabled
+            ? Icons.location_disabled
+            : Icons.location_off,
+        message: _errorMessage ?? 'Location unavailable',
+        primaryLabel: _state == NearbyLoadState.locationDisabled
+            ? 'Enable location'
+            : 'Open settings',
+        onPrimary: _state == NearbyLoadState.locationDisabled
+            ? _openLocationSettings
+            : _openAppSettings,
+        secondaryLabel: 'Try again',
+        onSecondary: () => _initLocationAndFetch(forceRefresh: true),
+      );
+    }
+
+    if (_state == NearbyLoadState.networkError ||
+        _state == NearbyLoadState.apiError) {
+      return _buildErrorState(
+        icon: Icons.wifi_off,
+        message: _errorMessage ??
+            (_state == NearbyLoadState.networkError
+                ? 'Network error. Check your connection and try again.'
+                : 'Could not load nearby places from the server.'),
+        primaryLabel: 'Retry',
+        onPrimary: () => _initLocationAndFetch(forceRefresh: true),
+      );
+    }
+
+    if (places.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'No places found nearby. Try another category or expand your search.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+      itemCount: places.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) => _PlaceCard(
+        place: places[index],
+        onDirections: () => _openDirections(places[index]),
+        onCall: () => _callPlace(places[index]),
+        onTap: () {
+          final p = places[index];
+          _mapController?.animateCamera(
+            CameraUpdate.newLatLngZoom(LatLng(p.lat, p.lng), 15),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorState({
+    required IconData icon,
+    required String message,
+    required String primaryLabel,
+    required VoidCallback onPrimary,
+    String? secondaryLabel,
+    VoidCallback? onSecondary,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 48, color: AppColors.primary),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 15,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: onPrimary,
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
+              child: Text(primaryLabel),
+            ),
+            if (secondaryLabel != null && onSecondary != null) ...[
+              const SizedBox(height: 8),
+              TextButton(onPressed: onSecondary, child: Text(secondaryLabel)),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -363,14 +460,7 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
   Widget _buildFilterChip(String label, IconData icon) {
     final isSelected = _selectedCategory == label;
     return GestureDetector(
-      onTap: () async {
-        setState(() {
-          _selectedCategory = label;
-          _isLoading = true;
-        });
-        await _fetchPlaces();
-        if (mounted) setState(() => _isLoading = false);
-      },
+      onTap: () => setState(() => _selectedCategory = label),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
@@ -392,6 +482,133 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PlaceCard extends StatelessWidget {
+  const _PlaceCard({
+    required this.place,
+    required this.onDirections,
+    required this.onCall,
+    required this.onTap,
+  });
+
+  final NearbyPlace place;
+  final VoidCallback onDirections;
+  final VoidCallback onCall;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          place.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${place.categoryLabel} · ${place.distanceLabel}',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Directions',
+                    onPressed: onDirections,
+                    icon: const Icon(Icons.directions_outlined, color: AppColors.primary),
+                  ),
+                  if (place.phone.isNotEmpty)
+                    IconButton(
+                      tooltip: 'Call',
+                      onPressed: onCall,
+                      icon: const Icon(Icons.phone_outlined, color: AppColors.primary),
+                    ),
+                ],
+              ),
+              if (place.address.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  place.address,
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                ),
+              ],
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  if (place.openNow != null)
+                    _chip(
+                      place.openNow! ? 'Open now' : 'Closed',
+                      place.openNow! ? Colors.green.shade700 : Colors.red.shade700,
+                      place.openNow! ? Colors.green.shade50 : Colors.red.shade50,
+                    ),
+                  if (place.rating != null)
+                    _chip(
+                      '★ ${place.rating!.toStringAsFixed(1)}'
+                      '${place.userRatingCount != null ? ' (${place.userRatingCount})' : ''}',
+                      Colors.amber.shade900,
+                      Colors.amber.shade50,
+                    ),
+                  if (place.stockBadge != null && place.stockBadge!.isNotEmpty)
+                    _chip(
+                      place.stockBadge!,
+                      place.stockBadge!.contains('Low') ||
+                              place.stockBadge!.contains('Out')
+                          ? Colors.orange.shade800
+                          : Colors.green.shade700,
+                      place.stockBadge!.contains('Low') ||
+                              place.stockBadge!.contains('Out')
+                          ? Colors.orange.shade50
+                          : Colors.green.shade50,
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(String label, Color fg, Color bg) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 12),
       ),
     );
   }

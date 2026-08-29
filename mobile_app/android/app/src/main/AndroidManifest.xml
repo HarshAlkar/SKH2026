@@ -68,9 +68,12 @@
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <!-- Maps SDK for Android only. Restrict this key by package name + SHA-1.
+             Do NOT put your Places Web Service key here — that belongs in
+             backend/django_api/.env as GOOGLE_PLACES_API_KEY. -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_GOOGLE_MAPS_API_KEY_HERE"/>
+            android:value="AIzaSyB3quMtXIWlnX5IYCsi23xiAjdvQUZy2bs"/>
 
         <meta-data
             android:name="flutterEmbedding"

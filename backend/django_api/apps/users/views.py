@@ -89,6 +89,7 @@ class UserSerializer(serializers.ModelSerializer):
                 "license_number": profile.license_number,
                 "bio": profile.bio,
                 "is_available": profile.is_available,
+                "is_veterinarian": profile.is_veterinarian,
                 "verification_status": profile.verification_status,
                 "rejection_reason": profile.rejection_reason,
             }
@@ -151,6 +152,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     license_number = serializers.CharField(required=False, allow_blank=True)
     worker_id = serializers.CharField(required=False, allow_blank=True)
     district = serializers.CharField(required=False, allow_blank=True)
+    is_veterinarian = serializers.BooleanField(required=False, default=False)
     # Optional patient profile fields (used when role=user, e.g. ASHA registration)
     age = serializers.IntegerField(required=False, min_value=0, max_value=150)
     gender = serializers.CharField(required=False, allow_blank=True)
@@ -177,6 +179,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             "license_number",
             "worker_id",
             "district",
+            "is_veterinarian",
             "age",
             "gender",
             "blood_group",
@@ -233,6 +236,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         license_number = validated_data.pop("license_number", None)
         worker_id = validated_data.pop("worker_id", None)
         district = validated_data.pop("district", None)
+        is_veterinarian = validated_data.pop("is_veterinarian", False)
         age = validated_data.pop("age", None)
         gender = validated_data.pop("gender", None)
         blood_group = validated_data.pop("blood_group", None)
@@ -249,12 +253,15 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
 
         if user.role == "doctor":
+            spec = specialization or "General"
+            vet_flag = bool(is_veterinarian) or ("veterinar" in (spec or "").lower())
             Doctor.objects.create(
                 user=user,
-                specialization=specialization or "General",
+                specialization=spec,
                 experience_years=experience_years or 0,
-                hospital_name=hospital_name or "General Hospital",
+                hospital_name=hospital_name or ("Animal Husbandry Centre" if vet_flag else "General Hospital"),
                 license_number=license_number,
+                is_veterinarian=vet_flag,
             )
         elif user.role == "asha_worker":
             ASHAWorker.objects.create(

@@ -80,7 +80,8 @@
 			<string>https</string>
 			<string>http</string>
 		</array>
+		<!-- Maps SDK for iOS only (restrict by bundle ID). Places key is server-side. -->
 		<key>GMSApiKey</key>
-		<string>YOUR_GOOGLE_MAPS_API_KEY_HERE</string>
+		<string>AIzaSyB3quMtXIWlnX5IYCsi23xiAjdvQUZy2bs</string>
 	</dict>
 </plist>

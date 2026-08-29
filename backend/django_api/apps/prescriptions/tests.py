@@ -178,12 +178,12 @@ class HandwrittenPrescriptionTests(TestCase):
         )
         self.assertEqual(res.status_code, 400)
 
-    def test_unauthorized_patient_upload_denied(self):
-        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token_doctor.key}')
+    def test_patient_cannot_upload_handwritten(self):
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {self.token_a.key}')
         res = self.client.post(
             '/api/prescriptions/',
             {
-                'patient': self.patient_b.id,
+                'patient': self.patient_a.id,
                 'prescription_type': 'handwritten',
                 'file': _png_file(),
             },

@@ -298,7 +298,26 @@ class _CreatePrescriptionScreenState extends State<CreatePrescriptionScreen> {
           ),
         );
         Navigator.pop(context);
-      } catch (_) {
+        return;
+      } catch (e) {
+        final msg = e.toString().toLowerCase();
+        final isNetwork = msg.contains('socket') ||
+            msg.contains('timeout') ||
+            msg.contains('connection') ||
+            msg.contains('network') ||
+            msg.contains('failed host lookup') ||
+            msg.contains('unreachable');
+        if (!isNetwork) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString().replaceFirst('Exception: ', '')),
+              backgroundColor: Colors.redAccent,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
         final saved = await PendingUploadStore.instance.savePrescriptionScan(file);
         final result = await OfflineApi.instance.postMultipart(
           '/prescriptions/',

@@ -71,6 +71,7 @@ urlpatterns = [
     path('api/admin/', include('apps.admin_api.urls')),
     path('api/one-health/', include('apps.one_health.urls')),
     path('api/ai/', include('apps.ai_proxy.urls')),
+    path('api/places/', include('apps.places_proxy.urls')),
     path('api/iot/', include('apps.security_audit.urls')),
 ]
 

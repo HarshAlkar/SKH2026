@@ -31,8 +31,12 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
     'Dermatologist',
     'Pediatrician',
     'Orthopedic',
-    'Neurologist'
+    'Neurologist',
+    'Veterinary Specialist',
   ];
+
+  bool get _isVetSpecialist =>
+      (_selectedSpecialization ?? '').toLowerCase().contains('veterinar');
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -72,6 +76,7 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
         'license_number': _licenseController.text.trim(),
         'experience_years': int.tryParse(_experienceController.text.trim()) ?? 0,
         'hospital_name': _hospitalController.text.trim(),
+        'is_veterinarian': _isVetSpecialist,
       };
       
       final success = await authProvider.register(registrationData);
@@ -335,14 +340,20 @@ class _DoctorRegisterScreenState extends State<DoctorRegisterScreen> {
                         
                         const SizedBox(height: 20),
                         
-                        _buildLabel("Hospital / Clinic Name"),
+                        _buildLabel(_isVetSpecialist
+                            ? "Clinic / Animal Hospital"
+                            : "Hospital / Clinic Name"),
                         _buildTextField(
                           controller: _hospitalController,
-                          hintText: "City General Hospital",
+                          hintText: _isVetSpecialist
+                              ? "Kopargaon Animal Husbandry Centre"
+                              : "City General Hospital",
                           icon: Icons.local_hospital_outlined,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Hospital/Clinic Name must not be empty';
+                              return _isVetSpecialist
+                                  ? 'Clinic / Animal hospital name must not be empty'
+                                  : 'Hospital/Clinic Name must not be empty';
                             }
                             return null;
                           },

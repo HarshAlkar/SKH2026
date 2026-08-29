@@ -189,23 +189,39 @@ class ScreeningResultView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _bandColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              _isUnresolved
-                  ? 'STATUS: SCREENING UNAVAILABLE'
-                  : 'Risk: ${band.toUpperCase()}',
+          if (domain == ScreeningDomain.livestock && !_isUnresolved) ...[
+            _LivestockSeverityMeter(band: band, color: _bandColor),
+            const SizedBox(height: 10),
+            Text(
+              EscalationPolicy.farmerFacingAction(band),
               style: TextStyle(
                 color: _bandColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                height: 1.35,
               ),
             ),
-          ),
+          ] else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _bandColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _isUnresolved
+                    ? 'STATUS: SCREENING UNAVAILABLE'
+                    : EscalationPolicy.displaySeverityLabel(
+                        severity: band,
+                        domain: domain,
+                      ),
+                style: TextStyle(
+                  color: _bandColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
           if (confidence != null && confidence! > 0 && !confidenceIsFallback) ...[
             const SizedBox(height: 10),
             Text(
@@ -387,6 +403,92 @@ class ScreeningResultView extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _LivestockSeverityMeter extends StatelessWidget {
+  final String band;
+  final Color color;
+
+  const _LivestockSeverityMeter({required this.band, required this.color});
+
+  static const _steps = ['Low', 'Moderate', 'High', 'Critical'];
+
+  int get _index {
+    final i = _steps.indexOf(band);
+    return i < 0 ? 0 : i;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            EscalationPolicy.farmerFacingLabel(band),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: List.generate(_steps.length, (i) {
+            final active = i <= _index;
+            final stepColor = switch (_steps[i]) {
+              'Critical' => const Color(0xFFDC2626),
+              'High' => const Color(0xFFEA580C),
+              'Moderate' => const Color(0xFFD97706),
+              _ => const Color(0xFF059669),
+            };
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: i < _steps.length - 1 ? 4 : 0),
+                child: Column(
+                  children: [
+                    Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: active
+                            ? stepColor
+                            : const Color(0xFFE2E8F0),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      EscalationPolicy.farmerFacingLabel(_steps[i])
+                          .split('—')
+                          .first
+                          .trim()
+                          .split(' ')
+                          .take(2)
+                          .join(' '),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: i == _index ? FontWeight.w800 : FontWeight.w500,
+                        color: i == _index ? stepColor : const Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 }

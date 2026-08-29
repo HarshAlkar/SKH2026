@@ -98,10 +98,26 @@ class Command(BaseCommand):
                     'email': f"{data['name'].lower().replace(' ', '.')}@example.com",
                 },
             )
+            changed = False
             if created:
                 user.set_password('password123')
-                user.save()
+                changed = True
                 self.stdout.write(self.style.SUCCESS(f'Created ASHA worker: {data["name"]}'))
+            else:
+                # Keep demo ASHA phones on password123 / asha_worker (phone is unique).
+                user.set_password('password123')
+                changed = True
+            if user.role != 'asha_worker':
+                user.role = 'asha_worker'
+                changed = True
+            if not user.name:
+                user.name = data['name']
+                changed = True
+            if not user.village:
+                user.village = data['village']
+                changed = True
+            if changed:
+                user.save()
             asha, _ = ASHAWorker.objects.get_or_create(
                 user=user,
                 defaults={

@@ -23,7 +23,7 @@ Future<void> showEscalationSheet(
 
   final title = isAnimal
       ? (sev == 'Critical'
-          ? 'Urgent veterinary assessment recommended'
+          ? 'Urgent — Call Veterinary Specialist'
           : 'Veterinary attention recommended')
       : (sev == 'Critical'
           ? 'Urgent professional assessment recommended'
@@ -65,16 +65,22 @@ Future<void> showEscalationSheet(
               const SizedBox(height: 16),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1E293B),
+                  color: isAnimal && sev == 'Critical'
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFF1E293B),
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 body,
-                style: const TextStyle(fontSize: 13, color: Color(0xFF64748B), height: 1.4),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -143,12 +149,18 @@ Future<void> showEscalationSheet(
                 ],
               ] else ...[
                 _EscalationButton(
-                  icon: Icons.pets_outlined,
-                  label: 'Contact Veterinarian',
-                  color: const Color(0xFFB45309),
+                  icon: sev == 'Critical'
+                      ? Icons.phone_in_talk_outlined
+                      : Icons.pets_outlined,
+                  label: sev == 'Critical'
+                      ? 'Call Veterinary Specialist'
+                      : 'Contact Veterinary Specialist',
+                  color: sev == 'Critical'
+                      ? const Color(0xFFDC2626)
+                      : const Color(0xFFB45309),
                   onTap: () async {
                     Navigator.pop(ctx);
-                    await _callFirstVet(context);
+                    await showVeterinarianPicker(context);
                   },
                 ),
                 const SizedBox(height: 10),
@@ -175,41 +187,249 @@ Future<void> showEscalationSheet(
   );
 }
 
-Future<void> _callFirstVet(BuildContext context) async {
+/// Lists veterinarians from `/one-health/veterinarians/` and starts a call.
+Future<void> showVeterinarianPicker(BuildContext context) async {
+  List<Map<String, dynamic>> vets = [];
+  String? loadError;
   try {
     final api = ApiService();
     final raw = await api.get('/one-health/veterinarians/');
     final list = raw is List ? raw : <dynamic>[];
-    if (list.isEmpty) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'No veterinarian listed yet. Ask ASHA for local AH contacts.',
-            ),
-          ),
-        );
-      }
-      return;
-    }
-    final vet = Map<String, dynamic>.from(list.first as Map);
-    final userId = parseContactId(vet['user_id']);
-    final doctorId = parseContactId(vet['id']);
-    if (userId == null || !context.mounted) return;
-    await CallLauncher.start(
-      context: context,
-      peerName: 'Dr. ${vet['full_name'] ?? 'Veterinarian'}',
-      receiverUserId: userId.toString(),
-      isVideo: true,
-      doctorId: doctorId,
-    );
+    vets = list
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList()
+      ..sort((a, b) {
+        final aAvail = a['is_available'] == true ? 0 : 1;
+        final bAvail = b['is_available'] == true ? 0 : 1;
+        return aAvail.compareTo(bAvail);
+      });
   } catch (e) {
+    loadError = e.toString();
+  }
+
+  if (!context.mounted) return;
+
+  if (loadError != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Could not reach veterinarian list: $loadError')),
+    );
+    return;
+  }
+
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (ctx) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Choose Veterinary Specialist',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Available specialists are listed first. Tap to start a video consult.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (vets.isEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFDBA74)),
+                  ),
+                  child: const Text(
+                    'No veterinarian listed yet. Ask ASHA for local animal husbandry contacts, or try again later.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF9A3412),
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.pushNamed(context, AppRoutes.ashaWorkers);
+                  },
+                  icon: const Icon(Icons.health_and_safety_outlined),
+                  label: const Text('Contact ASHA'),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    await showVeterinarianPicker(context);
+                  },
+                  child: const Text('Retry'),
+                ),
+              ] else
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(ctx).size.height * 0.45,
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: vets.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (_, i) {
+                      final vet = vets[i];
+                      final name =
+                          (vet['full_name'] ?? vet['name'] ?? 'Veterinarian')
+                              .toString();
+                      final spec =
+                          (vet['specialization'] ?? 'Veterinary Specialist')
+                              .toString();
+                      final hospital =
+                          (vet['hospital_name'] ?? '').toString();
+                      final available = vet['is_available'] == true;
+                      return Material(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            await _callVet(context, vet);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: available
+                                    ? const Color(0xFFFDBA74)
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: available
+                                      ? const Color(0xFFFFF7ED)
+                                      : const Color(0xFFF1F5F9),
+                                  child: Icon(
+                                    Icons.pets_outlined,
+                                    color: available
+                                        ? const Color(0xFFB45309)
+                                        : const Color(0xFF94A3B8),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Dr. $name',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: Color(0xFF1E293B),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        hospital.isNotEmpty
+                                            ? '$spec · $hospital'
+                                            : spec,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF64748B),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        available
+                                            ? 'Available now'
+                                            : 'May be unavailable',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: available
+                                              ? const Color(0xFF059669)
+                                              : const Color(0xFF94A3B8),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.videocam_outlined,
+                                  color: Color(0xFFB45309),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Future<void> _callVet(BuildContext context, Map<String, dynamic> vet) async {
+  final userId = parseContactId(vet['user_id']);
+  final doctorId = parseContactId(vet['id']);
+  if (userId == null) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not reach veterinarian list: $e')),
+        const SnackBar(content: Text('This veterinarian cannot be contacted yet.')),
       );
     }
+    return;
   }
+  if (!context.mounted) return;
+  final name = (vet['full_name'] ?? vet['name'] ?? 'Veterinarian').toString();
+  await CallLauncher.start(
+    context: context,
+    peerName: 'Dr. $name',
+    receiverUserId: userId.toString(),
+    isVideo: true,
+    doctorId: doctorId,
+  );
 }
 
 class _EscalationButton extends StatelessWidget {

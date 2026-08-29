@@ -25,6 +25,19 @@ class LivestockScreeningScreen extends StatefulWidget {
   State<LivestockScreeningScreen> createState() => _LivestockScreeningScreenState();
 }
 
+class _SignChip {
+  final String label;
+  final bool dangerous;
+  const _SignChip(this.label, {this.dangerous = false});
+}
+
+class _BodyArea {
+  final String title;
+  final IconData icon;
+  final List<_SignChip> chips;
+  const _BodyArea(this.title, this.icon, this.chips);
+}
+
 class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
   final _api = ApiService();
   final _offline = OfflineApi.instance;
@@ -35,6 +48,7 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
   bool _loading = false;
   Map<String, dynamic>? _result;
   List<Map<String, dynamic>> _cases = [];
+  final Set<String> _selectedSigns = {};
 
   static const _speciesOptions = [
     ('CATTLE', 'Cattle'),
@@ -45,18 +59,122 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
     ('OTHER', 'Other'),
   ];
 
-  static const _chipSymptoms = [
-    'fever',
-    'not eating',
-    'diarrhea',
-    'cough',
-    'lameness',
-    'mastitis',
-    'nasal discharge',
-    'skin lesions',
-    'difficulty breathing',
-    'bloody diarrhea',
+  static const _dangerousSigns = <_SignChip>[
+    _SignChip('bloody diarrhea', dangerous: true),
+    _SignChip('cannot stand', dangerous: true),
+    _SignChip('difficulty breathing', dangerous: true),
+    _SignChip('gasping', dangerous: true),
+    _SignChip('sudden death', dangerous: true),
+    _SignChip('collapse', dangerous: true),
   ];
+
+  List<_BodyArea> get _bodyAreas {
+    final speciesExtra = switch (_species) {
+      'CATTLE' || 'BUFFALO' => const [
+          _SignChip('mastitis'),
+          _SignChip('swollen udder'),
+          _SignChip('clotted milk'),
+          _SignChip('milk drop'),
+          _SignChip('salivation'),
+        ],
+      'POULTRY' => const [
+          _SignChip('gasping', dangerous: true),
+          _SignChip('sudden death', dangerous: true),
+          _SignChip('sneezing'),
+          _SignChip('ruffled feathers'),
+          _SignChip('dead flock', dangerous: true),
+        ],
+      'GOAT' || 'SHEEP' => const [
+          _SignChip('cough'),
+          _SignChip('diarrhea'),
+          _SignChip('lameness'),
+          _SignChip('nasal discharge'),
+          _SignChip('itching'),
+        ],
+      _ => const [
+          _SignChip('fever'),
+          _SignChip('not eating'),
+          _SignChip('weakness'),
+        ],
+    };
+
+    return [
+      _BodyArea('Appetite & energy', Icons.restaurant_outlined, [
+        const _SignChip('not eating'),
+        const _SignChip('weakness'),
+        const _SignChip('lethargy'),
+        const _SignChip('fever'),
+        const _SignChip('shivering'),
+        ...speciesExtra.where((c) =>
+            c.label.contains('milk') || c.label == 'ruffled feathers'),
+      ]),
+      const _BodyArea('Breathing', Icons.air, [
+        _SignChip('cough'),
+        _SignChip('nasal discharge'),
+        _SignChip('sneezing'),
+        _SignChip('difficulty breathing', dangerous: true),
+        _SignChip('gasping', dangerous: true),
+        _SignChip('panting'),
+      ]),
+      const _BodyArea('Digestion', Icons.water_drop_outlined, [
+        _SignChip('diarrhea'),
+        _SignChip('bloody diarrhea', dangerous: true),
+        _SignChip('loose stool'),
+        _SignChip('not drinking'),
+      ]),
+      _BodyArea('Skin / udder / legs', Icons.pets_outlined, [
+        const _SignChip('skin lesions'),
+        const _SignChip('itching'),
+        const _SignChip('lameness'),
+        const _SignChip('limping'),
+        const _SignChip('swollen joint'),
+        ...speciesExtra.where((c) =>
+            c.label.contains('udder') ||
+            c.label == 'mastitis' ||
+            c.label == 'clotted milk' ||
+            c.label == 'salivation'),
+      ]),
+      const _BodyArea('Dangerous signs', Icons.warning_amber_rounded, _dangerousSigns),
+    ];
+  }
+
+  List<_SignChip> get _quickSpeciesChips {
+    return switch (_species) {
+      'CATTLE' || 'BUFFALO' => const [
+          _SignChip('fever'),
+          _SignChip('not eating'),
+          _SignChip('mastitis'),
+          _SignChip('milk drop'),
+          _SignChip('lameness'),
+          _SignChip('diarrhea'),
+          _SignChip('difficulty breathing', dangerous: true),
+        ],
+      'POULTRY' => const [
+          _SignChip('gasping', dangerous: true),
+          _SignChip('sneezing'),
+          _SignChip('diarrhea'),
+          _SignChip('not eating'),
+          _SignChip('sudden death', dangerous: true),
+          _SignChip('ruffled feathers'),
+        ],
+      'GOAT' || 'SHEEP' => const [
+          _SignChip('cough'),
+          _SignChip('diarrhea'),
+          _SignChip('lameness'),
+          _SignChip('fever'),
+          _SignChip('not eating'),
+          _SignChip('nasal discharge'),
+        ],
+      _ => const [
+          _SignChip('fever'),
+          _SignChip('not eating'),
+          _SignChip('diarrhea'),
+          _SignChip('cough'),
+          _SignChip('lameness'),
+          _SignChip('difficulty breathing', dangerous: true),
+        ],
+    };
+  }
 
   @override
   void initState() {
@@ -83,6 +201,51 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
     } catch (_) {}
   }
 
+  void _toggleSign(String label) {
+    setState(() {
+      if (_selectedSigns.contains(label)) {
+        _selectedSigns.remove(label);
+      } else {
+        _selectedSigns.add(label);
+      }
+      _syncSignsToText();
+    });
+  }
+
+  void _syncSignsToText() {
+    final extra = _symptomsCtrl.text
+        .split(RegExp(r'[,;\n]'))
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty && !_isKnownChip(e))
+        .toList();
+    final combined = [..._selectedSigns, ...extra];
+    _symptomsCtrl.text = combined.join(', ');
+  }
+
+  bool _isKnownChip(String text) {
+    final lower = text.toLowerCase();
+    for (final area in _bodyAreas) {
+      for (final c in area.chips) {
+        if (c.label.toLowerCase() == lower) return true;
+      }
+    }
+    for (final c in _quickSpeciesChips) {
+      if (c.label.toLowerCase() == lower) return true;
+    }
+    return false;
+  }
+
+  String get _combinedObservationText {
+    final free = _symptomsCtrl.text.trim();
+    if (_selectedSigns.isEmpty) return free;
+    final parts = <String>{..._selectedSigns};
+    for (final p in free.split(RegExp(r'[,;\n]'))) {
+      final t = p.trim();
+      if (t.isNotEmpty) parts.add(t);
+    }
+    return parts.join(', ');
+  }
+
   Future<void> _ensureCase() async {
     if (_nameCtrl.text.trim().isEmpty) return;
     await _offline.post(
@@ -96,11 +259,23 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
     await _loadCases();
   }
 
+  void _selectSavedAnimal(Map<String, dynamic> c) {
+    setState(() {
+      _nameCtrl.text = (c['name'] ?? '').toString();
+      final sp = (c['species'] ?? '').toString().toUpperCase();
+      if (_speciesOptions.any((o) => o.$1 == sp)) {
+        _species = sp;
+      }
+    });
+  }
+
   Future<void> _analyze() async {
-    final text = _symptomsCtrl.text.trim();
+    final text = _combinedObservationText.trim();
     if (text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Describe what you observe on the animal.')),
+        const SnackBar(
+          content: Text('Tap signs you see, or describe what you observe.'),
+        ),
       );
       return;
     }
@@ -109,11 +284,11 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
       _result = null;
     });
 
-    final clientId = 'animal-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}';
+    final clientId =
+        'animal-${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}';
     try {
       await _ensureCase();
 
-      // Local-first: TFLite livestock MLP + Critical keyword safety override.
       Map<String, dynamic> result = await LivestockMlService.instance.tryPredict(
             text: text,
             species: _species,
@@ -126,7 +301,6 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
         result: result,
       );
 
-      // Best-effort online path for care-team alerts (High/Critical only via server).
       try {
         final response = await _api.post(
           '/one-health/animal/analyze/',
@@ -152,7 +326,14 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
         _result = result;
         _loading = false;
       });
-      // Result-first: do NOT auto-open escalation/chat.
+
+      final sev = EscalationPolicy.normalize((result['severity'] ?? '').toString());
+      if (sev == 'Critical' || sev == 'High') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _escalateVet();
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -183,20 +364,36 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
     final critical = blob.contains('bloody') ||
         blob.contains('cannot stand') ||
         blob.contains('difficulty breathing') ||
+        blob.contains('laboured breathing') ||
         blob.contains('gasping') ||
-        blob.contains('sudden death');
+        blob.contains('respiratory distress') ||
+        blob.contains('sudden death') ||
+        blob.contains('downer') ||
+        blob.contains('paralysis') ||
+        blob.contains('collapse') ||
+        blob.contains('unconscious') ||
+        blob.contains('dead flock') ||
+        blob.contains('mass mortality') ||
+        (blob.contains('dysentery') || blob.contains('blood stool'));
     final high = (blob.contains('foot') && blob.contains('mouth')) ||
+        blob.contains('blister') ||
+        blob.contains('vesicle') ||
         blob.contains('mastitis') ||
-        blob.contains('fever');
-    if (critical && _sevRank('Critical') > _sevRank((ml['severity'] ?? '').toString())) {
+        blob.contains('swollen udder') ||
+        blob.contains('hard udder') ||
+        blob.contains('clotted milk') ||
+        blob.contains('fever') ||
+        blob.contains('high temperature') ||
+        blob.contains('hot body') ||
+        blob.contains('shivering');
+    if (critical &&
+        _sevRank('Critical') > _sevRank((ml['severity'] ?? '').toString())) {
       return {
         ...ml,
         'possible_condition': 'Urgent livestock concern (screening)',
-        'disease': 'Urgent livestock concern (screening)',
+        'disease_display': 'Urgent livestock concern (screening)',
         'severity': 'Critical',
-        'confidence': 0.85,
-        'advice': 'Isolate animal and contact a veterinarian promptly.',
-        'source': 'rules_override_ml',
+        'source': 'rules_boost_ml',
         'disclaimer': ScreeningDisclaimer.enAnimal,
         'message':
             'Livestock screening indicates elevated risk. '
@@ -221,20 +418,36 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
     String advice =
         'Monitor feed, water, and activity. Escalate to a veterinarian if signs worsen.';
     double confidence = 0.35;
-    if (blob.contains('bloody') || blob.contains('cannot stand') || blob.contains('breathing')) {
+    if (blob.contains('bloody') ||
+        blob.contains('cannot stand') ||
+        blob.contains('difficulty breathing') ||
+        blob.contains('gasping') ||
+        blob.contains('sudden death') ||
+        blob.contains('collapse') ||
+        blob.contains('dead flock')) {
       condition = 'Urgent livestock concern (screening)';
       severity = 'Critical';
-      advice = 'Isolate animal and contact a veterinarian promptly.';
+      advice = 'Isolate animal and contact a veterinary specialist promptly.';
       confidence = 0.8;
-    } else if (blob.contains('fever') || blob.contains('mastitis') || blob.contains('foot') || blob.contains('mouth')) {
+    } else if (blob.contains('fever') ||
+        blob.contains('mastitis') ||
+        blob.contains('swollen udder') ||
+        (blob.contains('foot') && blob.contains('mouth')) ||
+        blob.contains('blister')) {
       condition = 'Significant livestock signs (screening)';
       severity = 'High';
-      advice = 'Isolate if contagious signs. Consult a veterinarian today.';
+      advice = 'Isolate if contagious signs. Consult a veterinary specialist today.';
       confidence = 0.7;
-    } else if (blob.contains('diarrhea') || blob.contains('cough') || blob.contains('lameness')) {
+    } else if (blob.contains('diarrhea') ||
+        blob.contains('cough') ||
+        blob.contains('lameness') ||
+        blob.contains('not eating') ||
+        blob.contains('itching') ||
+        blob.contains('skin lesions')) {
       condition = 'Moderate livestock concern (screening)';
       severity = 'Moderate';
-      advice = 'Improve hygiene and hydration. Seek veterinary advice if not improving.';
+      advice =
+          'Improve hygiene and hydration. Seek veterinary advice if not improving.';
       confidence = 0.6;
     }
     return {
@@ -253,13 +466,19 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
   void _openAiChat() {
     final r = _result;
     if (r == null) return;
-    final finding = (r['possible_condition'] ?? r['disease_display'] ?? 'Livestock screening').toString();
+    final finding =
+        (r['possible_condition'] ?? r['disease_display'] ?? 'Livestock screening')
+            .toString();
     final severity = (r['severity'] ?? 'Low').toString();
     final steps = ScreeningHealthSteps.forResult(
       domain: ScreeningDomain.livestock,
       severity: severity,
       condition: finding,
-      symptoms: _symptomsCtrl.text.split(RegExp(r'[,;]')).map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+      symptoms: _combinedObservationText
+          .split(RegExp(r'[,;]'))
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList(),
     );
     SharedAIHealthChat.open(
       context,
@@ -267,7 +486,8 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
         domain: ScreeningDomain.livestock,
         possibleFinding: finding,
         severity: severity,
-        confidence: r['confidence'] is num ? (r['confidence'] as num).toDouble() : null,
+        confidence:
+            r['confidence'] is num ? (r['confidence'] as num).toDouble() : null,
         advice: r['advice']?.toString() ?? r['message']?.toString(),
         explanation: ScreeningHealthSteps.explanation(
           domain: ScreeningDomain.livestock,
@@ -275,7 +495,7 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
           possibleFinding: finding,
         ),
         nextSteps: steps,
-        symptoms: [_symptomsCtrl.text.trim()],
+        symptoms: [_combinedObservationText.trim()],
         species: _species,
         aiSource: r['source']?.toString(),
         rawResult: Map<String, dynamic>.from(r),
@@ -285,13 +505,14 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
 
   void _escalateVet() {
     final r = _result;
-    final finding = (r?['possible_condition'] ?? 'Livestock screening').toString();
+    final finding =
+        (r?['possible_condition'] ?? 'Livestock screening').toString();
     final severity = (r?['severity'] ?? 'Critical').toString();
     final summary = EscalationPolicy.careTeamSummary(
       domain: ScreeningDomain.livestock,
       possibleFinding: finding,
       severity: severity,
-      symptoms: _symptomsCtrl.text.trim(),
+      symptoms: _combinedObservationText.trim(),
       timestamp: DateTime.now(),
       offlineQueued: r?['queued_offline'] == true,
       aiSource: r?['source']?.toString(),
@@ -310,7 +531,10 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Livestock Screening', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Livestock Screening',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF1E293B),
         elevation: 0,
@@ -331,11 +555,18 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
                   ),
                   child: Text(
                     ScreeningDisclaimer.enAnimal,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF9A3412), height: 1.4),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF9A3412),
+                      height: 1.4,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text('Species', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(
+                  'Which animal?',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
@@ -345,7 +576,11 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
                     return ChoiceChip(
                       label: Text(s.$2),
                       selected: selected,
-                      onSelected: (_) => setState(() => _species = s.$1),
+                      onSelected: (_) => setState(() {
+                        _species = s.$1;
+                        _selectedSigns.clear();
+                        _syncSignsToText();
+                      }),
                       selectedColor: const Color(0xFFFDBA74),
                     );
                   }).toList(),
@@ -357,60 +592,126 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
                     labelText: 'Animal name / tag (optional)',
                     filled: true,
                     fillColor: Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
                 if (_cases.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Saved animals: ${_cases.map((c) => c['name'] ?? c['species']).join(', ')}',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Saved animals',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _cases.map((c) {
+                      final name = (c['name'] ?? c['species'] ?? 'Animal').toString();
+                      final sp = (c['species'] ?? '').toString();
+                      final selected = _nameCtrl.text == (c['name'] ?? '').toString() &&
+                          _species == sp.toUpperCase();
+                      return ActionChip(
+                        avatar: Icon(
+                          Icons.pets,
+                          size: 16,
+                          color: selected
+                              ? const Color(0xFFB45309)
+                              : const Color(0xFF94A3B8),
+                        ),
+                        label: Text(
+                          sp.isNotEmpty ? '$name ($sp)' : name,
+                          style: TextStyle(
+                            fontWeight:
+                                selected ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                        backgroundColor: selected
+                            ? const Color(0xFFFFF7ED)
+                            : Colors.white,
+                        onPressed: () => _selectSavedAnimal(c),
+                      );
+                    }).toList(),
                   ),
                 ],
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _symptomsCtrl,
-                  maxLines: 4,
-                  decoration: InputDecoration(
-                    labelText: 'Observed signs',
-                    hintText: 'e.g. fever, not eating, diarrhea, lameness…',
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Quick signs for this species',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _chipSymptoms.map((s) {
-                    return ActionChip(
-                      label: Text(s),
-                      onPressed: () {
-                        final cur = _symptomsCtrl.text.trim();
-                        _symptomsCtrl.text = cur.isEmpty ? s : '$cur, $s';
-                        setState(() {});
-                      },
+                  children: _quickSpeciesChips.map((c) {
+                    final selected = _selectedSigns.contains(c.label);
+                    return FilterChip(
+                      label: Text(c.label),
+                      selected: selected,
+                      onSelected: (_) => _toggleSign(c.label),
+                      selectedColor: c.dangerous
+                          ? const Color(0xFFFEE2E2)
+                          : const Color(0xFFFED7AA),
+                      checkmarkColor: c.dangerous
+                          ? const Color(0xFFDC2626)
+                          : const Color(0xFFB45309),
+                      side: c.dangerous
+                          ? const BorderSide(color: Color(0xFFFCA5A5))
+                          : null,
+                      avatar: c.dangerous
+                          ? const Icon(
+                              Icons.priority_high,
+                              size: 16,
+                              color: Color(0xFFDC2626),
+                            )
+                          : null,
                     );
                   }).toList(),
                 ),
                 const SizedBox(height: 20),
+                const Text(
+                  'Guided check (tap what you see)',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+                const SizedBox(height: 8),
+                ..._bodyAreas.map(_buildBodyArea),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _symptomsCtrl,
+                  maxLines: 3,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: 'Anything else?',
+                    hintText: 'Add extra details in your own words…',
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 SizedBox(
                   height: 52,
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     onPressed: _loading ? null : _analyze,
+                    icon: const Icon(Icons.health_and_safety_outlined),
+                    label: Text(
+                      _loading ? 'Screening…' : 'Run livestock screening',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFB45309),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
-                    child: _loading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Run livestock screening', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
                 if (_result != null) ...[
@@ -425,20 +726,88 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
     );
   }
 
+  Widget _buildBodyArea(_BodyArea area) {
+    final isDanger = area.title.toLowerCase().contains('dangerous');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDanger ? const Color(0xFFFEF2F2) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDanger ? const Color(0xFFFECACA) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                area.icon,
+                size: 18,
+                color: isDanger
+                    ? const Color(0xFFDC2626)
+                    : const Color(0xFFB45309),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                area.title,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: isDanger
+                      ? const Color(0xFF991B1B)
+                      : const Color(0xFF1E293B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: area.chips.map((c) {
+              final selected = _selectedSigns.contains(c.label);
+              return FilterChip(
+                label: Text(c.label, style: const TextStyle(fontSize: 12)),
+                selected: selected,
+                onSelected: (_) => _toggleSign(c.label),
+                selectedColor: c.dangerous || isDanger
+                    ? const Color(0xFFFEE2E2)
+                    : const Color(0xFFFED7AA),
+                checkmarkColor: c.dangerous || isDanger
+                    ? const Color(0xFFDC2626)
+                    : const Color(0xFFB45309),
+                visualDensity: VisualDensity.compact,
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildResultCard(Map<String, dynamic> r) {
     final severity = (r['severity'] ?? 'Low').toString();
-    final finding = (r['possible_condition'] ?? r['disease_display'] ?? '—').toString();
+    final finding =
+        (r['possible_condition'] ?? r['disease_display'] ?? '—').toString();
     final source = (r['source'] ?? 'on-device').toString();
     final sourceLabel = source.contains('ondevice') || source.contains('mlp')
         ? 'On-device ML'
         : (source.contains('rules') ? 'Rules + ML' : source);
-    final conf = r['confidence'] is num ? (r['confidence'] as num).toDouble() : null;
+    final conf =
+        r['confidence'] is num ? (r['confidence'] as num).toDouble() : null;
     final steps = ScreeningHealthSteps.forResult(
       domain: ScreeningDomain.livestock,
       severity: severity,
       condition: finding,
-      symptoms: [_symptomsCtrl.text.trim()],
+      symptoms: [_combinedObservationText.trim()],
     );
+    final band = EscalationPolicy.normalize(severity);
+    final primaryLabel = band == 'Critical'
+        ? 'Call Vet Now'
+        : 'Contact Veterinary Specialist';
 
     return ScreeningResultView(
       domain: ScreeningDomain.livestock,
@@ -463,8 +832,10 @@ class _LivestockScreeningScreenState extends State<LivestockScreeningScreen> {
       onContactPrimary: EscalationPolicy.shouldShowEscalationButtons(severity)
           ? _escalateVet
           : null,
-      primaryContactLabel: 'Contact Veterinarian',
-      primaryContactIcon: Icons.pets_outlined,
+      primaryContactLabel: primaryLabel,
+      primaryContactIcon: band == 'Critical'
+          ? Icons.phone_in_talk_outlined
+          : Icons.pets_outlined,
       onContactSecondary: EscalationPolicy.shouldShowEscalationButtons(severity)
           ? () => Navigator.pushNamed(context, AppRoutes.ashaWorkers)
           : null,
