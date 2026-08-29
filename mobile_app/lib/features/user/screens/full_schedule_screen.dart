@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../routes/app_routes.dart';
 import '../../../providers/medicine_provider.dart';
 import '../../../models/medicine_model.dart';
 
@@ -91,6 +92,21 @@ class FullScheduleScreen extends StatelessWidget {
                 ),
               ),
               IconButton(
+                tooltip: 'Edit medicine',
+                icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                onPressed: () async {
+                  final result = await Navigator.pushNamed(
+                    context,
+                    AppRoutes.addMedicine,
+                    arguments: med,
+                  );
+                  if (result == true) {
+                    provider.loadMedicines();
+                  }
+                },
+              ),
+              IconButton(
+                tooltip: 'Delete medicine',
                 icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                 onPressed: () => _confirmDelete(context, med, provider),
               ),
@@ -99,7 +115,13 @@ class FullScheduleScreen extends StatelessWidget {
           const Divider(height: 32),
           Row(
             children: [
-              _infoChip(Icons.calendar_today, 'Duration', '${med.startDate} to ${med.endDate}'),
+              _infoChip(
+                Icons.calendar_today,
+                'Duration',
+                med.frequency.toLowerCase() == 'once'
+                    ? med.startDate
+                    : '${med.startDate} to ${med.endDate}',
+              ),
               const Spacer(),
               _infoChip(Icons.access_time, 'Time', med.reminderTime),
             ],

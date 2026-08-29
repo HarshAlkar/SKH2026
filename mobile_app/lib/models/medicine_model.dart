@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 class MedicineModel {
   final int? id;
   final String medicineName;
@@ -22,6 +24,40 @@ class MedicineModel {
     this.isTaken = false,
     required this.createdAt,
   });
+
+  bool isScheduledForDate(DateTime date) {
+    final dateStr = DateFormat('yyyy-MM-dd').format(date);
+    final freq = frequency.trim().toLowerCase();
+
+    // 1. One-time medicine (frequency is 'Once')
+    if (freq == 'once' || freq == 'one-time' || freq == 'single') {
+      return startDate == dateStr;
+    }
+
+    // 2. Daily recurring medicine
+    if (freq == 'daily' || freq == 'twice daily' || freq == 'thrice daily' || freq.contains('day') || freq.isEmpty) {
+      if (startDate.isNotEmpty && startDate.compareTo(dateStr) > 0) return false;
+      if (endDate.isNotEmpty && endDate.compareTo(dateStr) < 0) return false;
+      return true;
+    }
+
+    // 3. Weekly recurring medicine
+    if (freq == 'weekly') {
+      if (startDate.isNotEmpty && startDate.compareTo(dateStr) > 0) return false;
+      if (endDate.isNotEmpty && endDate.compareTo(dateStr) < 0) return false;
+      try {
+        final parsedStart = DateFormat('yyyy-MM-dd').parse(startDate);
+        return date.weekday == parsedStart.weekday;
+      } catch (_) {
+        return true;
+      }
+    }
+
+    // Default fallback: date range based
+    if (startDate.isNotEmpty && startDate.compareTo(dateStr) > 0) return false;
+    if (endDate.isNotEmpty && endDate.compareTo(dateStr) < 0) return false;
+    return true;
+  }
 
   Map<String, dynamic> toMap() {
     return {

@@ -56,11 +56,10 @@ class MedicineDbService {
 
   Future<List<MedicineModel>> getTodaysMedicines(String dateStr) async {
     final db = await instance.database;
-    // Simple filter: date is between start and end
     final result = await db.query(
       'medicines',
-      where: 'start_date <= ? AND end_date >= ?',
-      whereArgs: [dateStr, dateStr],
+      where: '(LOWER(frequency) = "once" AND start_date = ?) OR (LOWER(frequency) != "once" AND start_date <= ? AND end_date >= ?)',
+      whereArgs: [dateStr, dateStr, dateStr],
     );
     return result.map((json) => MedicineModel.fromMap(json)).toList();
   }

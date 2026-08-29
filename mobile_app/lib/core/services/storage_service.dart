@@ -6,7 +6,9 @@ class StorageService {
 
   static Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
-    await Hive.initFlutter();
+    try {
+      await Hive.initFlutter();
+    } catch (_) {}
   }
 
   Future<void> saveString(String key, String value) async {

@@ -2,6 +2,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from django.db.models import Q
+import datetime
 from .models import MedicineSchedule, MedicineRecord
 from .serializers import MedicineScheduleSerializer, MedicineRecordSerializer
 from apps.patients.models import Patient
@@ -16,22 +18,45 @@ class MedicineTrackerViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_authenticated:
-            # Look for patient profile
+        if not user.is_authenticated:
+            return self.queryset.none()
+
+        patient = getattr(user, 'patient_profile', None)
+        if not patient:
             patient = Patient.objects.filter(user=user).first()
-            if patient:
-                return self.queryset.filter(patient=patient)
-        return self.queryset.none()
+        if not patient:
+            return self.queryset.none()
+
+        qs = self.queryset.filter(patient=patient)
+
+        date_param = self.request.query_params.get('date')
+        if date_param:
+            try:
+                target_date = datetime.datetime.strptime(date_param.strip(), '%Y-%m-%d').date()
+                qs = qs.filter(
+                    (Q(frequency__iexact='Once') & Q(start_date=target_date)) |
+                    (~Q(frequency__iexact='Once') & Q(start_date__lte=target_date) & Q(end_date__gte=target_date))
+                )
+            except ValueError:
+                pass
+
+        return qs
 
     def perform_create(self, serializer):
-        # Safely get or create patient profile
         patient = getattr(self.request.user, 'patient_profile', None)
         if not patient:
             patient, _ = Patient.objects.get_or_create(
                 user=self.request.user,
                 defaults={'age': 0, 'gender': 'Not Set', 'address': 'Not Set'}
             )
-        serializer.save(patient=patient)
+        
+        # If frequency is Once, ensure end_date matches start_date
+        frequency = serializer.validated_data.get('frequency', '')
+        start_date = serializer.validated_data.get('start_date')
+        if frequency.lower() == 'once' and start_date:
+            serializer.save(patient=patient, end_date=start_date)
+        else:
+            serializer.save(patient=patient)
 
     @action(detail=False, methods=['get'], url_path='user')
     def user_medicines(self, request):
@@ -71,8 +96,8 @@ class MedicineTrackerViewSet(viewsets.ModelViewSet):
         """Helper for today's medicines"""
         today_date = timezone.now().date()
         queryset = self.get_queryset().filter(
-            start_date__lte=today_date,
-            end_date__gte=today_date
+            (Q(frequency__iexact='Once') & Q(start_date=today_date)) |
+            (~Q(frequency__iexact='Once') & Q(start_date__lte=today_date) & Q(end_date__gte=today_date))
         )
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)

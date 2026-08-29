@@ -1,4 +1,5 @@
 import '../core/config/app_config.dart';
+import 'emergency_contact_model.dart';
 
 class UserModel {
   final int id;
@@ -40,6 +41,17 @@ class UserModel {
     if (url.isEmpty) return null;
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
     return '${AppConfig.origin}$url';
+  }
+
+  List<EmergencyContactModel> get emergencyContacts {
+    final raw = profileDetails['emergency_contacts'];
+    if (raw is List) {
+      return raw
+          .whereType<Map>()
+          .map((m) => EmergencyContactModel.fromJson(Map<String, dynamic>.from(m)))
+          .toList();
+    }
+    return [];
   }
 
   String detail(String key, {String fallback = ''}) {

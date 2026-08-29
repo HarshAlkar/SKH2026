@@ -79,6 +79,15 @@ class UserSerializer(serializers.ModelSerializer):
                 "district": obj.asha_profile.district,
             }
         if obj.role == "user" and hasattr(obj, "patient_profile"):
+            contacts = [
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "phone": c.phone,
+                    "relationship": c.relationship,
+                }
+                for c in obj.patient_profile.emergency_contacts.all()
+            ]
             return {
                 "patient_id": obj.patient_profile.id,
                 "user_id": obj.id,
@@ -87,6 +96,9 @@ class UserSerializer(serializers.ModelSerializer):
                 "address": obj.patient_profile.address,
                 "blood_group": obj.patient_profile.blood_group,
                 "medical_history": obj.patient_profile.medical_history,
+                "emergency_contact_name": getattr(obj.patient_profile, "emergency_contact_name", "") or "",
+                "emergency_contact_phone": getattr(obj.patient_profile, "emergency_contact_phone", "") or "",
+                "emergency_contacts": contacts,
             }
         if obj.role == "medical_staff" and hasattr(obj, "medical_staff_profile"):
             profile = obj.medical_staff_profile
@@ -291,6 +303,10 @@ def _apply_role_profile(user, details):
             patient.address = str(details["address"])
         if "medical_history" in details and details["medical_history"] is not None:
             patient.medical_history = str(details["medical_history"])
+        if "emergency_contact_name" in details and details["emergency_contact_name"] is not None:
+            patient.emergency_contact_name = str(details["emergency_contact_name"])
+        if "emergency_contact_phone" in details and details["emergency_contact_phone"] is not None:
+            patient.emergency_contact_phone = str(details["emergency_contact_phone"])
         patient.save()
     elif user.role == "doctor":
         doctor, _ = Doctor.objects.get_or_create(

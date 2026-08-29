@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/emergency_comms/emergency_comms.dart';
 import '../../../core/services/api_service.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../models/emergency_contact_model.dart';
 import '../../../providers/auth_provider.dart';
 
 
@@ -153,9 +155,18 @@ class _EmergencyHelpScreenState extends State<EmergencyHelpScreen> with SingleTi
       );
       return;
     }
-    final uri = Uri(scheme: 'tel', path: cleaned);
+    final uri = Uri.parse('tel:$cleaned');
     try {
-      await launchUrl(uri);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!launched && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not open phone dialer for $cleaned')),
+          );
+        }
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -168,7 +179,7 @@ class _EmergencyHelpScreenState extends State<EmergencyHelpScreen> with SingleTi
     final lat = _lat;
     final lng = _lng;
     final uri = (lat != null && lng != null)
-        ? Uri.parse('https://www.google.com/maps/search/?api=1&query=hospital&query_place_id=&center=$lat,$lng')
+        ? Uri.parse('https://www.google.com/maps/search/?api=1&query=hospital&center=$lat,$lng')
         : Uri.parse('https://www.google.com/maps/search/?api=1&query=hospital+near+me');
     // Prefer a location-biased hospital search.
     final search = (lat != null && lng != null)
@@ -189,16 +200,116 @@ class _EmergencyHelpScreenState extends State<EmergencyHelpScreen> with SingleTi
   }
 
   Future<void> _callFamily() async {
-    final user = context.read<AuthProvider>().user;
-    final fromProfile = user?.detail('emergency_contact').trim() ?? '';
-    final phone = fromProfile.isNotEmpty ? fromProfile : (user?.phoneNumber ?? '');
-    if (phone.isEmpty) {
+    final auth = context.read<AuthProvider>();
+    final user = auth.user;
+    List<EmergencyContactModel> contacts = user?.emergencyContacts ?? [];
+
+    if (contacts.isEmpty) {
+      try {
+        final res = await ApiService().get('/patients/emergency-contacts/');
+        if (res is List) {
+          contacts = res
+              .whereType<Map>()
+              .map((m) => EmergencyContactModel.fromJson(Map<String, dynamic>.from(m)))
+              .toList();
+        }
+      } catch (_) {}
+    }
+
+    if (contacts.isEmpty) {
+      final legacyPhone = user?.detail('emergency_contact_phone').trim() ?? '';
+      if (legacyPhone.isNotEmpty) {
+        await _makePhoneCall(legacyPhone);
+        return;
+      }
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No family or emergency contact saved on your profile')),
+        const SnackBar(
+          content: Text('No emergency family contact is available. Please add one to your profile.'),
+        ),
       );
       return;
     }
-    await _makePhoneCall(phone);
+
+    if (contacts.length == 1) {
+      await _makePhoneCall(contacts.first.phone);
+      return;
+    }
+
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (bottomCtx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Call Family',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Who would you like to call?',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 16),
+              ...contacts.map((c) => Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                        child: const Icon(Icons.person, color: AppColors.primary),
+                      ),
+                      title: Text(
+                        c.relationship.isNotEmpty ? '${c.name} (${c.relationship})' : c.name,
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                      subtitle: Text(
+                        c.phone,
+                        style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF475569)),
+                      ),
+                      trailing: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.call, color: Colors.green, size: 20),
+                      ),
+                      onTap: () {
+                        Navigator.pop(bottomCtx);
+                        _makePhoneCall(c.phone);
+                      },
+                    ),
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _notifyAsha() async {

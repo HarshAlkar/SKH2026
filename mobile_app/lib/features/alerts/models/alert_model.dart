@@ -8,6 +8,12 @@ class AlertModel {
   final AlertSeverity severityLevel;
   final String patientPhone;
   final String patientUserId;
+  final bool isMedicineReminder;
+  final String? medicineName;
+  final String? reminderTime;
+  final String? scheduledDate;
+  final DateTime? rawDateTime;
+  final int? medicineId;
 
   AlertModel({
     required this.patientName,
@@ -17,6 +23,12 @@ class AlertModel {
     required this.severityLevel,
     this.patientPhone = "0000000000",
     this.patientUserId = "",
+    this.isMedicineReminder = false,
+    this.medicineName,
+    this.reminderTime,
+    this.scheduledDate,
+    this.rawDateTime,
+    this.medicineId,
   });
 
   factory AlertModel.fromNotification(Map<String, dynamic> json) {
@@ -44,6 +56,34 @@ class AlertModel {
       severityLevel: level,
       patientPhone: json['patient_phone']?.toString() ?? '',
       patientUserId: json['patient_user_id']?.toString() ?? '',
+      rawDateTime: created,
+    );
+  }
+
+  factory AlertModel.fromMedicineReminder({
+    int? medicineId,
+    required String medicineName,
+    required String dosage,
+    required String reminderTime,
+    required String scheduledDate,
+    required DateTime occurrenceTime,
+  }) {
+    final bodyText = dosage.isNotEmpty
+        ? "It's time to take $medicineName ($dosage)."
+        : "It's time to take $medicineName.";
+
+    return AlertModel(
+      patientName: 'Self',
+      alertType: '💊 Medicine Reminder',
+      description: bodyText,
+      timestamp: relativeTime(occurrenceTime),
+      severityLevel: AlertSeverity.normal,
+      isMedicineReminder: true,
+      medicineName: medicineName,
+      reminderTime: reminderTime,
+      scheduledDate: scheduledDate,
+      rawDateTime: occurrenceTime,
+      medicineId: medicineId,
     );
   }
 }
@@ -51,8 +91,9 @@ class AlertModel {
 String relativeTime(DateTime? dt) {
   if (dt == null) return '';
   final diff = DateTime.now().difference(dt.toLocal());
-  if (diff.inMinutes < 1) return 'Just now';
+  if (diff.isNegative || diff.inSeconds < 45) return 'Just now';
   if (diff.inMinutes < 60) return '${diff.inMinutes} mins ago';
   if (diff.inHours < 24) return '${diff.inHours} hours ago';
+  if (diff.inDays == 1) return 'Yesterday';
   return '${diff.inDays} days ago';
 }

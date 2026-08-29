@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/user_sidebar.dart';
 import '../services/doctor_service.dart';
@@ -62,25 +61,13 @@ class _DoctorConsultScreenState extends State<DoctorConsultScreen> {
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-        title: Column(
-          children: [
-            const Text(
-              'Consult a Doctor',
-              style: TextStyle(
-                color: Color(0xFF1E293B),
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-            Text(
-              AppConstants.appName,
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 12,
-                fontWeight: FontWeight.normal,
-              ),
-            ),
-          ],
+        title: const Text(
+          'Consult a Doctor',
+          style: TextStyle(
+            color: Color(0xFF1E293B),
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
         ),
         centerTitle: true,
       ),

@@ -8,20 +8,22 @@ import '../../../providers/medicine_provider.dart';
 import '../../../models/medicine_model.dart';
 
 class MedicineTrackerScreen extends StatefulWidget {
-  const MedicineTrackerScreen({super.key});
+  final DateTime? initialDate;
+  const MedicineTrackerScreen({super.key, this.initialDate});
 
   @override
   State<MedicineTrackerScreen> createState() => _MedicineTrackerScreenState();
 }
 
 class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate;
   late List<DateTime> _weekDates;
 
   @override
   void initState() {
     super.initState();
-    _weekDates = _generateWeekDisplayDates(DateTime.now());
+    _selectedDate = widget.initialDate ?? DateTime.now();
+    _weekDates = _generateWeekDisplayDates(_selectedDate);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MedicineProvider>().loadMedicines();
     });
@@ -342,9 +344,37 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      med.medicineName,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            med.medicineName,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                          ),
+                        ),
+                        if (med.frequency.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: med.frequency.toLowerCase() == 'once'
+                                  ? const Color(0xFFFEF3C7)
+                                  : const Color(0xFFE0F2FE),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              med.frequency,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: med.frequency.toLowerCase() == 'once'
+                                    ? const Color(0xFFD97706)
+                                    : AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -362,11 +392,52 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
                 ),
               ),
               IconButton(
+                tooltip: provider.isTakenOn(med.id!, _selectedDate) ? 'Mark as not taken' : 'Mark as taken',
                 icon: Icon(
                   provider.isTakenOn(med.id!, _selectedDate) ? Icons.check_circle : Icons.radio_button_unchecked,
                   color: provider.isTakenOn(med.id!, _selectedDate) ? AppColors.primary : Colors.grey.shade300,
                 ),
                 onPressed: () => provider.toggleTakenOn(med.id!, _selectedDate),
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 20),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onSelected: (value) async {
+                  if (value == 'edit') {
+                    final result = await Navigator.pushNamed(
+                      context,
+                      AppRoutes.addMedicine,
+                      arguments: {'medicine': med, 'selectedDate': _selectedDate},
+                    );
+                    if (result == true && mounted) {
+                      provider.loadMedicines();
+                    }
+                  } else if (value == 'delete') {
+                    _confirmDelete(context, med, provider);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined, size: 18, color: Color(0xFF1E293B)),
+                        SizedBox(width: 10),
+                        Text('Edit', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                        SizedBox(width: 10),
+                        Text('Delete', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.redAccent)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -375,11 +446,52 @@ class _MedicineTrackerScreenState extends State<MedicineTrackerScreen> {
     );
   }
 
+  void _confirmDelete(BuildContext context, MedicineModel med, MedicineProvider provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete this medicine?', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to remove ${med.medicineName} from your schedule?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (med.id != null) {
+                provider.removeMedicine(med.id!);
+              }
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${med.medicineName} deleted'),
+                  backgroundColor: Colors.redAccent,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAddMedicineButton() {
     return FloatingActionButton.extended(
       onPressed: () async {
-        final result = await Navigator.pushNamed(context, AppRoutes.addMedicine);
-        if (result == true) {
+        final result = await Navigator.pushNamed(
+          context,
+          AppRoutes.addMedicine,
+          arguments: _selectedDate,
+        );
+        if (result == true && mounted) {
           context.read<MedicineProvider>().loadMedicines();
         }
       },

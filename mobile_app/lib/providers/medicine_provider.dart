@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/medicine_model.dart';
 import '../core/services/medicine_db_service.dart';
 import '../core/services/alarm_service.dart';
+import '../core/services/notification_service.dart';
 import '../core/services/storage_service.dart';
 import '../core/sync/offline_api.dart';
 import 'package:intl/intl.dart';
@@ -47,10 +48,7 @@ class MedicineProvider extends ChangeNotifier {
   }
 
   List<MedicineModel> getMedicinesForDate(DateTime date) {
-    final dateStr = DateFormat('yyyy-MM-dd').format(date);
-    return _medicines.where((m) {
-      return m.startDate.compareTo(dateStr) <= 0 && m.endDate.compareTo(dateStr) >= 0;
-    }).toList();
+    return _medicines.where((m) => m.isScheduledForDate(date)).toList();
   }
 
   String _takenKey(int id, DateTime date) =>
@@ -103,8 +101,7 @@ class MedicineProvider extends ChangeNotifier {
     final todayStr = DateFormat('yyyy-MM-dd').format(now);
     
     for (var med in _medicines) {
-      // Only schedule if medicine schedule hasn't ended
-      if (med.endDate.compareTo(todayStr) >= 0) {
+      if (med.endDate.compareTo(todayStr) >= 0 || med.frequency.toLowerCase() == 'once') {
         _scheduleAlarm(med);
       }
     }
@@ -120,45 +117,18 @@ class MedicineProvider extends ChangeNotifier {
 
   void _scheduleAlarm(MedicineModel med) {
     try {
-      final now = DateTime.now();
-      DateFormat format = DateFormat("hh:mm a");
-      DateTime parsed;
-      
-      try {
-        parsed = format.parse(med.reminderTime);
-      } catch (e) {
-        // Fallback to HH:mm (24h)
-        try {
-          final parts = med.reminderTime.split(':');
-          parsed = DateTime(now.year, now.month, now.day, int.parse(parts[0]), int.parse(parts[1]));
-        } catch (e2) {
-          // Fallback to current time if format is completely broken
-          parsed = now;
-        }
-      }
-
-      DateTime alarmTime = DateTime(now.year, now.month, now.day, parsed.hour, parsed.minute);
-
-      // If time has passed today, schedule for tomorrow
-      if (alarmTime.isBefore(now)) {
-        alarmTime = alarmTime.add(const Duration(days: 1));
-      }
-      
-      // Ensure alarmTime is within medicine end date
-      final endDate = DateFormat('yyyy-MM-dd').parse(med.endDate);
-      final alarmDate = DateTime(alarmTime.year, alarmTime.month, alarmTime.day);
-      
-      if (alarmDate.isBefore(endDate.add(const Duration(days: 1)))) {
-        AlarmService.scheduleMedicineAlarm(
-          med.id ?? med.hashCode,
-          alarmTime,
-          med.medicineName,
-          med.instructions,
-          med.dosage,
-        );
-      }
+      NotificationService().scheduleMedicineScheduleReminders(
+        id: med.id ?? med.hashCode,
+        name: med.medicineName,
+        dosage: med.dosage,
+        frequency: med.frequency,
+        startDateStr: med.startDate,
+        endDateStr: med.endDate,
+        reminderTimeStr: med.reminderTime,
+        instructions: med.instructions,
+      );
     } catch (e) {
-      debugPrint('Error scheduling alarm for ${med.medicineName}: $e');
+      debugPrint('Error scheduling notifications for ${med.medicineName}: $e');
     }
   }
 
@@ -194,6 +164,32 @@ class MedicineProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateMedicine(MedicineModel medicine) async {
+    final index = _medicines.indexWhere((m) => m.id == medicine.id);
+    if (index != -1) {
+      _medicines[index] = medicine;
+      _updateTodaysMedicines();
+      notifyListeners();
+
+      // Update in Local DB
+      await _dbService.update(medicine);
+
+      // Reschedule alarms & notifications: cancels old and schedules new
+      _scheduleAlarm(medicine);
+
+      // Update Remote
+      try {
+        await _apiService.put('/medicines/update/${medicine.id}/', body: medicine.toJson());
+      } catch (e) {
+        debugPrint('Remote update failed: $e');
+      }
+    }
+  }
+
+  Future<void> editMedicine(MedicineModel medicine) async {
+    await updateMedicine(medicine);
+  }
+
   Future<void> syncWithBackend() async {
     try {
       final raw = await _apiService.get('/medicines/user/');
@@ -203,8 +199,10 @@ class MedicineProvider extends ChangeNotifier {
       bool hasChanges = false;
       for (var remoteMed in remoteMeds) {
         // Check if exists locally
-        final localIndex = _medicines.indexWhere((m) => m.medicineName == remoteMed.medicineName && m.reminderTime == remoteMed.reminderTime);
-        
+        final localIndex = _medicines.indexWhere((m) =>
+            m.id == remoteMed.id ||
+            (m.medicineName == remoteMed.medicineName && m.reminderTime == remoteMed.reminderTime));
+
         if (localIndex == -1) {
           // Add to local
           final id = await _dbService.insert(remoteMed);
@@ -212,9 +210,24 @@ class MedicineProvider extends ChangeNotifier {
           _medicines.add(newMed);
           _scheduleAlarm(newMed);
           hasChanges = true;
+        } else {
+          // Update local if frequency or dates changed
+          final existing = _medicines[localIndex];
+          if (existing.frequency != remoteMed.frequency ||
+              existing.startDate != remoteMed.startDate ||
+              existing.endDate != remoteMed.endDate) {
+            final updatedMed = MedicineModel.fromMap({
+              ...remoteMed.toMap(),
+              'id': existing.id ?? remoteMed.id,
+            });
+            _medicines[localIndex] = updatedMed;
+            await _dbService.update(updatedMed);
+            _scheduleAlarm(updatedMed);
+            hasChanges = true;
+          }
         }
       }
-      
+
       if (hasChanges) {
         _updateTodaysMedicines();
         notifyListeners();
@@ -230,6 +243,7 @@ class MedicineProvider extends ChangeNotifier {
     notifyListeners();
 
     await _dbService.delete(id);
+    await NotificationService().cancelMedicineReminders(id);
     await AlarmService.cancelAlarm(id);
 
     try {

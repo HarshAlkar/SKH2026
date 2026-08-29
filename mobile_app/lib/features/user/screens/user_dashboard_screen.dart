@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/medicine_provider.dart';
 import '../widgets/user_sidebar.dart';
 import '../../profile/widgets/profile_avatar.dart';
 
@@ -33,6 +34,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
         context.read<ConsultationProvider>().initSignaling(user.id.toString());
       }
       PermissionDialogService.ensureNotifications(context);
+      context.read<MedicineProvider>().loadMedicines();
       _loadAssignedAsha();
     });
   }
@@ -114,8 +116,7 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
                         const SizedBox(height: 16),
                         _buildQuickActionsGrid(),
                         const SizedBox(height: 24),
-                        if (_showReminder) _buildMedicineReminder(),
-                        const SizedBox(height: 24),
+                        _buildMedicineReminder(),
                         const Text(
                           "Today's Health Tips",
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
@@ -354,52 +355,75 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   }
 
   Widget _buildMedicineReminder() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    if (!_showReminder) return const SizedBox.shrink();
+    return Consumer<MedicineProvider>(
+      builder: (context, medProvider, _) {
+        final todaysMeds = medProvider.todaysMedicines;
+        if (todaysMeds.isEmpty) return const SizedBox.shrink();
+
+        // Find next untaken medicine for today
+        final now = DateTime.now();
+        final upcoming = todaysMeds.where((m) => !medProvider.isTakenOn(m.id ?? 0, now)).toList();
+        final med = upcoming.isNotEmpty ? upcoming.first : null;
+        if (med == null) return const SizedBox.shrink();
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.medication_outlined, color: Colors.blue, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Paracetamol reminder',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          child: Row(
+            children: [
+              InkWell(
+                onTap: () => Navigator.pushNamed(context, AppRoutes.medicineTracker),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.medication_outlined, color: AppColors.primary, size: 24),
                 ),
-                Text(
-                  'Scheduled at 8:00 PM',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: InkWell(
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.medicineTracker),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${med.medicineName} reminder',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1E293B)),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Scheduled at ${med.reminderTime}${med.dosage.isNotEmpty ? ' • ${med.dosage}' : ''}',
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              ),
+              TextButton(
+                onPressed: () => setState(() => _showReminder = false),
+                child: const Text('DISMISS', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => setState(() => _showReminder = false),
-            child: const Text('DISMISS', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

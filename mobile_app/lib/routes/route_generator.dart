@@ -23,6 +23,7 @@ import '../features/user/screens/my_prescriptions_screen.dart';
 import '../features/user/screens/emergency_help_screen.dart';
 import '../features/user/screens/health_tips_screen.dart';
 import '../features/user/screens/patient_alerts_screen.dart';
+import '../models/medicine_model.dart';
 
 // ASHA Feature Screens
 import '../features/reports/screens/village_health_report_screen.dart';
@@ -85,9 +86,25 @@ class RouteGenerator {
       case AppRoutes.symptomChecker:
         return _fadeRoute(const SymptomCheckerScreen());
       case AppRoutes.medicineTracker:
-        return _fadeRoute(const MedicineTrackerScreen());
+        final initialDate = settings.arguments is DateTime
+            ? settings.arguments as DateTime
+            : (settings.arguments is Map && (settings.arguments as Map)['selectedDate'] is DateTime
+                ? (settings.arguments as Map)['selectedDate'] as DateTime
+                : null);
+        return _fadeRoute(MedicineTrackerScreen(initialDate: initialDate));
       case AppRoutes.addMedicine:
-        return _fadeRoute(const AddMedicineScreen());
+        final initialDate = settings.arguments is DateTime
+            ? settings.arguments as DateTime
+            : (settings.arguments is Map && (settings.arguments as Map)['selectedDate'] is DateTime
+                ? (settings.arguments as Map)['selectedDate'] as DateTime
+                : null);
+        MedicineModel? medicine;
+        if (settings.arguments is MedicineModel) {
+          medicine = settings.arguments as MedicineModel;
+        } else if (settings.arguments is Map && (settings.arguments as Map)['medicine'] is MedicineModel) {
+          medicine = (settings.arguments as Map)['medicine'] as MedicineModel;
+        }
+        return _fadeRoute(AddMedicineScreen(initialDate: initialDate, medicine: medicine));
       case AppRoutes.medicineSchedule:
         return _fadeRoute(const FullScheduleScreen());
       case AppRoutes.medicineCall:

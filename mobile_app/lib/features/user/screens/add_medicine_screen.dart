@@ -8,7 +8,9 @@ import '../../../models/medicine_model.dart';
 import '../../../providers/medicine_provider.dart';
 
 class AddMedicineScreen extends StatefulWidget {
-  const AddMedicineScreen({super.key});
+  final DateTime? initialDate;
+  final MedicineModel? medicine;
+  const AddMedicineScreen({super.key, this.initialDate, this.medicine});
 
   @override
   State<AddMedicineScreen> createState() => _AddMedicineScreenState();
@@ -18,21 +20,37 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _dosageController = TextEditingController();
-  final _frequencyController = TextEditingController();
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
   final _timeController = TextEditingController();
   final _instructionsController = TextEditingController();
 
+  String _selectedFrequency = 'Daily'; // 'Once' or 'Daily'
   List<String> _medicineSuggestions = [];
   bool _isLoading = false;
+
+  bool get isEditing => widget.medicine != null;
 
   @override
   void initState() {
     super.initState();
     _loadMedicineDataset();
-    _startDateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    _endDateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    if (isEditing) {
+      final med = widget.medicine!;
+      _nameController.text = med.medicineName;
+      _dosageController.text = med.dosage;
+      _selectedFrequency = med.frequency.trim().toLowerCase() == 'once' ? 'Once' : 'Daily';
+      _startDateController.text = med.startDate;
+      _endDateController.text = med.endDate.isNotEmpty ? med.endDate : med.startDate;
+      _timeController.text = med.reminderTime;
+      _instructionsController.text = med.instructions;
+    } else {
+      final defaultDate = widget.initialDate ?? DateTime.now();
+      final dateStr = DateFormat('yyyy-MM-dd').format(defaultDate);
+      _startDateController.text = dateStr;
+      _endDateController.text = dateStr;
+    }
   }
 
   Future<void> _loadMedicineDataset() async {
@@ -47,16 +65,28 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     }
   }
 
-  Future<void> _selectDate(BuildContext context, TextEditingController controller) async {
+  Future<void> _selectDate(BuildContext context, TextEditingController controller, {bool isOnce = false}) async {
+    DateTime initial = widget.initialDate ?? DateTime.now();
+    try {
+      if (controller.text.isNotEmpty) {
+        initial = DateFormat('yyyy-MM-dd').parse(controller.text);
+      }
+    } catch (_) {}
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 30)),
+      initialDate: initial,
+      firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) {
+      final formatted = DateFormat('yyyy-MM-dd').format(picked);
       setState(() {
-        controller.text = DateFormat('yyyy-MM-dd').format(picked);
+        controller.text = formatted;
+        if (isOnce || _selectedFrequency == 'Once') {
+          _startDateController.text = formatted;
+          _endDateController.text = formatted;
+        }
       });
     }
   }
@@ -79,29 +109,56 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final newMed = MedicineModel(
-        medicineName: _nameController.text,
-        dosage: _dosageController.text,
-        frequency: _frequencyController.text,
-        startDate: _startDateController.text,
-        endDate: _endDateController.text,
-        reminderTime: _timeController.text,
-        instructions: _instructionsController.text,
-        createdAt: DateTime.now(),
-      );
+      final startDate = _startDateController.text.trim();
+      final endDate = _selectedFrequency == 'Once' ? startDate : _endDateController.text.trim();
 
-      await context.read<MedicineProvider>().addMedicine(newMed);
-      
-      if (mounted) {
-        Navigator.pop(context, true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Medicine added successfully')),
+      if (isEditing) {
+        final updatedMed = MedicineModel(
+          id: widget.medicine!.id,
+          medicineName: _nameController.text.trim(),
+          dosage: _dosageController.text.trim(),
+          frequency: _selectedFrequency,
+          startDate: startDate,
+          endDate: endDate,
+          reminderTime: _timeController.text.trim(),
+          instructions: _instructionsController.text.trim(),
+          isTaken: widget.medicine!.isTaken,
+          createdAt: widget.medicine!.createdAt,
         );
+
+        await context.read<MedicineProvider>().updateMedicine(updatedMed);
+
+        if (mounted) {
+          Navigator.pop(context, true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Medicine updated successfully'), backgroundColor: Colors.green),
+          );
+        }
+      } else {
+        final newMed = MedicineModel(
+          medicineName: _nameController.text.trim(),
+          dosage: _dosageController.text.trim(),
+          frequency: _selectedFrequency,
+          startDate: startDate,
+          endDate: endDate,
+          reminderTime: _timeController.text.trim(),
+          instructions: _instructionsController.text.trim(),
+          createdAt: DateTime.now(),
+        );
+
+        await context.read<MedicineProvider>().addMedicine(newMed);
+        
+        if (mounted) {
+          Navigator.pop(context, true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Medicine added successfully'), backgroundColor: Colors.green),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -114,7 +171,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Add Medicine', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(isEditing ? 'Edit Medicine' : 'Add Medicine', style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF1E293B),
         elevation: 0,
@@ -126,11 +183,14 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Medicine Details', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(
+                isEditing ? 'Edit Medicine Details' : 'Medicine Details',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+              ),
               const SizedBox(height: 24),
               
               // Autocomplete Medicine Name
-              const Text('Medicine Name', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey)),
+              const Text('Medicine Name', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
               const SizedBox(height: 8),
               Autocomplete<String>(
                 optionsBuilder: (TextEditingValue textEditingValue) {
@@ -154,26 +214,121 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
               ),
 
               const SizedBox(height: 20),
+              _buildField('Dosage', 'e.g. 1 Tablet / 5ml', _dosageController),
+              
+              const SizedBox(height: 20),
+              // Frequency Selection
+              const Text('Frequency', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: _buildField('Dosage', 'e.g. 1 Tablet', _dosageController)),
-                  const SizedBox(width: 16),
-                  Expanded(child: _buildField('Frequency', 'e.g. Twice Daily', _frequencyController)),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedFrequency = 'Once';
+                          _endDateController.text = _startDateController.text;
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: _selectedFrequency == 'Once' ? AppColors.primary.withOpacity(0.1) : Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _selectedFrequency == 'Once' ? AppColors.primary : Colors.grey.shade200,
+                            width: _selectedFrequency == 'Once' ? 1.5 : 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _selectedFrequency == 'Once' ? Icons.radio_button_checked : Icons.radio_button_off,
+                              size: 18,
+                              color: _selectedFrequency == 'Once' ? AppColors.primary : Colors.grey,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Once',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: _selectedFrequency == 'Once' ? AppColors.primary : const Color(0xFF1E293B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => setState(() => _selectedFrequency = 'Daily'),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: _selectedFrequency == 'Daily' ? AppColors.primary.withOpacity(0.1) : Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _selectedFrequency == 'Daily' ? AppColors.primary : Colors.grey.shade200,
+                            width: _selectedFrequency == 'Daily' ? 1.5 : 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _selectedFrequency == 'Daily' ? Icons.radio_button_checked : Icons.radio_button_off,
+                              size: 18,
+                              color: _selectedFrequency == 'Daily' ? AppColors.primary : Colors.grey,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Daily',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: _selectedFrequency == 'Daily' ? AppColors.primary : const Color(0xFF1E293B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               
               const SizedBox(height: 20),
-              Row(
-                children: [
-                   Expanded(
-                    child: _buildClickableField('Start Date', _startDateController, () => _selectDate(context, _startDateController)),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildClickableField('End Date', _endDateController, () => _selectDate(context, _endDateController)),
-                  ),
-                ],
-              ),
+              // Dates based on Frequency
+              if (_selectedFrequency == 'Once')
+                _buildClickableField(
+                  'Date',
+                  _startDateController,
+                  () => _selectDate(context, _startDateController, isOnce: true),
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildClickableField(
+                        'Start Date',
+                        _startDateController,
+                        () => _selectDate(context, _startDateController),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildClickableField(
+                        'End Date',
+                        _endDateController,
+                        () => _selectDate(context, _endDateController),
+                      ),
+                    ),
+                  ],
+                ),
 
               const SizedBox(height: 20),
               _buildClickableField('Reminder Time', _timeController, () => _selectTime(context), icon: Icons.access_time),
@@ -193,7 +348,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                   ),
                   child: _isLoading 
                       ? const CircularProgressIndicator(color: Colors.white) 
-                      : const Text('Save Schedule', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      : Text(isEditing ? 'Update Schedule' : 'Save Schedule', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
             ],
@@ -209,7 +364,9 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       filled: true,
       fillColor: Colors.grey.shade50,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
     );
   }
 
@@ -217,7 +374,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.grey)),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
@@ -233,7 +390,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.grey)),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF64748B))),
         const SizedBox(height: 8),
         InkWell(
           onTap: onTap,

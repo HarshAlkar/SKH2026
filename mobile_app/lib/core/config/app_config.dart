@@ -3,7 +3,7 @@ import '../services/storage_service.dart';
 class AppConfig {
   static const String defaultHost = String.fromEnvironment(
     'API_HOST',
-    defaultValue: 'https://skh2026.onrender.com',
+    defaultValue: 'http://127.0.0.1:8000',
   );
   static const int apiPort = 8000;
   static const int signalingPort = 5000;
@@ -36,8 +36,9 @@ class AppConfig {
   }
 
   static String get origin {
-    final raw = host.replaceAll(RegExp(r'/$'), '');
+    var raw = host.trim().replaceAll(RegExp(r'/$'), '');
     if (_isAbsolute) return raw;
+    if (raw.contains(':')) return 'http://$raw';
     return 'http://$raw:$apiPort';
   }
 
@@ -45,6 +46,7 @@ class AppConfig {
 
   static String get displayHost {
     if (_isAbsolute) return origin;
+    if (host.contains(':')) return host;
     return '$host:$apiPort';
   }
 
