@@ -521,7 +521,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tabSkin => 'Skin photo';
 
   @override
-  String get skinDesc => 'Take or choose a clear photo of the affected skin';
+  String get skinDesc =>
+      'Select skin symptoms to screen for possible conditions';
 
   @override
   String get takePhoto => 'Take Photo';
@@ -543,7 +544,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Camera permission was denied. You can still choose a photo from Gallery.';
 
   @override
-  String get skinSymptoms => 'Or select skin symptoms from dataset';
+  String get skinSymptoms => 'Select skin symptoms';
 
   @override
   String get skinDisclaimer =>
@@ -610,7 +611,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Speech recognition not available or permission denied';
 
   @override
-  String get skinFirst => 'Take a skin photo or select skin symptoms';
+  String get skinFirst => 'Select at least one skin symptom';
 
   @override
   String get severityLow => 'Low';

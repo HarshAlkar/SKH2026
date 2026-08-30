@@ -4180,7 +4180,7 @@
   "cv_f1_macro_trainval": 1.0,
   "model_size_bytes": 63253,
   "tflite_size_bytes": 33632,
-  "inference_ms_approx": 0.0030817187507636845,
+  "inference_ms_approx": 0.0033967187846428715,
   "offline_compatible": true,
   "artifacts": {
     "pickle": "C:\\Users\\HARSH\\OneDrive\\Desktop\\HARSH\\SKH\\SKH2026\\ai_engine\\models\\trained_model.pkl",

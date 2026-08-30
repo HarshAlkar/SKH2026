@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../../core/services/locale_controller.dart';
-import '../escalation_policy.dart';
-import '../screening_disclaimer.dart';
-import '../screening_health_steps.dart';
+import 'package:hs053/core/theme/app_colors.dart';
+import 'package:hs053/core/services/locale_controller.dart';
+import 'package:hs053/features/one_health/escalation_policy.dart';
+import 'package:hs053/features/one_health/screening_disclaimer.dart';
+import 'package:hs053/features/one_health/screening_health_steps.dart';
 
 /// Consistent screening result layout across human / skin / livestock / child.
 class ScreeningResultView extends StatelessWidget {
@@ -24,10 +24,13 @@ class ScreeningResultView extends StatelessWidget {
   final VoidCallback? onAskAi;
   final VoidCallback? onContactPrimary;
   final VoidCallback? onContactSecondary;
+  final VoidCallback? onBookDoctor;
   final String? primaryContactLabel;
   final String? secondaryContactLabel;
+  final String? bookDoctorLabel;
   final IconData? primaryContactIcon;
   final IconData? secondaryContactIcon;
+  final IconData? bookDoctorIcon;
 
   const ScreeningResultView({
     super.key,
@@ -47,10 +50,13 @@ class ScreeningResultView extends StatelessWidget {
     this.onAskAi,
     this.onContactPrimary,
     this.onContactSecondary,
+    this.onBookDoctor,
     this.primaryContactLabel,
     this.secondaryContactLabel,
+    this.bookDoctorLabel,
     this.primaryContactIcon,
     this.secondaryContactIcon,
+    this.bookDoctorIcon,
   });
 
   Color get _bandColor {
@@ -236,7 +242,7 @@ class ScreeningResultView extends StatelessWidget {
           if (confidenceIsFallback) ...[
             const SizedBox(height: 10),
             Text(
-              'Fallback screening score — not model probabilities',
+              'Fallback screening score � not model probabilities',
               style: TextStyle(
                 color: Colors.orange.shade800,
                 fontWeight: FontWeight.w600,
@@ -298,7 +304,7 @@ class ScreeningResultView extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('•  ', style: TextStyle(color: Colors.grey.shade700)),
+                  Text('�  ', style: TextStyle(color: Colors.grey.shade700)),
                   Expanded(
                     child: Text(
                       step,
@@ -336,7 +342,7 @@ class ScreeningResultView extends StatelessWidget {
           if (queuedOffline) ...[
             const SizedBox(height: 8),
             const Text(
-              'Saved offline — will sync when internet returns.',
+              'Saved offline � will sync when internet returns.',
               style: TextStyle(
                 fontSize: 12,
                 color: AppColors.primary,
@@ -395,6 +401,26 @@ class ScreeningResultView extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF0F766E),
                   side: const BorderSide(color: Color(0xFF0F766E)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          if (showEscalate && onBookDoctor != null) ...[
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: onBookDoctor,
+                icon: Icon(bookDoctorIcon ?? Icons.event_available),
+                label: Text(bookDoctorLabel ?? 'Book Doctor'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0F766E),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -468,7 +494,7 @@ class _LivestockSeverityMeter extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       EscalationPolicy.farmerFacingLabel(_steps[i])
-                          .split('—')
+                          .split('�')
                           .first
                           .trim()
                           .split(' ')

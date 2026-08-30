@@ -68,12 +68,12 @@
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
-        <!-- Maps SDK for Android only. Restrict this key by package name + SHA-1.
-             Do NOT put your Places Web Service key here — that belongs in
-             backend/django_api/.env as GOOGLE_PLACES_API_KEY. -->
+        <!-- Maps SDK for Android (tiles + my-location). Enable "Maps SDK for Android" in GCP.
+             Restrict this key: package com.vitalreach.app + your debug/release SHA-1.
+             Places nearby search stays on Django GOOGLE_PLACES_API_KEY (server key). -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyB3quMtXIWlnX5IYCsi23xiAjdvQUZy2bs"/>
+            android:value="AIzaSyCumVZ_km61Iu2-sQcpoH42b_uc_szeW3c"/>
 
         <meta-data
             android:name="flutterEmbedding"
@@ -100,6 +100,13 @@
         <intent>
             <action android:name="android.media.action.IMAGE_CAPTURE" />
         </intent>
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.RECOGNIZE_SPEECH" />
+        </intent>
+        <package android:name="com.google.android.googlequicksearchbox" />
     </queries>
 
 </manifest>

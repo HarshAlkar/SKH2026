@@ -9,7 +9,9 @@ from ai_engine.utils import dataset_path, model_path, normalize_symptom
 
 _MODEL_BUNDLE = None
 
-CONFIDENCE_FLOOR = 0.35
+# Headline is "elevated-risk" when top-1 is weak or top-2 are close (matches on-device MLP).
+AMBIGUOUS_MAX = 0.45
+AMBIGUOUS_GAP = 0.08
 
 
 # Map user language to dataset tokens. Do not upgrade plain fever to high_fever.
@@ -157,10 +159,16 @@ def _meets_rare_requirements(disease, tokens):
     if not required:
         return True
     present = _token_set(tokens)
-    return bool(present & required)
+    hits = present & required
+    if not hits:
+        return False
+    # Heart attack needs chest pain plus another classic sign — chest_pain alone is too weak.
+    if "heart attack" in key:
+        return "chest_pain" in present and bool(present & {"sweating", "breathlessness"})
+    return True
 
 
-def _undetermined(tokens, extras=None):
+def _undetermined(tokens, extras=None, source="symptom_ml"):
     present = _token_set(tokens)
     if present and present.issubset(COMMON_RESPIRATORY | {"vomiting", "nausea"}):
         disease = "Possible viral illness"
@@ -170,6 +178,7 @@ def _undetermined(tokens, extras=None):
         disease = "Undetermined"
         severity = "Low"
         confidence = 0.2
+    trained = source == "symptom_ml"
     payload = {
         "disease": disease,
         "severity": severity,
@@ -179,14 +188,15 @@ def _undetermined(tokens, extras=None):
         ],
         "disclaimer": HUMAN_DISCLAIMER,
         "message": screening_wording(disease, "HUMAN"),
-        "source": "symptom_ml",
+        "source": source,
+        "score_type": "model_probability" if trained else "symptom_match_fallback",
     }
     if extras:
         payload.update(extras)
     return payload
 
 
-def _sanitize(result, tokens):
+def _sanitize(result, tokens, source="symptom_ml"):
     predictions = list(result.get("top_predictions") or [])
     if result.get("disease") and not predictions:
         predictions = [
@@ -201,7 +211,7 @@ def _sanitize(result, tokens):
     for row in predictions:
         name = str(row.get("disease") or "")
         score = float(row.get("confidence") or 0)
-        if score < CONFIDENCE_FLOOR:
+        if score <= 0:
             continue
         if not _meets_rare_requirements(name, tokens):
             continue
@@ -213,27 +223,36 @@ def _sanitize(result, tokens):
     only_common = bool(present) and present.issubset(COMMON_RESPIRATORY)
 
     if only_common:
-        return _undetermined(tokens)
+        return _undetermined(tokens, source=source)
 
     if not safe:
-        return _undetermined(tokens)
+        return _undetermined(tokens, source=source)
 
     best = safe[0]
+    max_p = float(best["confidence"])
+    second = float(safe[1]["confidence"]) if len(safe) > 1 else 0.0
+    ambiguous = max_p < AMBIGUOUS_MAX or (max_p - second) < AMBIGUOUS_GAP
+    headline = "Elevated-risk screening result" if ambiguous else best["disease"]
+    trained = source == "symptom_ml"
     return {
         "disease": best["disease"],
+        "possible_condition": headline,
+        "disease_display": headline,
         "severity": best["severity"],
         "confidence": best["confidence"],
         "top_predictions": safe[:3],
+        "ambiguous": ambiguous,
         "disclaimer": HUMAN_DISCLAIMER,
-        "message": screening_wording(best["disease"], "HUMAN"),
-        "source": "symptom_ml",
+        "message": screening_wording(headline, "HUMAN"),
+        "source": source,
+        "score_type": "model_probability" if trained else "symptom_match_fallback",
     }
 
 
 def _csv_fallback(tokens):
     csv_path = dataset_path()
     if not os.path.exists(csv_path):
-        return _undetermined(tokens)
+        return _undetermined(tokens, source="dataset_csv")
 
     df = pd.read_csv(csv_path)
     disease_scores = {}
@@ -253,7 +272,7 @@ def _csv_fallback(tokens):
             disease_scores[disease] = max(disease_scores.get(disease, 0), coverage)
 
     if not disease_scores:
-        return _undetermined(tokens)
+        return _undetermined(tokens, source="dataset_csv")
 
     ranked = sorted(disease_scores.items(), key=lambda item: item[1], reverse=True)[:5]
     top_predictions = [
@@ -270,7 +289,7 @@ def _csv_fallback(tokens):
         "confidence": top_predictions[0]["confidence"],
         "top_predictions": top_predictions,
     }
-    return _sanitize(raw, tokens)
+    return _sanitize(raw, tokens, source="dataset_csv")
 
 
 def predict_symptoms(symptoms_list):

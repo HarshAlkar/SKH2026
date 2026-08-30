@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../services/chat_service.dart';
 import 'chat_screen.dart';
+import '../widgets/chat_image_picker.dart';
 
 class ChatInboxScreen extends StatefulWidget {
   const ChatInboxScreen({super.key});
@@ -143,7 +144,7 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(
-                    last?['text']?.toString() ?? 'No messages',
+                    chatPreviewText(last),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

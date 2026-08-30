@@ -1,9 +1,12 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from django.db.models import Q
 from django.utils import timezone
+from django.core.exceptions import ValidationError as DjangoValidationError
 from apps.users.models import User
+from apps.common.uploads import validate_image_upload, safe_upload_name
 from .models import ChatThread, ChatMessage, ChatThreadHide
 from .serializers import ChatThreadSerializer, ChatMessageSerializer
 
@@ -20,6 +23,7 @@ def _ordered_ids(id1, id2):
 
 class ChatThreadViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def _get_thread(self, request, pk):
         return ChatThread.objects.get(
@@ -85,17 +89,35 @@ class ChatThreadViewSet(viewsets.ViewSet):
         if request.method == 'GET':
             qs = thread.messages.select_related('sender').order_by('created_at')
             thread.messages.filter(is_read=False).exclude(sender=user).update(is_read=True)
-            serializer = ChatMessageSerializer(qs, many=True)
+            serializer = ChatMessageSerializer(qs, many=True, context={'request': request})
             return Response(serializer.data)
 
         text = (request.data.get('text') or '').strip()
-        if not text:
-            return Response({'error': 'text is required'}, status=status.HTTP_400_BAD_REQUEST)
+        uploaded = request.FILES.get('image') or request.FILES.get('file')
+        if not text and uploaded is None:
+            return Response(
+                {'error': 'text or image is required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        message = ChatMessage.objects.create(thread=thread, sender=user, text=text)
+        image_file = None
+        if uploaded is not None:
+            try:
+                ext = validate_image_upload(uploaded)
+            except DjangoValidationError as exc:
+                return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+            uploaded.name = safe_upload_name(ext, prefix='chat')
+            image_file = uploaded
+
+        message = ChatMessage.objects.create(
+            thread=thread,
+            sender=user,
+            text=text or ('[Photo]' if image_file else ''),
+            image=image_file,
+        )
         thread.updated_at = timezone.now()
         thread.save(update_fields=['updated_at'])
-        serializer = ChatMessageSerializer(message)
+        serializer = ChatMessageSerializer(message, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'], url_path='hide')

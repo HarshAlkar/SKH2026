@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -10,6 +11,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../providers/auth_provider.dart';
 import '../../user/services/doctor_service.dart';
 import '../../chat/services/chat_service.dart';
+import '../../chat/widgets/chat_image_picker.dart';
 import '../../../main.dart';
 
 class CallScreen extends StatefulWidget {
@@ -36,11 +38,13 @@ class _ChatLine {
   final String text;
   final String senderId;
   final bool pending;
+  final String? imageUrl;
 
   const _ChatLine({
     required this.text,
     required this.senderId,
     this.pending = false,
+    this.imageUrl,
   });
 }
 
@@ -207,12 +211,18 @@ class _CallScreenState extends State<CallScreen> {
     final senderId = data['senderId']?.toString() ?? '';
     if (senderId == _myId) return;
     final text = data['text']?.toString() ?? '';
-    if (text.isEmpty) return;
+    final imageUrl = data['imageUrl']?.toString() ?? '';
+    if (text.isEmpty && imageUrl.isEmpty) return;
     setState(() {
-      _messages.add(_ChatLine(text: text, senderId: senderId));
+      _messages.add(_ChatLine(text: text, senderId: senderId, imageUrl: imageUrl.isEmpty ? null : imageUrl));
     });
     _scrollChat();
-    _persistChatLine(text, senderId: int.tryParse(senderId), outgoing: false);
+    _persistChatLine(
+      text.isEmpty ? '[Photo]' : text,
+      senderId: int.tryParse(senderId),
+      outgoing: false,
+      imageUrl: imageUrl.isEmpty ? null : imageUrl,
+    );
   }
 
   void _flushPendingMessages() {
@@ -304,27 +314,59 @@ class _CallScreenState extends State<CallScreen> {
     _leaveCall(notifyPeer: true);
   }
 
-  void _sendChat() {
+  void _sendChat({File? image}) {
     final text = _chatController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && image == null) return;
     _chatController.clear();
 
     final connected = _signaling.isConnected;
+    final display = text.isEmpty && image != null ? '[Photo]' : text;
     setState(() {
-      _messages.add(_ChatLine(text: text, senderId: _myId, pending: !connected));
+      _messages.add(_ChatLine(
+        text: display,
+        senderId: _myId,
+        pending: !connected,
+        imageUrl: image?.path,
+      ));
     });
     _scrollChat();
+    _finishSendChat(display: display, image: image, connected: connected, rawText: text);
+  }
 
+  Future<void> _finishSendChat({
+    required String display,
+    File? image,
+    required bool connected,
+    required String rawText,
+  }) async {
+    String? imageUrl = image?.path;
+    await _ensureChatThread();
+    if (_chatThreadId != null && widget.peerUserId != null) {
+      try {
+        final saved = await _chatService.sendMessage(
+          _chatThreadId!,
+          display == '[Photo]' ? '' : display,
+          image: image,
+        );
+        imageUrl = saved['image_url']?.toString() ?? image?.path;
+      } catch (_) {}
+    }
     if (connected) {
       _signaling.sendMessage(
         consultationId: widget.consultationId,
-        text: text,
+        text: display,
+        imageUrl: imageUrl,
         senderId: _myId,
       );
-    } else {
-      _pendingMessages.add(text);
+    } else if (rawText.isNotEmpty) {
+      _pendingMessages.add(rawText);
     }
-    _persistChatLine(text, senderId: int.tryParse(_myId), outgoing: true);
+  }
+
+  Future<void> _sendChatPhoto() async {
+    final file = await ChatImagePicker.pick(context);
+    if (file == null || !mounted) return;
+    _sendChat(image: file);
   }
 
   Future<void> _ensureChatThread() async {
@@ -339,12 +381,18 @@ class _CallScreenState extends State<CallScreen> {
     String text, {
     int? senderId,
     required bool outgoing,
+    File? image,
+    String? imageUrl,
   }) async {
     await _ensureChatThread();
     if (_chatThreadId == null || widget.peerUserId == null) return;
     if (outgoing) {
       try {
-        await _chatService.sendMessage(_chatThreadId!, text);
+        await _chatService.sendMessage(
+          _chatThreadId!,
+          text == '[Photo]' ? '' : text,
+          image: image,
+        );
         return;
       } catch (_) {}
     }
@@ -354,6 +402,7 @@ class _CallScreenState extends State<CallScreen> {
       peerName: widget.doctorName,
       text: text,
       senderId: senderId,
+      imageUrl: imageUrl ?? image?.path,
     );
   }
 
@@ -820,11 +869,42 @@ class _CallScreenState extends State<CallScreen> {
                               color: mine ? AppColors.primary : Colors.white,
                               borderRadius: BorderRadius.circular(14),
                             ),
-                            child: Text(
-                              line.pending ? '${line.text}  (waiting for network)' : line.text,
-                              style: TextStyle(
-                                color: mine ? Colors.white : AppColors.textPrimary,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if ((line.imageUrl ?? '').isNotEmpty)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: line.imageUrl!.startsWith('http')
+                                        ? Image.network(
+                                            line.imageUrl!,
+                                            width: 200,
+                                            height: 200,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.file(
+                                            File(line.imageUrl!),
+                                            width: 200,
+                                            height: 200,
+                                            fit: BoxFit.cover,
+                                          ),
+                                  ),
+                                if (line.text.isNotEmpty && line.text != '[Photo]')
+                                  Padding(
+                                    padding: EdgeInsets.only(
+                                      top: (line.imageUrl ?? '').isNotEmpty ? 8 : 0,
+                                    ),
+                                    child: Text(
+                                      line.pending
+                                          ? '${line.text}  (waiting for network)'
+                                          : line.text,
+                                      style: TextStyle(
+                                        color: mine ? Colors.white : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         );
@@ -836,6 +916,11 @@ class _CallScreenState extends State<CallScreen> {
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
                 child: Row(
                   children: [
+                    IconButton(
+                      tooltip: 'Send photo',
+                      onPressed: _sendChatPhoto,
+                      icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                    ),
                     Expanded(
                       child: TextField(
                         controller: _chatController,

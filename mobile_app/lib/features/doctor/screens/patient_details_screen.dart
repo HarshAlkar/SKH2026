@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/services/call_launcher.dart';
 import '../../chat/screens/chat_screen.dart';
 import 'create_prescription_screen.dart';
-
 
 class PatientData {
   final String name;
@@ -34,8 +34,39 @@ class PatientData {
     this.userId,
     this.patientId,
   });
-}
 
+  PatientData copyWith({
+    String? name,
+    String? age,
+    String? gender,
+    String? village,
+    String? bloodType,
+    String? phoneNumber,
+    String? chronicConditions,
+    String? pastSurgeries,
+    String? allergies,
+    List<SymptomData>? symptoms,
+    String? aiInsights,
+    int? userId,
+    int? patientId,
+  }) {
+    return PatientData(
+      name: name ?? this.name,
+      age: age ?? this.age,
+      gender: gender ?? this.gender,
+      village: village ?? this.village,
+      bloodType: bloodType ?? this.bloodType,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      chronicConditions: chronicConditions ?? this.chronicConditions,
+      pastSurgeries: pastSurgeries ?? this.pastSurgeries,
+      allergies: allergies ?? this.allergies,
+      symptoms: symptoms ?? this.symptoms,
+      aiInsights: aiInsights ?? this.aiInsights,
+      userId: userId ?? this.userId,
+      patientId: patientId ?? this.patientId,
+    );
+  }
+}
 
 class SymptomData {
   final String label;
@@ -45,10 +76,155 @@ class SymptomData {
   SymptomData({required this.label, required this.bgColor, required this.textColor});
 }
 
-class PatientDetailsScreen extends StatelessWidget {
+class PatientDetailsScreen extends StatefulWidget {
   final PatientData patient;
 
   const PatientDetailsScreen({super.key, required this.patient});
+
+  @override
+  State<PatientDetailsScreen> createState() => _PatientDetailsScreenState();
+}
+
+class _PatientDetailsScreenState extends State<PatientDetailsScreen> {
+  final ApiService _api = ApiService();
+  late PatientData _patient;
+  bool _isRefreshing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _patient = widget.patient;
+    _refreshPatientData();
+  }
+
+  Future<void> _refreshPatientData() async {
+    if (_isRefreshing) return;
+    setState(() => _isRefreshing = true);
+    try {
+      await _refreshProfile();
+      await _refreshLatestRecord();
+    } catch (e) {
+      debugPrint('Error refreshing patient details: $e');
+    } finally {
+      if (mounted) setState(() => _isRefreshing = false);
+    }
+  }
+
+  Future<void> _refreshProfile() async {
+    final data = await _api.get('/users/patients/');
+    if (data is! List || !mounted) return;
+
+    Map<String, dynamic>? match;
+    for (final item in data) {
+      if (item is! Map) continue;
+      final json = Map<String, dynamic>.from(item);
+      final details = json['profile_details'] is Map
+          ? Map<String, dynamic>.from(json['profile_details'] as Map)
+          : <String, dynamic>{};
+      final userId = json['id'] is int
+          ? json['id'] as int
+          : int.tryParse(json['id']?.toString() ?? '');
+      final patientId = details['patient_id'] is int
+          ? details['patient_id'] as int
+          : int.tryParse(details['patient_id']?.toString() ?? '');
+
+      final matchUser = _patient.userId != null && userId == _patient.userId;
+      final matchPatient =
+          _patient.patientId != null && patientId == _patient.patientId;
+      if (matchUser || matchPatient) {
+        match = json;
+        break;
+      }
+    }
+
+    if (match == null || !mounted) return;
+
+    final details = match['profile_details'] is Map
+        ? Map<String, dynamic>.from(match['profile_details'] as Map)
+        : <String, dynamic>{};
+    final history = details['medical_history']?.toString().trim() ?? '';
+
+    setState(() {
+      _patient = _patient.copyWith(
+        name: match!['name']?.toString() ?? _patient.name,
+        age: details['age']?.toString() ?? _patient.age,
+        gender: details['gender']?.toString() ?? _patient.gender,
+        village: match['village']?.toString() ??
+            details['address']?.toString() ??
+            _patient.village,
+        bloodType: details['blood_group']?.toString() ?? _patient.bloodType,
+        phoneNumber: match['phone_number']?.toString() ?? _patient.phoneNumber,
+        chronicConditions:
+            history.isNotEmpty ? history : _patient.chronicConditions,
+        userId: match['id'] is int
+            ? match['id'] as int
+            : int.tryParse(match['id']?.toString() ?? '') ?? _patient.userId,
+        patientId: details['patient_id'] is int
+            ? details['patient_id'] as int
+            : int.tryParse(details['patient_id']?.toString() ?? '') ??
+                _patient.patientId,
+      );
+    });
+  }
+
+  Future<void> _refreshLatestRecord() async {
+    final patientId = _patient.patientId;
+    if (patientId == null) return;
+
+    final data = await _api.get('/records/?patient_id=$patientId');
+    if (data is! List || data.isEmpty || !mounted) return;
+
+    final latest = Map<String, dynamic>.from(data.first as Map);
+    final temp = latest['temperature']?.toString() ?? '--';
+    final bp = latest['bloodPressure']?.toString() ?? '--';
+    final sugar = latest['bloodSugar']?.toString() ?? '--';
+    final weight = latest['weight']?.toString() ?? '--';
+    final symptomsRaw = latest['symptoms']?.toString().trim() ?? '';
+    final risk = latest['riskLevel']?.toString().trim() ?? '';
+    final updated = latest['lastUpdated']?.toString() ?? '';
+
+    final symptomLabels = symptomsRaw.isEmpty ||
+            symptomsRaw.toLowerCase() == 'no symptoms reported.'
+        ? <String>[]
+        : symptomsRaw
+            .split(RegExp(r'[,;|]'))
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList();
+
+    final chips = symptomLabels
+        .map(
+          (label) => SymptomData(
+            label: label,
+            bgColor: const Color(0xFFE8F1FF),
+            textColor: const Color(0xFF2A7DE1),
+          ),
+        )
+        .toList();
+
+    final vitals =
+        'Temp: $temp  ·  BP: $bp  ·  Sugar: $sugar  ·  Weight: $weight';
+    final insightParts = <String>[
+      if (risk.isNotEmpty) 'Latest risk level: $risk.',
+      if (updated.isNotEmpty) 'Last ASHA update: $updated.',
+      if (risk.isEmpty && updated.isEmpty)
+        'Latest vitals from ASHA health record.',
+    ];
+
+    setState(() {
+      _patient = _patient.copyWith(
+        pastSurgeries: vitals,
+        allergies: symptomsRaw.isNotEmpty &&
+                symptomsRaw.toLowerCase() != 'no symptoms reported.'
+            ? symptomsRaw
+            : _patient.allergies,
+        symptoms: chips.isNotEmpty ? chips : _patient.symptoms,
+        aiInsights: insightParts.where((e) => e.isNotEmpty).join(' '),
+      );
+    });
+  }
+
+  PatientData get patient => _patient;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +249,24 @@ class PatientDetailsScreen extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          if (_isRefreshing)
+            const Padding(
+              padding: EdgeInsets.only(right: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.refresh, color: textPrimary),
+              onPressed: _refreshPatientData,
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -351,19 +545,28 @@ class PatientDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildHealthHistoryCard() {
+    final hasVitals = patient.pastSurgeries.startsWith('Temp:');
     return _buildCardBase(
       title: 'Health History',
       iconUrl: Icons.history,
       child: Column(
         children: [
           _buildHistorySection(
-            'CHRONIC CONDITIONS',
+            'CHRONIC CONDITIONS / MEDICAL HISTORY',
             patient.chronicConditions,
           ),
           const SizedBox(height: 12),
-          _buildHistorySection('PAST SURGERIES', patient.pastSurgeries),
+          _buildHistorySection(
+            hasVitals ? 'LATEST VITALS' : 'PAST SURGERIES',
+            patient.pastSurgeries,
+          ),
           const SizedBox(height: 12),
-          _buildHistorySection('ALLERGIES', patient.allergies),
+          _buildHistorySection(
+            hasVitals && patient.allergies != 'Not recorded'
+                ? 'REPORTED SYMPTOMS'
+                : 'ALLERGIES',
+            patient.allergies,
+          ),
         ],
       ),
     );
@@ -380,7 +583,7 @@ class PatientDetailsScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
         ),
         child: const Text(
-          'AI ANALYZED',
+          'LATEST RECORD',
           style: TextStyle(
             color: Color(0xFF2A7DE1),
             fontSize: 9,
@@ -391,11 +594,19 @@ class PatientDetailsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: patient.symptoms.map((s) => _buildSymptomChip(s.label, s.bgColor, s.textColor)).toList(),
-          ),
+          if (patient.symptoms.isEmpty)
+            const Text(
+              'No recent symptoms recorded.',
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+            )
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: patient.symptoms
+                  .map((s) => _buildSymptomChip(s.label, s.bgColor, s.textColor))
+                  .toList(),
+            ),
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
@@ -413,7 +624,7 @@ class PatientDetailsScreen extends StatelessWidget {
                 ),
                 children: [
                   const TextSpan(
-                    text: 'AI Insights: ',
+                    text: 'Insights: ',
                     style: TextStyle(
                       color: Color(0xFF2A7DE1),
                       fontWeight: FontWeight.bold,
@@ -492,12 +703,15 @@ class PatientDetailsScreen extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Color(0xFF0F172A),
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: const TextStyle(
+              color: Color(0xFF0F172A),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],

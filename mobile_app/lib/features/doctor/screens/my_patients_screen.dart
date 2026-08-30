@@ -50,6 +50,7 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
     final details = json['profile_details'] is Map
         ? Map<String, dynamic>.from(json['profile_details'] as Map)
         : <String, dynamic>{};
+    final history = details['medical_history']?.toString().trim() ?? '';
     return PatientData(
       name: json['name']?.toString() ?? 'Patient',
       age: details['age']?.toString() ?? '—',
@@ -57,7 +58,7 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
       village: json['village']?.toString() ?? details['address']?.toString() ?? '—',
       bloodType: details['blood_group']?.toString() ?? 'Not set',
       phoneNumber: json['phone_number']?.toString() ?? '',
-      chronicConditions: 'See medical history on file.',
+      chronicConditions: history.isNotEmpty ? history : 'See medical history on file.',
       pastSurgeries: 'Not recorded',
       allergies: 'Not recorded',
       symptoms: const [],
@@ -66,6 +67,15 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
       patientId: details['patient_id'] is int
           ? details['patient_id'] as int
           : int.tryParse(details['patient_id']?.toString() ?? ''),
+    );
+  }
+
+  void _openDetails(PatientData patient) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PatientDetailsScreen(patient: patient),
+      ),
     );
   }
 
@@ -190,83 +200,91 @@ class _MyPatientsScreenState extends State<MyPatientsScreen> {
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PatientDetailsScreen(patient: patient),
-              ),
-            );
-          },
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 28,
-                      backgroundColor: const Color(0xFFE8F1FF),
-                      child: Text(
-                        initials.isEmpty ? 'P' : initials,
+                CircleAvatar(
+                  radius: 28,
+                  backgroundColor: const Color(0xFFE8F1FF),
+                  child: Text(
+                    initials.isEmpty ? 'P' : initials,
+                    style: const TextStyle(
+                      color: Color(0xFF2A7DE1),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        patient.name,
                         style: const TextStyle(
-                          color: Color(0xFF2A7DE1),
-                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
                           fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            patient.name,
-                            style: const TextStyle(
-                              color: textPrimary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Age: ${patient.age} · Village: ${patient.village}',
-                            style: const TextStyle(
-                              color: textSecondary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          if (patient.phoneNumber.isNotEmpty)
-                            Text(
-                              patient.phoneNumber,
-                              style: const TextStyle(
-                                color: textSecondary,
-                                fontSize: 12,
-                              ),
-                            ),
-                        ],
+                      const SizedBox(height: 4),
+                      Text(
+                        'Age: ${patient.age} · Village: ${patient.village}',
+                        style: const TextStyle(
+                          color: textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                if (patient.userId != null) ...[
-                  const SizedBox(height: 12),
-                  ContactActionRow(
-                    peerName: patient.name,
-                    peerUserId: patient.userId!,
-                    patientId: patient.patientId ?? patient.userId,
+                      if (patient.phoneNumber.isNotEmpty)
+                        Text(
+                          patient.phoneNumber,
+                          style: const TextStyle(
+                            color: textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
                   ),
-                ],
+                ),
               ],
             ),
-          ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _openDetails(patient),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF005BBC),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'View Details',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+            if (patient.userId != null) ...[
+              const SizedBox(height: 12),
+              ContactActionRow(
+                peerName: patient.name,
+                peerUserId: patient.userId!,
+                patientId: patient.patientId ?? patient.userId,
+              ),
+            ],
+          ],
         ),
       ),
     );

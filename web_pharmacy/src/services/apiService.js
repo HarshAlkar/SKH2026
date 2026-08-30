@@ -46,7 +46,9 @@ api.interceptors.response.use(
         : null) ||
       err.message ||
       'Request failed';
-    return Promise.reject(new Error(typeof message === 'string' ? message : JSON.stringify(message)));
+    const wrapped = new Error(typeof message === 'string' ? message : JSON.stringify(message));
+    wrapped.status = err.response?.status;
+    return Promise.reject(wrapped);
   },
 );
 

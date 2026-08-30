@@ -182,6 +182,7 @@ class SyncService {
         'pending_sync': 0,
         'created_at': response['created_at']?.toString() ??
             DateTime.now().toIso8601String(),
+        if (response['image_url'] != null) 'image_url': response['image_url'].toString(),
       },
       where: 'client_id = ? AND thread_id = ?',
       whereArgs: [clientId, threadId],

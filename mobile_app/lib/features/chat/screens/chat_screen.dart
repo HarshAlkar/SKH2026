@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../providers/auth_provider.dart';
 import '../services/chat_service.dart';
 import '../services/chat_local_store.dart';
+import '../widgets/chat_image_picker.dart';
 
 class ChatScreen extends StatefulWidget {
   final int peerUserId;
@@ -47,6 +50,7 @@ class _ChatScreenState extends State<ChatScreen> {
           'id': data['messageId'],
           'sender_id': int.tryParse(senderId ?? ''),
           'text': data['text'] ?? '',
+          'image_url': data['imageUrl'] ?? data['image_url'],
           'created_at': data['timestamp'],
         });
       });
@@ -59,6 +63,7 @@ class _ChatScreenState extends State<ChatScreen> {
           messageId: int.tryParse(data['messageId']?.toString() ?? ''),
           senderId: int.tryParse(senderId ?? ''),
           createdAt: data['timestamp']?.toString(),
+          imageUrl: data['imageUrl']?.toString() ?? data['image_url']?.toString(),
         );
       }
       _jumpToEnd();
@@ -153,9 +158,9 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  Future<void> _send() async {
+  Future<void> _send({File? image}) async {
     final text = _controller.text.trim();
-    if (text.isEmpty || _threadId == null) return;
+    if ((text.isEmpty && image == null) || _threadId == null) return;
     _controller.clear();
     try {
       final auth = context.read<AuthProvider>();
@@ -163,6 +168,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _threadId!,
         text,
         senderId: auth.user?.id,
+        image: image,
       );
       if (!mounted) return;
       setState(() => _messages.add(saved));
@@ -177,7 +183,8 @@ class _ChatScreenState extends State<ChatScreen> {
         SignalingService().sendPersistentChat(
           receiverId: widget.peerUserId.toString(),
           threadId: _threadId!,
-          text: text,
+          text: saved['text']?.toString() ?? text,
+          imageUrl: saved['image_url']?.toString(),
           senderId: auth.user?.id.toString() ?? '',
           senderName: auth.user?.name ?? '',
           messageId: int.tryParse(saved['id']?.toString() ?? ''),
@@ -189,6 +196,12 @@ class _ChatScreenState extends State<ChatScreen> {
         const SnackBar(content: Text('Message failed to send')),
       );
     }
+  }
+
+  Future<void> _sendPhoto() async {
+    final file = await ChatImagePicker.pick(context);
+    if (file == null || !mounted) return;
+    await _send(image: file);
   }
 
   Future<void> _dial() async {
@@ -205,6 +218,46 @@ class _ChatScreenState extends State<ChatScreen> {
     final sender = message['sender_id'];
     if (sender is int) return sender == me;
     return int.tryParse(sender?.toString() ?? '') == me;
+  }
+
+  Widget _imageFor(String url, {required bool mine}) {
+    ImageProvider provider;
+    if (url.startsWith('http')) {
+      provider = NetworkImage(url);
+    } else {
+      provider = FileImage(File(url));
+    }
+    return GestureDetector(
+      onTap: () => _openPhoto(url),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image(
+          image: provider,
+          width: 220,
+          height: 220,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Icon(
+            Icons.broken_image_outlined,
+            color: mine ? Colors.white70 : Colors.grey,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openPhoto(String url) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: GestureDetector(
+          onTap: () => Navigator.pop(ctx),
+          child: url.startsWith('http')
+              ? Image.network(url, fit: BoxFit.contain)
+              : Image.file(File(url), fit: BoxFit.contain),
+        ),
+      ),
+    );
   }
 
   @override
@@ -297,20 +350,29 @@ class _ChatScreenState extends State<ChatScreen> {
                                       ),
                                     ],
                                   ),
-                                  child: Row(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Flexible(
-                                        child: Text(
+                                      if ((message['image_url']?.toString() ?? '').isNotEmpty)
+                                        _imageFor(
+                                          message['image_url'].toString(),
+                                          mine: mine,
+                                        ),
+                                      if ((message['text']?.toString() ?? '').isNotEmpty &&
+                                          message['text'].toString() != '[Photo]') ...[
+                                        if ((message['image_url']?.toString() ?? '').isNotEmpty)
+                                          const SizedBox(height: 8),
+                                        Text(
                                           message['text']?.toString() ?? '',
                                           style: TextStyle(
                                             color: mine ? Colors.white : AppColors.textPrimary,
                                             fontSize: 14,
                                           ),
                                         ),
-                                      ),
+                                      ],
                                       if (message['pending_sync'] == true) ...[
-                                        const SizedBox(width: 6),
+                                        const SizedBox(height: 4),
                                         Icon(
                                           Icons.schedule,
                                           size: 14,
@@ -330,6 +392,11 @@ class _ChatScreenState extends State<ChatScreen> {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
               child: Row(
                 children: [
+                  IconButton(
+                    tooltip: 'Send photo',
+                    onPressed: _threadId == null ? null : _sendPhoto,
+                    icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                  ),
                   Expanded(
                     child: TextField(
                       controller: _controller,

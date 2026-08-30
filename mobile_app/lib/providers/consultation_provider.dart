@@ -37,7 +37,8 @@ class ConsultationProvider extends ChangeNotifier {
     final threadId = int.tryParse(data['threadId']?.toString() ?? '');
     final senderId = int.tryParse(data['senderId']?.toString() ?? '');
     final text = data['text']?.toString() ?? '';
-    if (threadId == null || text.isEmpty) return;
+    final imageUrl = data['imageUrl']?.toString() ?? '';
+    if (threadId == null || (text.isEmpty && imageUrl.isEmpty)) return;
     if (data['senderId']?.toString() == _signaling.connectedUserId) return;
 
     final peerUserId = senderId ?? 0;
@@ -50,6 +51,7 @@ class ConsultationProvider extends ChangeNotifier {
       messageId: int.tryParse(data['messageId']?.toString() ?? ''),
       senderId: senderId,
       createdAt: data['timestamp']?.toString(),
+      imageUrl: imageUrl.isEmpty ? null : imageUrl,
     );
 
     final viewingThisThread = ChatSession.openThreadId == threadId ||
@@ -60,7 +62,7 @@ class ConsultationProvider extends ChangeNotifier {
       threadId: threadId,
       peerUserId: peerUserId,
       peerName: peerName,
-      text: text,
+      text: text.isEmpty || text == '[Photo]' ? 'Photo' : text,
     );
   }
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import pickle
@@ -185,6 +186,35 @@ def _export_tflite(features, classes, X_train, y_train, X_val, y_val, out_tflite
     return out_tflite, model, temperature, mlp_metrics
 
 
+def _update_flutter_integrity(filename: str, tflite_path: str) -> None:
+    """Keep Flutter SHA-256 in sync so on-device load is not rejected after retrain."""
+    integrity_path = os.path.join(flutter_models_dir(), "model_integrity.json")
+    digest = hashlib.sha256()
+    with open(tflite_path, "rb") as handle:
+        digest.update(handle.read())
+    sha = digest.hexdigest()
+    payload = {}
+    if os.path.exists(integrity_path):
+        with open(integrity_path, encoding="utf-8") as handle:
+            payload = json.load(handle)
+    models = payload.setdefault("models", {})
+    if not isinstance(models, dict):
+        models = {}
+        payload["models"] = models
+    entry = models.get(filename)
+    if not isinstance(entry, dict):
+        entry = {}
+    entry["sha256"] = sha
+    models[filename] = entry
+    payload.setdefault(
+        "description",
+        "SHA-256 integrity hashes for on-device TFLite models (hashing, not encryption).",
+    )
+    with open(integrity_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2)
+        handle.write("\n")
+
+
 def _fit_temperature(probs, y_true, grid=None):
     """Pick T that minimizes NLL on validation softmax outputs."""
     grid = grid or [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0]
@@ -323,8 +353,10 @@ def train(seed: int = 42):
 
     flutter_dir = flutter_models_dir()
     os.makedirs(flutter_dir, exist_ok=True)
+    flutter_tflite = os.path.join(flutter_dir, "symptom_mlp.tflite")
     if os.path.exists(tflite_path):
-        shutil.copy2(tflite_path, os.path.join(flutter_dir, "symptom_mlp.tflite"))
+        shutil.copy2(tflite_path, flutter_tflite)
+        _update_flutter_integrity("symptom_mlp.tflite", flutter_tflite)
     shutil.copy2(labels_path, os.path.join(flutter_dir, "symptom_labels.json"))
 
     report = {

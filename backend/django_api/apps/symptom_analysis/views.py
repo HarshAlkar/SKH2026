@@ -64,36 +64,49 @@ class SymptomAnalysisView(APIView):
     def post(self, request):
         user = request.user
         recognized_text = request.data.get('recognized_text', '')
-        symptoms_text = request.data.get('symptoms', request.data.get('symptoms_text', recognized_text))
+        raw_symptoms = request.data.get('symptoms', request.data.get('symptoms_text', recognized_text))
         language = request.data.get('language', 'en')
-        
+
         # 1. Store Voice Input if provided
         if recognized_text:
             VoiceSymptomInput.objects.create(
                 user=user,
                 recognized_text=recognized_text
             )
-        
-        # 2. Convert text to symptom list (supporting Hindi/Unicode)
+
+        # 2. Convert text/tokens to symptom list (supporting Hindi/Unicode)
         import re
-        # Support Unicode words for Hindi
-        words = re.findall(r'[\w\u0900-\u097F]+', symptoms_text.lower())
-        symptoms_list = map_indic_tokens(words)
-        
+        if isinstance(raw_symptoms, (list, tuple)):
+            symptoms_list = map_indic_tokens(
+                [str(item).strip() for item in raw_symptoms if str(item).strip()]
+            )
+            symptoms_text = ', '.join(symptoms_list)
+        else:
+            symptoms_text = raw_symptoms or ''
+            words = re.findall(r'[\w\u0900-\u097F]+', str(symptoms_text).lower())
+            symptoms_list = map_indic_tokens(words)
+
         # 3. AI Prediction
-        _ensure_project_root() 
+        _ensure_project_root()
         try:
             from ai_engine.predict import predict_symptoms
             analysis_result = predict_symptoms(symptoms_list)
         except Exception as e:
             return Response({"error": f"AI Engine error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
         predicted_disease = analysis_result.get('disease', 'Unknown')
         severity = analysis_result.get('severity', 'Low')
         confidence = analysis_result.get('confidence', 0)
         top_predictions = analysis_result.get('top_predictions') or [
             {'disease': predicted_disease, 'confidence': confidence, 'severity': severity}
         ]
+        source = analysis_result.get('source') or 'symptom_ml'
+        score_type = analysis_result.get('score_type') or (
+            'model_probability' if source == 'symptom_ml' else 'symptom_match_fallback'
+        )
+        result_state = (
+            'SUCCESS_SERVER_ML' if source == 'symptom_ml' else 'SUCCESS_FALLBACK'
+        )
 
         # 4. Store Analysis Result
         analysis = SymptomAnalysis.objects.create(
@@ -127,6 +140,10 @@ class SymptomAnalysisView(APIView):
             "disclaimer": disclaimer,
             "language": localized["language"],
             "domain": "HUMAN",
+            "source": source,
+            "score_type": score_type,
+            "result_state": result_state,
+            "ambiguous": bool(analysis_result.get("ambiguous")),
         }, status=status.HTTP_200_OK)
 
 

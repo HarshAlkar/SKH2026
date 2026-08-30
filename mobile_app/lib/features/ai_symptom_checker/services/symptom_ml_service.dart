@@ -28,7 +28,6 @@ class SymptomMlService {
   String _disclaimer =
       'AI-assisted screening only. This result is not a medical diagnosis. '
       'Please consult a qualified healthcare professional.';
-  bool _loadAttempted = false;
 
   String? get lastError => _lastError;
   List<String> get featureVocabulary => List.unmodifiable(_features);
@@ -266,41 +265,56 @@ class SymptomMlService {
   }
 
   Future<void> _ensureLoaded() async {
-    if (_loadAttempted) return;
-    _loadAttempted = true;
-    try {
-      final raw = await rootBundle.loadString(_labelsAsset);
-      final labels = jsonDecode(raw) as Map<String, dynamic>;
-      _features = (labels['features'] as List).map((e) => e.toString()).toList();
-      _classes = (labels['classes'] as List).map((e) => e.toString()).toList();
-      _severity = {
-        for (final e in ((labels['severity'] as Map?) ?? {}).entries)
-          e.key.toString(): e.value.toString(),
-      };
-      _precautions = {
-        for (final e in ((labels['precautions'] as Map?) ?? {}).entries)
-          e.key.toString(): ((e.value as List?) ?? const [])
-              .map((x) => x.toString())
-              .toList(),
-      };
-      _temperature = (labels['temperature'] is num)
-          ? (labels['temperature'] as num).toDouble()
-          : 1.0;
-      _disclaimer = labels['disclaimer']?.toString() ?? _disclaimer;
-    } catch (e) {
-      _lastError = 'Failed to load symptom_labels.json: $e';
-      debugPrint(_lastError);
-      _features = const [];
-      _classes = const [];
+    if (_interpreter != null && _features.isNotEmpty && _classes.isNotEmpty) {
+      return;
+    }
+    if (_features.isEmpty || _classes.isEmpty) {
+      try {
+        final raw = await rootBundle.loadString(_labelsAsset);
+        final labels = jsonDecode(raw) as Map<String, dynamic>;
+        _features = (labels['features'] as List).map((e) => e.toString()).toList();
+        _classes = (labels['classes'] as List).map((e) => e.toString()).toList();
+        _severity = {
+          for (final e in ((labels['severity'] as Map?) ?? {}).entries)
+            e.key.toString(): e.value.toString(),
+        };
+        _precautions = {
+          for (final e in ((labels['precautions'] as Map?) ?? {}).entries)
+            e.key.toString(): ((e.value as List?) ?? const [])
+                .map((x) => x.toString())
+                .toList(),
+        };
+        _temperature = (labels['temperature'] is num)
+            ? (labels['temperature'] as num).toDouble()
+            : 1.0;
+        _disclaimer = labels['disclaimer']?.toString() ?? _disclaimer;
+      } catch (e) {
+        _lastError = 'Failed to load symptom_labels.json: $e';
+        debugPrint(_lastError);
+        _features = const [];
+        _classes = const [];
+      }
     }
     try {
       final ok = await ModelIntegrity.verifyAsset(_modelAsset);
       if (!ok) {
         _lastError = 'Model integrity check failed (SHA-256 mismatch).';
         debugPrint(_lastError);
+        _interpreter = null;
         return;
       }
-      _interpreter = await Interpreter.fromAsset(_modelAsset);
+      try {
+        _interpreter = await Interpreter.fromAsset(_modelAsset);
+      } catch (e) {
+        try {
+          _interpreter = await Interpreter.fromAsset('models/symptom_mlp.tflite');
+        } catch (e2) {
+          _lastError = 'Failed to load symptom_mlp.tflite: $e2';
+          debugPrint(_lastError);
+          _interpreter = null;
+          return;
+        }
+      }
       debugPrint(
         'SymptomMlService: loaded TFLite '
         'features=${_features.length} classes=${_classes.length}',

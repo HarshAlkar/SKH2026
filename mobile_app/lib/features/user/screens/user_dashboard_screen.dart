@@ -29,11 +29,14 @@ class _UserDashboardScreenState extends State<UserDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = context.read<AuthProvider>().user;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final auth = context.read<AuthProvider>();
+      final user = auth.user;
       if (user != null) {
         context.read<ConsultationProvider>().initSignaling(user.id.toString());
       }
+      await auth.refreshUser();
+      if (!mounted) return;
       PermissionDialogService.ensureNotifications(context);
       _loadAssignedAsha();
     });

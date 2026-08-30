@@ -1,6 +1,7 @@
 from datetime import timedelta
 from math import asin, cos, radians, sin, sqrt
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import F, Q, Sum
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -35,31 +36,96 @@ def _haversine_km(lat1, lng1, lat2, lng2):
     return 2 * r * asin(sqrt(a))
 
 
+_SKIP_PLACE_TOKENS = {
+    'village', 'phc', 'the', 'primary', 'health', 'centre', 'center',
+    'hospital', 'pharmacy', 'clinic',
+}
+
+
+def _related_or_none(obj, name):
+    try:
+        return getattr(obj, name)
+    except ObjectDoesNotExist:
+        return None
+
+
+def _place_needles(*parts):
+    """Turn 'Rampur Village' / 'Rampur PHC' into match keys like 'Rampur'."""
+    needles = []
+    seen = set()
+
+    def add(value):
+        value = (value or '').strip()
+        if not value:
+            return
+        key = value.lower()
+        if key in seen:
+            return
+        seen.add(key)
+        needles.append(value)
+
+    suffixes = (
+        ' village',
+        ' phc',
+        ' primary health centre',
+        ' primary health center',
+        ' pharmacy',
+        ' hospital',
+    )
+    for part in parts:
+        add(part)
+        raw = (part or '').strip()
+        lowered = raw.lower()
+        for suffix in suffixes:
+            if lowered.endswith(suffix):
+                add(raw[: -len(suffix)])
+        for tok in raw.replace('-', ' ').replace('/', ' ').split():
+            if tok.lower() not in _SKIP_PLACE_TOKENS and len(tok) >= 3:
+                add(tok)
+    return needles
+
+
+def _asha_facility_ids(asha, user):
+    qs = HealthcareFacility.objects.filter(is_active=True)
+    village = (asha.assigned_village or getattr(user, 'village', None) or '').strip()
+    phc = (asha.phc_center or '').strip()
+    district = (asha.district or '').strip()
+    ids = set()
+
+    needles = _place_needles(village, phc)
+    q = Q()
+    for needle in needles:
+        q |= Q(village__icontains=needle) | Q(name__icontains=needle)
+    if q:
+        ids.update(qs.filter(q).values_list('id', flat=True))
+
+    if not ids and district:
+        ids.update(qs.filter(district__iexact=district).values_list('id', flat=True))
+
+    # Never lock an ASHA out of stock: empty matching used to return zero batches,
+    # which made the mobile "Select Medicine" dropdown unusable.
+    if not ids:
+        phc_ids = list(qs.filter(facility_type='phc').values_list('id', flat=True)[:8])
+        ids.update(phc_ids)
+    if not ids:
+        ids.update(qs.values_list('id', flat=True)[:8])
+    return ids
+
+
 def user_facility_ids(user):
     """Facilities this user may write to (None = all for staff)."""
     if user.is_staff:
         return None
     ids = set()
-    if getattr(user, 'role', None) == 'medical_staff':
-        profile = getattr(user, 'medical_staff_profile', None)
+    role = getattr(user, 'role', None)
+    if role == 'medical_staff':
+        profile = _related_or_none(user, 'medical_staff_profile')
         if profile and profile.facility_id:
             ids.add(profile.facility_id)
-    if getattr(user, 'role', None) == 'asha_worker':
-        asha = getattr(user, 'asha_profile', None)
+    if role == 'asha_worker':
+        asha = _related_or_none(user, 'asha_profile')
         if asha:
-            village = (asha.assigned_village or user.village or '').strip()
-            phc = (asha.phc_center or '').strip()
-            qs = HealthcareFacility.objects.filter(is_active=True)
-            matched = qs.none()
-            if village:
-                matched = qs.filter(Q(village__iexact=village) | Q(name__icontains=village))
-            if phc:
-                matched = matched | qs.filter(Q(name__icontains=phc) | Q(village__icontains=phc))
-            ids.update(matched.values_list('id', flat=True))
-            if not ids and asha.district:
-                ids.update(
-                    qs.filter(district__iexact=asha.district).values_list('id', flat=True)[:3]
-                )
+            ids.update(_asha_facility_ids(asha, user))
     return ids
 
 
@@ -233,7 +299,7 @@ class FacilityViewSet(viewsets.ReadOnlyModelViewSet):
             return qs
         if ids is not None:
             if not ids:
-                return qs
+                return qs.none() if role in ('medical_staff', 'asha_worker') else qs
             return qs.filter(id__in=ids)
         return qs
 
@@ -297,12 +363,15 @@ class AdjustStockView(APIView):
         ser.is_valid(raise_exception=True)
         batch = ser.validated_data['batch']
         allowed = user_facility_ids(request.user)
-        if allowed is not None and batch.facility_id not in allowed and not request.user.is_staff:
-            if allowed:
-                return Response(
-                    {'error': 'You cannot update stock for this facility.'},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        if (
+            allowed is not None
+            and not request.user.is_staff
+            and batch.facility_id not in allowed
+        ):
+            return Response(
+                {'error': 'You cannot update stock for this facility.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         result = ser.save()
         movement = result['movement']
         return Response({
@@ -332,8 +401,8 @@ class SyncStockView(APIView):
             allowed = user_facility_ids(request.user)
             if (
                 allowed is not None
-                and batch.facility_id not in allowed
                 and not request.user.is_staff
+                and batch.facility_id not in allowed
             ):
                 results.append({
                     'ok': False,

@@ -5,14 +5,29 @@ from .models import ChatThread, ChatMessage
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.IntegerField(source='sender.id', read_only=True)
     sender_name = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ChatMessage
-        fields = ['id', 'thread', 'sender_id', 'sender_name', 'text', 'created_at', 'is_read']
-        read_only_fields = ['thread', 'sender_id', 'sender_name', 'created_at', 'is_read']
+        fields = [
+            'id', 'thread', 'sender_id', 'sender_name', 'text',
+            'image_url', 'created_at', 'is_read',
+        ]
+        read_only_fields = [
+            'thread', 'sender_id', 'sender_name', 'image_url', 'created_at', 'is_read',
+        ]
 
     def get_sender_name(self, obj):
         return obj.sender.name or obj.sender.username
+
+    def get_image_url(self, obj):
+        if not obj.image:
+            return None
+        url = obj.image.url
+        request = self.context.get('request')
+        if request and url and not str(url).startswith('http'):
+            return request.build_absolute_uri(url)
+        return url
 
 
 class ChatThreadSerializer(serializers.ModelSerializer):
@@ -54,7 +69,7 @@ class ChatThreadSerializer(serializers.ModelSerializer):
         msg = obj.messages.order_by('-created_at').first()
         if not msg:
             return None
-        return ChatMessageSerializer(msg).data
+        return ChatMessageSerializer(msg, context=self.context).data
 
     def get_unread_count(self, obj):
         request = self.context.get('request')

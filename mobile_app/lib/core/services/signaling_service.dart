@@ -235,10 +235,12 @@ class SignalingService {
     required String consultationId,
     required String text,
     required String senderId,
+    String? imageUrl,
   }) {
     _socket?.emit('send-message', {
       'consultationId': consultationId,
       'text': text,
+      'imageUrl': imageUrl,
       'senderId': senderId,
     });
   }
@@ -250,11 +252,13 @@ class SignalingService {
     required String senderId,
     String senderName = '',
     int? messageId,
+    String? imageUrl,
   }) {
     _socket?.emit('chat-message', {
       'receiverId': receiverId,
       'threadId': threadId,
       'text': text,
+      'imageUrl': imageUrl,
       'senderId': senderId,
       'senderName': senderName,
       'messageId': messageId,

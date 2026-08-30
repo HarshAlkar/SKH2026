@@ -89,7 +89,8 @@ class ChatLocalStore {
         'peer_user_id': int.tryParse(thread['peer_user_id']?.toString() ?? '') ?? 0,
         'peer_name': thread['peer_name']?.toString() ?? existing?['peer_name'] ?? 'Chat',
         'peer_phone': thread['peer_phone']?.toString() ?? existing?['peer_phone'],
-        'last_text': last?['text']?.toString() ?? existing?['last_text'],
+        'last_text': last?['text']?.toString() ??
+            (last?['image_url'] != null ? '[Photo]' : existing?['last_text']),
         'last_at': last?['created_at']?.toString() ??
             thread['updated_at']?.toString() ??
             existing?['last_at'],
@@ -125,6 +126,7 @@ class ChatLocalStore {
     int? senderId,
     required String text,
     required String createdAt,
+    String? imageUrl,
   }) async {
     final db = await _db;
     await db.insert('chat_messages', {
@@ -132,6 +134,7 @@ class ChatLocalStore {
       'thread_id': threadId,
       'sender_id': senderId,
       'text': text,
+      'image_url': imageUrl,
       'created_at': createdAt,
       'pending_sync': 1,
     });
@@ -143,7 +146,7 @@ class ChatLocalStore {
         'peer_user_id': thread?['peer_user_id'] ?? 0,
         'peer_name': thread?['peer_name'] ?? 'Chat',
         'peer_phone': thread?['peer_phone'],
-        'last_text': text,
+        'last_text': text.isNotEmpty ? text : (imageUrl != null && imageUrl.isNotEmpty ? '[Photo]' : thread?['last_text']),
         'last_at': createdAt,
         'unread': thread?['unread'] ?? 0,
         'hidden': thread?['hidden'] ?? 0,
@@ -162,6 +165,7 @@ class ChatLocalStore {
     String? createdAt,
     String? peerName,
     int? peerUserId,
+    String? imageUrl,
   }) async {
     final db = await _db;
     if (serverId != null) {
@@ -178,6 +182,7 @@ class ChatLocalStore {
             'thread_id': threadId,
             'sender_id': senderId,
             'text': text,
+            'image_url': imageUrl ?? existing.first['image_url'],
             'created_at': createdAt ?? DateTime.now().toIso8601String(),
           },
           where: 'server_id = ?',
@@ -189,6 +194,7 @@ class ChatLocalStore {
           'thread_id': threadId,
           'sender_id': senderId,
           'text': text,
+          'image_url': imageUrl,
           'created_at': createdAt ?? DateTime.now().toIso8601String(),
         });
       }
@@ -197,6 +203,7 @@ class ChatLocalStore {
         'thread_id': threadId,
         'sender_id': senderId,
         'text': text,
+        'image_url': imageUrl,
         'created_at': createdAt ?? DateTime.now().toIso8601String(),
       });
     }
@@ -209,7 +216,7 @@ class ChatLocalStore {
         'peer_user_id': peerUserId ?? thread?['peer_user_id'] ?? 0,
         'peer_name': peerName ?? thread?['peer_name'] ?? 'Chat',
         'peer_phone': thread?['peer_phone'],
-        'last_text': text,
+        'last_text': text.isNotEmpty ? text : (imageUrl != null && imageUrl.isNotEmpty ? '[Photo]' : thread?['last_text']),
         'last_at': createdAt ?? DateTime.now().toIso8601String(),
         'unread': thread?['unread'] ?? 0,
         'hidden': thread?['hidden'] ?? 0,
@@ -230,6 +237,7 @@ class ChatLocalStore {
         senderId: int.tryParse(message['sender_id']?.toString() ?? ''),
         text: message['text']?.toString() ?? '',
         createdAt: message['created_at']?.toString(),
+        imageUrl: message['image_url']?.toString(),
       );
     }
     await writeJsonBackup(threadId);
@@ -249,6 +257,7 @@ class ChatLocalStore {
             'thread': threadId,
             'sender_id': row['sender_id'],
             'text': row['text'],
+            'image_url': row['image_url'],
             'created_at': row['created_at'],
             'pending_sync': (row['pending_sync'] ?? 0) == 1,
           },

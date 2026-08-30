@@ -1,5 +1,5 @@
 {
-  "saved_at": "2026-08-29T21:44:09.871325+00:00",
+  "saved_at": "2026-08-30T04:11:22.042361+00:00",
   "reason": "screening_create",
   "screenings": [
     {
@@ -204,6 +204,994 @@
       "client_id": "human-1788039847597-9365",
       "status": "released",
       "created_at": "2026-08-29T21:44:09.855711+00:00"
+    },
+    {
+      "id": 8,
+      "domain": "ANIMAL",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "bloody diarrhea, limping, nasal discharge, weakness, difficulty breathing",
+      "possible_condition": "Urgent livestock concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.8,
+      "advice": "Isolate animal and contact a veterinary specialist promptly.",
+      "result_json": {
+        "possible_condition": "Urgent livestock concern (screening)",
+        "disease_display": "Urgent livestock concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.8,
+        "advice": "Isolate animal and contact a veterinary specialist promptly.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "source": "rules_local",
+        "client_id": "animal-1788052771414-245"
+      },
+      "client_id": "animal-1788052771414-245",
+      "status": "held",
+      "created_at": "2026-08-30T02:14:23.878646+00:00"
+    },
+    {
+      "id": 9,
+      "domain": "ANIMAL",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "bloody diarrhea, limping, nasal discharge, weakness, difficulty breathing",
+      "possible_condition": "Urgent livestock concern (screening)",
+      "severity_level": "Critical",
+      "confidence": 0.8,
+      "advice": "Isolate animal and contact a veterinary specialist promptly.",
+      "result_json": {
+        "possible_condition": "Urgent livestock concern (screening)",
+        "disease_display": "Urgent livestock concern (screening)",
+        "severity": "Critical",
+        "confidence": 0.8,
+        "advice": "Isolate animal and contact a veterinary specialist promptly.",
+        "disclaimer": "AI-assisted screening only. This is not a medical or veterinary diagnosis. Livestock screening is decision support only \u2014 consult a qualified veterinarian.",
+        "domain": "ANIMAL",
+        "species": "BUFFALO",
+        "source": "rules_local",
+        "client_id": "animal-1788052771414-245"
+      },
+      "client_id": "animal-1788052771414-245",
+      "status": "held",
+      "created_at": "2026-08-30T02:14:23.877035+00:00"
+    },
+    {
+      "id": 10,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, high_fever, Cough. Hi I had fever for the last 10 days, Hi I had fever for the last 10 days",
+      "possible_condition": "Bronchial Asthma",
+      "severity_level": "Moderate",
+      "confidence": 1.0,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Bronchial Asthma",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 1.0,
+        "top_predictions": [
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 1.0,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059501572-7597"
+      },
+      "client_id": "human-1788059501572-7597",
+      "status": "released",
+      "created_at": "2026-08-30T03:11:42.219287+00:00"
+    },
+    {
+      "id": 11,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, high_fever, Cough. Hi I had fever for the last 10 days, Hi I had fever for the last 10 days",
+      "possible_condition": "Bronchial Asthma",
+      "severity_level": "Moderate",
+      "confidence": 1.0,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Bronchial Asthma",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 1.0,
+        "top_predictions": [
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 1.0,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059521079-7264"
+      },
+      "client_id": "human-1788059521079-7264",
+      "status": "released",
+      "created_at": "2026-08-30T03:12:02.500470+00:00"
+    },
+    {
+      "id": 12,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, high_fever, Cough. Hi I had fever for the last 10 days, Hi I had fever for the last 10 days",
+      "possible_condition": "Bronchial Asthma",
+      "severity_level": "Moderate",
+      "confidence": 1.0,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Bronchial Asthma",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 1.0,
+        "top_predictions": [
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 1.0,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059532704-5840"
+      },
+      "client_id": "human-1788059532704-5840",
+      "status": "released",
+      "created_at": "2026-08-30T03:12:13.136911+00:00"
+    },
+    {
+      "id": 13,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, Cough. chalu nahin kiya, chalu nahin kiya",
+      "possible_condition": "Possible viral illness",
+      "severity_level": "Low",
+      "confidence": 0.42,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Possible viral illness",
+        "severity": "Low",
+        "confidence": 0.42,
+        "top_predictions": [
+          {
+            "disease": "Possible viral illness",
+            "confidence": 0.42,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059549044-8697"
+      },
+      "client_id": "human-1788059549044-8697",
+      "status": "released",
+      "created_at": "2026-08-30T03:12:29.412495+00:00"
+    },
+    {
+      "id": 14,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, Cough. I had, I had",
+      "possible_condition": "Possible viral illness",
+      "severity_level": "Low",
+      "confidence": 0.42,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Possible viral illness",
+        "severity": "Low",
+        "confidence": 0.42,
+        "top_predictions": [
+          {
+            "disease": "Possible viral illness",
+            "confidence": 0.42,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059564244-735"
+      },
+      "client_id": "human-1788059564244-735",
+      "status": "released",
+      "created_at": "2026-08-30T03:12:44.640282+00:00"
+    },
+    {
+      "id": 15,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, vomiting, Cough. I had a few offer 2 days and I have a vomiting for a one day, I had a few offer 2 days and I have a vomiting for a one day",
+      "possible_condition": "GERD",
+      "severity_level": "Moderate",
+      "confidence": 1.0,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "GERD",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 1.0,
+        "top_predictions": [
+          {
+            "disease": "GERD",
+            "confidence": 1.0,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059582526-9335"
+      },
+      "client_id": "human-1788059582526-9335",
+      "status": "released",
+      "created_at": "2026-08-30T03:13:02.895423+00:00"
+    },
+    {
+      "id": 16,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, Cough. the head is also paining, the head is also paining",
+      "possible_condition": "Possible viral illness",
+      "severity_level": "Low",
+      "confidence": 0.42,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Possible viral illness",
+        "severity": "Low",
+        "confidence": 0.42,
+        "top_predictions": [
+          {
+            "disease": "Possible viral illness",
+            "confidence": 0.42,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059590943-7292"
+      },
+      "client_id": "human-1788059590943-7292",
+      "status": "released",
+      "created_at": "2026-08-30T03:13:11.289069+00:00"
+    },
+    {
+      "id": 17,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, Cough. the head is also paining, the head is also paining",
+      "possible_condition": "Possible viral illness",
+      "severity_level": "Low",
+      "confidence": 0.42,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Possible viral illness",
+        "severity": "Low",
+        "confidence": 0.42,
+        "top_predictions": [
+          {
+            "disease": "Possible viral illness",
+            "confidence": 0.42,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059595994-3680"
+      },
+      "client_id": "human-1788059595994-3680",
+      "status": "released",
+      "created_at": "2026-08-30T03:13:16.448686+00:00"
+    },
+    {
+      "id": 18,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, Cough. the head is also paining, the head is also paining",
+      "possible_condition": "Possible viral illness",
+      "severity_level": "Low",
+      "confidence": 0.42,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "disease": "Possible viral illness",
+        "severity": "Low",
+        "confidence": 0.42,
+        "top_predictions": [
+          {
+            "disease": "Possible viral illness",
+            "confidence": 0.42,
+            "severity": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059607598-3026"
+      },
+      "client_id": "human-1788059607598-3026",
+      "status": "released",
+      "created_at": "2026-08-30T03:13:28.101753+00:00"
+    },
+    {
+      "id": 19,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, high_fever, vomiting, Cough. basically I had a fever for a 2 days and vomiting in one days and also a head pain, basically I had a fever for a 2 days and vomiting in one days and also a head pain",
+      "possible_condition": "GERD",
+      "severity_level": "Moderate",
+      "confidence": 0.5,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "GERD",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 0.5,
+        "top_predictions": [
+          {
+            "disease": "GERD",
+            "confidence": 0.5,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.5,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059618816-9613"
+      },
+      "client_id": "human-1788059618816-9613",
+      "status": "released",
+      "created_at": "2026-08-30T03:13:39.369258+00:00"
+    },
+    {
+      "id": 20,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, high_fever, vomiting, Cough. basically I had a fever for a 2 days and vomiting in one days and also a head pain, basically I had a fever for a 2 days and vomiting in one days and also a head pain",
+      "possible_condition": "GERD",
+      "severity_level": "Moderate",
+      "confidence": 0.5,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "GERD",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 0.5,
+        "top_predictions": [
+          {
+            "disease": "GERD",
+            "confidence": 0.5,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.5,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059627443-8035"
+      },
+      "client_id": "human-1788059627443-8035",
+      "status": "released",
+      "created_at": "2026-08-30T03:13:47.908841+00:00"
+    },
+    {
+      "id": 21,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, high_fever, vomiting, Cough. basically I had a fever for a 2 days and vomiting in one days and also a head pain, basically I had a fever for a 2 days and vomiting in one days and also a head pain",
+      "possible_condition": "GERD",
+      "severity_level": "Moderate",
+      "confidence": 0.5,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "GERD",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 0.5,
+        "top_predictions": [
+          {
+            "disease": "GERD",
+            "confidence": 0.5,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.5,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059634335-1841"
+      },
+      "client_id": "human-1788059634335-1841",
+      "status": "released",
+      "created_at": "2026-08-30T03:13:54.715981+00:00"
+    },
+    {
+      "id": 22,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "cough, high_fever, vomiting, Cough. basically I had a fever for a 2 days and vomiting in one days and also a head pain, basically I had a fever for a 2 days and vomiting in one days and also a head pain",
+      "possible_condition": "GERD",
+      "severity_level": "Moderate",
+      "confidence": 0.5,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "GERD",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 0.5,
+        "top_predictions": [
+          {
+            "disease": "GERD",
+            "confidence": 0.5,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Bronchial Asthma",
+            "confidence": 0.5,
+            "match_coverage": 0.4,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788059664107-4758"
+      },
+      "client_id": "human-1788059664107-4758",
+      "status": "released",
+      "created_at": "2026-08-30T03:14:24.419567+00:00"
+    },
+    {
+      "id": 23,
+      "domain": "HUMAN",
+      "user_id": 4,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "loss_of_appetite, yellowish_skin, Loss of Appetite, Yellowish Skin",
+      "possible_condition": "Hepatitis C",
+      "severity_level": "High",
+      "confidence": 1.0,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Hepatitis C",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "High",
+        "confidence": 1.0,
+        "top_predictions": [
+          {
+            "disease": "Hepatitis C",
+            "confidence": 1.0,
+            "match_coverage": 0.4,
+            "severity": "High"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_local",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "ml_error": "Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Exception: Failed to load symptom_mlp.tflite: Invalid argument(s): Unable to create interpreter.",
+        "client_id": "human-1788060944186-207"
+      },
+      "client_id": "human-1788060944186-207",
+      "status": "released",
+      "created_at": "2026-08-30T03:45:04.516097+00:00"
+    },
+    {
+      "id": 24,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "yellowing_of_eyes, headache, Yellowing of Eyes, Headache",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "analysis_id": 66,
+        "disease": "Undetermined",
+        "disease_display": "Undetermined",
+        "possible_condition": "Undetermined",
+        "severity": "Low",
+        "severity_display": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low",
+            "disease_display": "Undetermined",
+            "severity_display": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "Screening indicates elevated risk \u2014 consult a qualified healthcare professional. This is not a medical diagnosis.",
+        "language": "en",
+        "domain": "HUMAN",
+        "source": "server_ml",
+        "score_type": "model_probability",
+        "result_state": "SUCCESS_SERVER_ML",
+        "client_id": "human-1788062157046-8339"
+      },
+      "client_id": "human-1788062157046-8339",
+      "status": "released",
+      "created_at": "2026-08-30T03:55:59.536919+00:00"
+    },
+    {
+      "id": 25,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "yellowing_of_eyes, headache, vomiting, high_fever, Yellowing of Eyes, Headache, Vomiting, High Fever",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "analysis_id": 67,
+        "disease": "Undetermined",
+        "disease_display": "Undetermined",
+        "possible_condition": "Undetermined",
+        "severity": "Low",
+        "severity_display": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low",
+            "disease_display": "Undetermined",
+            "severity_display": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "Screening indicates elevated risk \u2014 consult a qualified healthcare professional. This is not a medical diagnosis.",
+        "language": "en",
+        "domain": "HUMAN",
+        "source": "server_ml",
+        "score_type": "model_probability",
+        "result_state": "SUCCESS_SERVER_ML",
+        "client_id": "human-1788062182582-7936"
+      },
+      "client_id": "human-1788062182582-7936",
+      "status": "released",
+      "created_at": "2026-08-30T03:56:25.136125+00:00"
+    },
+    {
+      "id": 26,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "headache, vomiting, high_fever, Headache, Vomiting, High Fever",
+      "possible_condition": "Possible viral illness",
+      "severity_level": "Moderate",
+      "confidence": 0.42,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "analysis_id": 68,
+        "disease": "Possible viral illness",
+        "disease_display": "Possible viral illness",
+        "possible_condition": "Possible viral illness",
+        "severity": "Moderate",
+        "severity_display": "Moderate",
+        "confidence": 0.42,
+        "top_predictions": [
+          {
+            "disease": "Possible viral illness",
+            "confidence": 0.42,
+            "severity": "Moderate",
+            "disease_display": "Possible viral illness",
+            "severity_display": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "Screening indicates elevated risk \u2014 consult a qualified healthcare professional. This is not a medical diagnosis.",
+        "language": "en",
+        "domain": "HUMAN",
+        "source": "server_ml",
+        "score_type": "model_probability",
+        "result_state": "SUCCESS_SERVER_ML",
+        "client_id": "human-1788062193807-680"
+      },
+      "client_id": "human-1788062193807-680",
+      "status": "released",
+      "created_at": "2026-08-30T03:56:36.100508+00:00"
+    },
+    {
+      "id": 27,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "chest_pain, dark_urine, cough, Chest Pain, Dark Urine, Cough",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "analysis_id": 69,
+        "disease": "Undetermined",
+        "disease_display": "Undetermined",
+        "possible_condition": "Undetermined",
+        "severity": "Low",
+        "severity_display": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low",
+            "disease_display": "Undetermined",
+            "severity_display": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "Screening indicates elevated risk \u2014 consult a qualified healthcare professional. This is not a medical diagnosis.",
+        "language": "en",
+        "domain": "HUMAN",
+        "source": "server_ml",
+        "score_type": "model_probability",
+        "result_state": "SUCCESS_SERVER_ML",
+        "client_id": "human-1788062214960-6652"
+      },
+      "client_id": "human-1788062214960-6652",
+      "status": "released",
+      "created_at": "2026-08-30T03:56:57.246132+00:00"
+    },
+    {
+      "id": 28,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "chest_pain, dark_urine, fatigue, vomiting, high_fever, headache, Chest Pain, Dark Urine, Fatigue, Vomiting, High Fever, Headache",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "analysis_id": 70,
+        "disease": "Undetermined",
+        "disease_display": "Undetermined",
+        "possible_condition": "Undetermined",
+        "severity": "Low",
+        "severity_display": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low",
+            "disease_display": "Undetermined",
+            "severity_display": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "Screening indicates elevated risk \u2014 consult a qualified healthcare professional. This is not a medical diagnosis.",
+        "language": "en",
+        "domain": "HUMAN",
+        "source": "server_ml",
+        "score_type": "model_probability",
+        "result_state": "SUCCESS_SERVER_ML",
+        "client_id": "human-1788062240112-7025"
+      },
+      "client_id": "human-1788062240112-7025",
+      "status": "released",
+      "created_at": "2026-08-30T03:57:22.677607+00:00"
+    },
+    {
+      "id": 29,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "chest_pain, dark_urine, fatigue, vomiting, high_fever, headache, Chest Pain, Dark Urine, Fatigue, Vomiting, High Fever, Headache",
+      "possible_condition": "Undetermined",
+      "severity_level": "Low",
+      "confidence": 0.2,
+      "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+      "result_json": {
+        "analysis_id": 71,
+        "disease": "Undetermined",
+        "disease_display": "Undetermined",
+        "possible_condition": "Undetermined",
+        "severity": "Low",
+        "severity_display": "Low",
+        "confidence": 0.2,
+        "top_predictions": [
+          {
+            "disease": "Undetermined",
+            "confidence": 0.2,
+            "severity": "Low",
+            "disease_display": "Undetermined",
+            "severity_display": "Low"
+          }
+        ],
+        "alert_sent": false,
+        "advice": "These symptoms are common. Rest, drink fluids, and consult a doctor if they worsen.",
+        "disclaimer": "Screening indicates elevated risk \u2014 consult a qualified healthcare professional. This is not a medical diagnosis.",
+        "language": "en",
+        "domain": "HUMAN",
+        "source": "server_ml",
+        "score_type": "model_probability",
+        "result_state": "SUCCESS_SERVER_ML",
+        "client_id": "human-1788062253478-1542"
+      },
+      "client_id": "human-1788062253478-1542",
+      "status": "released",
+      "created_at": "2026-08-30T03:57:36.220832+00:00"
+    },
+    {
+      "id": 30,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "itching, skin_rash, scurring",
+      "possible_condition": "Fungal infection",
+      "severity_level": "Moderate",
+      "confidence": 0.384,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "disease": "Fungal infection",
+        "possible_condition": "Elevated-risk screening result (fallback)",
+        "disease_display": "Elevated-risk screening result (fallback)",
+        "severity": "Moderate",
+        "confidence": 0.384,
+        "top_predictions": [
+          {
+            "disease": "Fungal infection",
+            "confidence": 0.384,
+            "match_coverage": 0.667,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Acne",
+            "confidence": 0.384,
+            "match_coverage": 0.667,
+            "severity": "Moderate"
+          },
+          {
+            "disease": "Drug Reaction",
+            "confidence": 0.233,
+            "match_coverage": 0.5,
+            "severity": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "source": "dataset_skin",
+        "score_type": "symptom_match_fallback",
+        "result_state": "SUCCESS_FALLBACK",
+        "headline": "Symptom-match screening (fallback)",
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "This is a screening suggestion, not a medical diagnosis.",
+        "message": "On-device ML was unavailable; this ranked list uses symptom matching only \u2014 not model probabilities. AI-assisted screening only. This is not a medical diagnosis.",
+        "language": "en",
+        "client_id": "human-1788062381880-7480"
+      },
+      "client_id": "human-1788062381880-7480",
+      "status": "released",
+      "created_at": "2026-08-30T03:59:44.497746+00:00"
+    },
+    {
+      "id": 31,
+      "domain": "HUMAN",
+      "user_id": 12,
+      "livestock_case_id": null,
+      "input_type": "symptoms",
+      "input_text": "fatigue, vomiting, chest_pain, Fatigue, Vomiting, Chest Pain",
+      "possible_condition": "GERD",
+      "severity_level": "Moderate",
+      "confidence": 0.085,
+      "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+      "result_json": {
+        "analysis_id": 72,
+        "disease": "GERD",
+        "disease_display": "Elevated-risk screening result",
+        "possible_condition": "Elevated-risk screening result",
+        "severity": "Moderate",
+        "severity_display": "Moderate",
+        "confidence": 0.085,
+        "top_predictions": [
+          {
+            "disease": "GERD",
+            "confidence": 0.085,
+            "severity": "Moderate",
+            "disease_display": "GERD",
+            "severity_display": "Moderate"
+          },
+          {
+            "disease": "Gastroenteritis",
+            "confidence": 0.06,
+            "severity": "Low",
+            "disease_display": "Gastroenteritis",
+            "severity_display": "Low"
+          },
+          {
+            "disease": "Hypertension",
+            "confidence": 0.039,
+            "severity": "Moderate",
+            "disease_display": "Hypertension",
+            "severity_display": "Moderate"
+          }
+        ],
+        "alert_sent": false,
+        "advice": "Maintain hydration and rest. Monitor symptoms carefully.",
+        "disclaimer": "Screening indicates elevated risk \u2014 consult a qualified healthcare professional. This is not a medical diagnosis.",
+        "language": "en",
+        "domain": "HUMAN",
+        "source": "server_ml",
+        "score_type": "model_probability",
+        "result_state": "SUCCESS_SERVER_ML",
+        "ambiguous": true,
+        "client_id": "human-1788063078160-8766"
+      },
+      "client_id": "human-1788063078160-8766",
+      "status": "released",
+      "created_at": "2026-08-30T04:11:22.013182+00:00"
     }
   ],
   "prescriptions": [
@@ -266,6 +1254,96 @@
       "file": "prescription_documents/rx_scan_42db3512b6014a04bfe4df7f7603ba1b.jpg",
       "file_content_type": "image/jpeg",
       "file_size": 1725853
+    },
+    {
+      "id": 39,
+      "patient_id": 5,
+      "doctor_id": 4,
+      "medications": "",
+      "dosage_instructions": "",
+      "notes": "",
+      "consultation_id": null,
+      "prescription_type": "handwritten",
+      "status": "held",
+      "issued_at": "2026-08-30T02:00:36.585772+00:00",
+      "file": "prescription_documents/rx_scan_fe3305310eb34aeca174cb22d8b17d97.jpg",
+      "file_content_type": "image/jpeg",
+      "file_size": 1563540
+    },
+    {
+      "id": 40,
+      "patient_id": 5,
+      "doctor_id": 5,
+      "medications": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "dosage_instructions": "okay",
+      "notes": "dawai khao",
+      "consultation_id": null,
+      "prescription_type": "digital",
+      "status": "active",
+      "issued_at": "2026-08-30T02:01:36.200100+00:00",
+      "file": "",
+      "file_content_type": "",
+      "file_size": null
+    },
+    {
+      "id": 41,
+      "patient_id": 5,
+      "doctor_id": 4,
+      "medications": "",
+      "dosage_instructions": "",
+      "notes": "",
+      "consultation_id": null,
+      "prescription_type": "handwritten",
+      "status": "active",
+      "issued_at": "2026-08-30T02:01:36.223929+00:00",
+      "file": "prescription_documents/rx_scan_42db3512b6014a04bfe4df7f7603ba1b.jpg",
+      "file_content_type": "image/jpeg",
+      "file_size": 1725853
+    },
+    {
+      "id": 42,
+      "patient_id": 5,
+      "doctor_id": 5,
+      "medications": "hello  (52365) - 45days\nTimings: \nInstructions: okay",
+      "dosage_instructions": "okay",
+      "notes": "dawai khao",
+      "consultation_id": null,
+      "prescription_type": "digital",
+      "status": "active",
+      "issued_at": "2026-08-30T02:01:36.242591+00:00",
+      "file": "",
+      "file_content_type": "",
+      "file_size": null
+    },
+    {
+      "id": 43,
+      "patient_id": 5,
+      "doctor_id": 4,
+      "medications": "",
+      "dosage_instructions": "",
+      "notes": "",
+      "consultation_id": null,
+      "prescription_type": "handwritten",
+      "status": "active",
+      "issued_at": "2026-08-30T02:01:36.258153+00:00",
+      "file": "prescription_documents/rx_scan_42db3512b6014a04bfe4df7f7603ba1b.jpg",
+      "file_content_type": "image/jpeg",
+      "file_size": 1725853
+    },
+    {
+      "id": 44,
+      "patient_id": 5,
+      "doctor_id": 4,
+      "medications": "",
+      "dosage_instructions": "",
+      "notes": "",
+      "consultation_id": null,
+      "prescription_type": "handwritten",
+      "status": "active",
+      "issued_at": "2026-08-30T02:01:36.273590+00:00",
+      "file": "prescription_documents/rx_scan_fe3305310eb34aeca174cb22d8b17d97.jpg",
+      "file_content_type": "image/jpeg",
+      "file_size": 1563540
     }
   ]
 }

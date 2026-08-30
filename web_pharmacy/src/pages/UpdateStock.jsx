@@ -4,6 +4,36 @@ import { stockApi } from '../services/apiService';
 import { useSync } from '../context/SyncContext';
 import { PageHeader, ErrorBanner } from '../components/ui/PageHeader';
 
+function asList(data) {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.results)) return data.results;
+  return [];
+}
+
+function localISODate(offsetDays = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function defaultBatchNo() {
+  return `BAT-${localISODate().replace(/-/g, '')}`;
+}
+
+function skuFromName(name) {
+  const base = String(name || 'MED')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 16);
+  return `${base || 'MED'}-${Date.now().toString(36).slice(-4).toUpperCase()}`;
+}
+
+const fieldClass = 'mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 bg-white';
+
 export default function UpdateStock() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -22,33 +52,56 @@ export default function UpdateStock() {
   const [ok, setOk] = useState('');
   const [saving, setSaving] = useState(false);
   const [mode, setMode] = useState(params.get('add') ? 'new' : 'existing');
+  const [catalogQuery, setCatalogQuery] = useState('');
   const [newForm, setNewForm] = useState({
     facility_id: '',
     catalog_id: '',
-    batch_no: '',
-    expiry_date: '',
+    batch_no: defaultBatchNo(),
+    expiry_date: localISODate(365),
     reorder_level: 20,
+    new_name: '',
+    new_sku: '',
+    new_strength: '',
+    new_form: 'Tablet',
   });
 
+  const addingNewMedicine = newForm.catalog_id === '__new__';
+
   useEffect(() => {
+    let cancelled = false;
     (async () => {
-      try {
-        const [b, c, f] = await Promise.all([
-          stockApi.batches(),
-          stockApi.catalog({ active: 1 }),
-          stockApi.facilities(),
-        ]);
-        setBatches(Array.isArray(b) ? b : b.results || []);
-        setCatalog(Array.isArray(c) ? c : c.results || []);
-        const facs = Array.isArray(f) ? f : f.results || [];
-        setFacilities(facs);
-        if (facs[0] && !newForm.facility_id) {
-          setNewForm((s) => ({ ...s, facility_id: String(facs[0].id) }));
+      const load = async (fn, fallback) => {
+        try {
+          return asList(await fn());
+        } catch (e) {
+          if (!cancelled) setError((prev) => prev || e.message);
+          return fallback;
         }
-      } catch (e) {
-        setError(e.message);
+      };
+      const [b, c, f] = await Promise.all([
+        load(() => stockApi.batches(), []),
+        load(() => stockApi.catalog({ active: 1 }), []),
+        load(() => stockApi.facilities(), []),
+      ]);
+      if (cancelled) return;
+      setBatches(b);
+      setCatalog(c);
+      setFacilities(f);
+      setNewForm((s) => ({
+        ...s,
+        facility_id: s.facility_id || (f[0] ? String(f[0].id) : ''),
+        catalog_id: s.catalog_id || (c[0] ? String(c[0].id) : c.length ? '' : '__new__'),
+      }));
+      if (!params.get('batch') && b[0]) {
+        setBatchId(String(b[0].id));
+      }
+      if (!c.length) {
+        setError((prev) => prev || 'Medicine catalog is empty — add the medicine details below, then save.');
       }
     })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -56,6 +109,15 @@ export default function UpdateStock() {
     () => batches.find((b) => String(b.id) === String(batchId)),
     [batches, batchId],
   );
+
+  const filteredCatalog = useMemo(() => {
+    const q = catalogQuery.trim().toLowerCase();
+    if (!q) return catalog;
+    return catalog.filter((c) => {
+      const hay = `${c.display_name || ''} ${c.name || ''} ${c.sku || ''} ${c.strength || ''}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [catalog, catalogQuery]);
 
   const preview = useMemo(() => {
     const current = selected?.quantity ?? 0;
@@ -67,6 +129,28 @@ export default function UpdateStock() {
     return { current, qty, next };
   }, [selected, quantity, action]);
 
+  const patchNew = (patch) => setNewForm((s) => ({ ...s, ...patch }));
+
+  const ensureCatalogId = async () => {
+    if (newForm.catalog_id && newForm.catalog_id !== '__new__') {
+      return Number(newForm.catalog_id);
+    }
+    const name = newForm.new_name.trim();
+    if (!name) throw new Error('Enter a medicine name, or pick one from the catalog.');
+    const created = await stockApi.createCatalog({
+      sku: (newForm.new_sku || skuFromName(name)).trim(),
+      name,
+      form: newForm.new_form || 'Tablet',
+      strength: newForm.new_strength.trim(),
+      category: 'General',
+      unit: 'units',
+      is_active: true,
+    });
+    setCatalog((prev) => [created, ...prev]);
+    patchNew({ catalog_id: String(created.id) });
+    return created.id;
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -75,10 +159,14 @@ export default function UpdateStock() {
     try {
       let body;
       if (mode === 'new') {
+        if (!newForm.facility_id) throw new Error('Select a facility');
+        if (!newForm.batch_no.trim()) throw new Error('Enter a batch number');
+        if (!newForm.expiry_date) throw new Error('Choose an expiry date');
+        const catalogId = await ensureCatalogId();
         body = {
           facility_id: Number(newForm.facility_id),
-          catalog_id: Number(newForm.catalog_id),
-          batch_no: newForm.batch_no,
+          catalog_id: catalogId,
+          batch_no: newForm.batch_no.trim(),
           expiry_date: newForm.expiry_date,
           reorder_level: Number(newForm.reorder_level) || 20,
           action,
@@ -135,7 +223,7 @@ export default function UpdateStock() {
             <label className="block text-sm">
               Medicine / Batch
               <select
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5"
+                className={fieldClass}
                 value={batchId}
                 onChange={(e) => setBatchId(e.target.value)}
                 required
@@ -147,42 +235,109 @@ export default function UpdateStock() {
                   </option>
                 ))}
               </select>
+              {!batches.length ? (
+                <p className="mt-2 text-xs text-amber-700">No batches yet. Switch to “New medicine / batch”.</p>
+              ) : null}
             </label>
           ) : (
-            <div className="grid sm:grid-cols-2 gap-3">
-              <label className="block text-sm">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <label className="block text-sm sm:col-span-2">
                 Facility
                 <select
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5"
+                  className={fieldClass}
                   value={newForm.facility_id}
-                  onChange={(e) => setNewForm({ ...newForm, facility_id: e.target.value })}
+                  onChange={(e) => patchNew({ facility_id: e.target.value })}
                   required
                 >
+                  {!facilities.length ? <option value="">No facilities found</option> : null}
                   {facilities.map((f) => (
-                    <option key={f.id} value={f.id}>{f.name}</option>
+                    <option key={f.id} value={f.id}>{f.name}{f.village ? ` · ${f.village}` : ''}</option>
                   ))}
                 </select>
               </label>
-              <label className="block text-sm">
+              <label className="block text-sm sm:col-span-2">
+                Search catalog
+                <input
+                  className={fieldClass}
+                  placeholder="Type to filter: paracetamol, AMOX, 500mg…"
+                  value={catalogQuery}
+                  onChange={(e) => setCatalogQuery(e.target.value)}
+                />
+              </label>
+              <label className="block text-sm sm:col-span-2">
                 Medicine
                 <select
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5"
+                  className={fieldClass}
                   value={newForm.catalog_id}
-                  onChange={(e) => setNewForm({ ...newForm, catalog_id: e.target.value })}
+                  onChange={(e) => patchNew({ catalog_id: e.target.value })}
                   required
                 >
                   <option value="">Select catalog item</option>
-                  {catalog.map((c) => (
-                    <option key={c.id} value={c.id}>{c.display_name || c.name} ({c.sku})</option>
+                  {filteredCatalog.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.display_name || c.name} {c.sku ? `(${c.sku})` : ''}
+                    </option>
                   ))}
+                  <option value="__new__">+ Add a medicine not in this list</option>
                 </select>
+                {!catalog.length ? (
+                  <p className="mt-2 text-xs text-amber-700">Catalog is empty. Use “Add a medicine not in this list”.</p>
+                ) : null}
               </label>
+              {addingNewMedicine ? (
+                <>
+                  <label className="block text-sm">
+                    New medicine name
+                    <input
+                      className={fieldClass}
+                      placeholder="e.g. Paracetamol"
+                      value={newForm.new_name}
+                      onChange={(e) => patchNew({ new_name: e.target.value })}
+                      required
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    Strength
+                    <input
+                      className={fieldClass}
+                      placeholder="e.g. 500mg"
+                      value={newForm.new_strength}
+                      onChange={(e) => patchNew({ new_strength: e.target.value })}
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    Form
+                    <select
+                      className={fieldClass}
+                      value={newForm.new_form}
+                      onChange={(e) => patchNew({ new_form: e.target.value })}
+                    >
+                      <option>Tablet</option>
+                      <option>Capsule</option>
+                      <option>Syrup</option>
+                      <option>Injection</option>
+                      <option>Ointment</option>
+                      <option>Drops</option>
+                    </select>
+                  </label>
+                  <label className="block text-sm">
+                    SKU (optional)
+                    <input
+                      className={fieldClass}
+                      placeholder="Auto-generated if blank"
+                      value={newForm.new_sku}
+                      onChange={(e) => patchNew({ new_sku: e.target.value })}
+                    />
+                  </label>
+                </>
+              ) : null}
               <label className="block text-sm">
                 Batch Number
                 <input
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5"
+                  className={fieldClass}
+                  placeholder="e.g. BAT-20260830"
                   value={newForm.batch_no}
-                  onChange={(e) => setNewForm({ ...newForm, batch_no: e.target.value })}
+                  onChange={(e) => patchNew({ batch_no: e.target.value })}
                   required
                 />
               </label>
@@ -190,9 +345,9 @@ export default function UpdateStock() {
                 Expiry Date
                 <input
                   type="date"
-                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5"
+                  className={fieldClass}
                   value={newForm.expiry_date}
-                  onChange={(e) => setNewForm({ ...newForm, expiry_date: e.target.value })}
+                  onChange={(e) => patchNew({ expiry_date: e.target.value })}
                   required
                 />
               </label>
@@ -205,7 +360,7 @@ export default function UpdateStock() {
           <div className="grid sm:grid-cols-2 gap-3">
             <label className="block text-sm">
               Action Type
-              <select className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5" value={action} onChange={(e) => setAction(e.target.value)}>
+              <select className={fieldClass} value={action} onChange={(e) => setAction(e.target.value)}>
                 <option value="add">Add Stock (+)</option>
                 <option value="remove">Remove Stock (−)</option>
                 <option value="adjust">Set Absolute Qty</option>
@@ -218,7 +373,7 @@ export default function UpdateStock() {
               <input
                 type="number"
                 min="0"
-                className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5"
+                className={fieldClass}
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 required
@@ -241,7 +396,7 @@ export default function UpdateStock() {
           <div className="grid sm:grid-cols-2 gap-3">
             <label className="block text-sm">
               Reason for Update
-              <select className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5" value={reason} onChange={(e) => setReason(e.target.value)}>
+              <select className={fieldClass} value={reason} onChange={(e) => setReason(e.target.value)}>
                 <option>New Delivery Received</option>
                 <option>Correction / Recount</option>
                 <option>Dispensed to Patient</option>
@@ -252,20 +407,20 @@ export default function UpdateStock() {
             </label>
             <label className="block text-sm">
               Supplier / Source
-              <input className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5" value={supplierName} onChange={(e) => setSupplierName(e.target.value)} />
+              <input className={fieldClass} value={supplierName} onChange={(e) => setSupplierName(e.target.value)} />
             </label>
             <label className="block text-sm sm:col-span-2">
               Invoice / PO Number
-              <input className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5" value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} />
+              <input className={fieldClass} value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} />
             </label>
             <label className="block text-sm sm:col-span-2">
               Additional Notes
-              <textarea className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 min-h-[90px]" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <textarea className={`${fieldClass} min-h-[90px]`} value={notes} onChange={(e) => setNotes(e.target.value)} />
             </label>
           </div>
         </section>
 
-        <div className="flex justify-end gap-3">
+        <div className="sticky bottom-0 -mx-6 -mb-6 px-6 py-4 bg-white/95 backdrop-blur border-t border-slate-100 flex justify-end gap-3">
           <Link to="/inventory" className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold">Cancel</Link>
           <button type="submit" disabled={saving} className="rounded-xl bg-primary text-white px-5 py-2.5 text-sm font-semibold disabled:opacity-60">
             {saving ? 'Saving…' : 'Update Stock'}

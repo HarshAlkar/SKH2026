@@ -61,6 +61,28 @@ class PermissionDialogService {
     );
   }
 
+  static Future<bool> ensureVoiceInput(BuildContext context) async {
+    final micOk = await ensure(
+      context,
+      permission: Permission.microphone,
+      title: 'Allow microphone',
+      message:
+          'Allow the microphone so you can describe symptoms and book care by speaking.',
+    );
+    if (!micOk || !context.mounted) return false;
+    // iOS needs a separate speech-recognition grant. On Android this is a no-op.
+    final speech = await Permission.speech.status;
+    if (speech.isGranted || speech.isLimited) return true;
+    if (speech.isDenied) {
+      final result = await Permission.speech.request();
+      if (result.isGranted || result.isLimited || result.isDenied) {
+        // Denied-on-Android is fine; RECORD_AUDIO is what the engine uses.
+        return true;
+      }
+    }
+    return true;
+  }
+
   static Future<bool> ensureCallPermissions(
     BuildContext context, {
     required bool isVideo,

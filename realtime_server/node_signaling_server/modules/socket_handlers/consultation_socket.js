@@ -219,6 +219,7 @@ module.exports = (io, socket) => {
   socket.on('send-message', (data) => {
     io.to(roomName(data.consultationId)).emit('new-message', {
       text: data.text,
+      imageUrl: data.imageUrl || '',
       senderId: data.senderId || socket.id,
       timestamp: new Date().toISOString()
     });
@@ -241,6 +242,7 @@ module.exports = (io, socket) => {
     socket.to(`user-${receiverId}`).emit('chat-message', {
       threadId: payload.threadId,
       text: payload.text,
+      imageUrl: payload.imageUrl || '',
       senderId: payload.senderId || socket.id,
       senderName: payload.senderName || '',
       messageId: payload.messageId,

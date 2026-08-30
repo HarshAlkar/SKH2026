@@ -16,6 +16,7 @@ Future<void> showEscalationSheet(
   required bool isAnimal,
   String language = 'en',
   String? summary,
+  String? bookingSymptoms,
   bool forceShow = false,
 }) async {
   final sev = EscalationPolicy.normalize(severity);
@@ -37,6 +38,7 @@ Future<void> showEscalationSheet(
   final disclaimer =
       ScreeningDisclaimer.text(language: language, isAnimal: isAnimal);
   final doctorFirst = !isAnimal && EscalationPolicy.preferDoctorFirst(sev);
+  final notes = (bookingSymptoms ?? '').trim();
 
   await showModalBottomSheet<void>(
     context: context,
@@ -106,6 +108,22 @@ Future<void> showEscalationSheet(
                   ),
                   const SizedBox(height: 10),
                   _EscalationButton(
+                    icon: Icons.event_available,
+                    label: 'Book Doctor',
+                    color: const Color(0xFF0F766E),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.bookAppointment,
+                        arguments: {
+                          if (notes.isNotEmpty) 'symptoms': notes,
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _EscalationButton(
                     icon: Icons.health_and_safety_outlined,
                     label: 'Contact ASHA',
                     color: const Color(0xFF0F766E),
@@ -115,6 +133,22 @@ Future<void> showEscalationSheet(
                     },
                   ),
                 ] else ...[
+                  _EscalationButton(
+                    icon: Icons.event_available,
+                    label: 'Book Doctor',
+                    color: AppColors.primary,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.pushNamed(
+                        context,
+                        AppRoutes.bookAppointment,
+                        arguments: {
+                          if (notes.isNotEmpty) 'symptoms': notes,
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
                   _EscalationButton(
                     icon: Icons.health_and_safety_outlined,
                     label: 'Contact ASHA',

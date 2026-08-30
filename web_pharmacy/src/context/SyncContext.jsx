@@ -64,8 +64,13 @@ export function SyncProvider({ children }) {
           await removePending(client_id);
           await refreshPending();
           return { synced: true, ...res };
-        } catch {
-          // stay queued
+        } catch (e) {
+          const status = e.status;
+          if (status && status >= 400 && status < 500) {
+            await removePending(client_id);
+            await refreshPending();
+            throw e;
+          }
           return { synced: false, queued: true, client_id };
         }
       }

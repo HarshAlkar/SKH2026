@@ -141,7 +141,14 @@ class RouteGenerator {
       case AppRoutes.healthTips:
         return _fadeRoute(const HealthTipsScreen());
       case AppRoutes.bookAppointment:
-        return _fadeRoute(const BookAppointmentScreen());
+        final args = settings.arguments;
+        String? initialSymptoms;
+        if (args is Map) {
+          initialSymptoms = args['symptoms']?.toString();
+        }
+        return _fadeRoute(
+          BookAppointmentScreen(initialSymptoms: initialSymptoms),
+        );
       case AppRoutes.patientAppointments:
         return _fadeRoute(const PatientAppointmentsScreen());
       case AppRoutes.patientAlerts:

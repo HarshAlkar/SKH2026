@@ -17,7 +17,7 @@ import '../escalation_sheet.dart';
 import '../screening_disclaimer.dart';
 import '../screening_health_steps.dart';
 import '../screening_persistence.dart';
-import '../widgets/screening_result_view.dart';
+import '../screening_result_view.dart';
 
 /// Offline-capable livestock symptom screening (One Health).
 class LivestockScreeningScreen extends StatefulWidget {

@@ -7,7 +7,7 @@ import '../escalation_sheet.dart';
 import '../screening_disclaimer.dart';
 import '../screening_health_steps.dart';
 import '../screening_persistence.dart';
-import '../widgets/screening_result_view.dart';
+import '../screening_result_view.dart';
 
 /// Rule-based childhood milestone / growth screening (not a diagnosis).
 class ChildDevelopmentScreen extends StatefulWidget {

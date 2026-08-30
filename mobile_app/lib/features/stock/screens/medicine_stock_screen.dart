@@ -159,7 +159,19 @@ class _MedicineStockScreenState extends State<MedicineStockScreen> {
               ),
             )
           else if (_rows.isEmpty)
-            const Expanded(child: Center(child: Text('No stock found')))
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    widget.canUpdate
+                        ? 'No stock batches yet.\nTap Adjust to add the first delivery.'
+                        : 'No stock found',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            )
           else
             Expanded(
               child: RefreshIndicator(

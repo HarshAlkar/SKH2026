@@ -1,14 +1,14 @@
 import 'package:flutter/foundation.dart';
-import 'dart:io';
 import '../models/symptom_model.dart';
 import '../core/services/api_service.dart';
-import '../features/ai_symptom_checker/services/skin_cnn_service.dart';
+import '../core/services/connectivity_service.dart';
 import '../features/ai_symptom_checker/services/symptom_dataset_service.dart';
 import '../features/ai_symptom_checker/services/symptom_ml_service.dart';
 import '../features/one_health/screening_persistence.dart';
 
 class SymptomProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
+  final ConnectivityService _connectivity = ConnectivityService();
   final List<SymptomModel> _symptoms = [];
   bool _isLoading = false;
   Map<String, dynamic>? _lastAnalysis;
@@ -82,35 +82,44 @@ class SymptomProvider extends ChangeNotifier {
       local = await SymptomMlService.instance.tryPredict(mlInputs, language: language);
     }
 
+    var usedServerAsPrimary = false;
     if (local == null) {
       final err = SymptomMlService.instance.lastError ??
           SymptomMlService.missingMessage;
-      if (kDebugMode) {
-        debugPrint('SymptomProvider TFLite unavailable: $err — trying CSV fallback');
-      }
-      final csv = await SymptomDatasetService.instance.predict(
-        mlInputs,
-        language: language,
-      );
-      if (csv != null && csv['result_state'] != 'INSUFFICIENT_INPUT') {
-        local = {
-          ...csv,
-          'result_state': csv['result_state'] ?? 'SUCCESS_FALLBACK',
-          'ml_error': err,
-        };
-      } else if (csv != null && csv['result_state'] == 'INSUFFICIENT_INPUT') {
-        local = csv;
-      } else if (mlInputs.isNotEmpty) {
-        // Valid symptoms provided but model missing → MODEL_ERROR, not Low risk.
-        local = _modelErrorResult(err);
+      final online = await _connectivity.isConnected();
+      if (online) {
+        if (kDebugMode) {
+          debugPrint('SymptomProvider TFLite unavailable: $err — trying server ML');
+        }
+        final server = await _tryServerAnalyze(
+          mlInputs: mlInputs,
+          symptomsText: symptomsText,
+          recognizedText: recognizedText,
+          language: language,
+        );
+        if (server != null) {
+          local = server;
+          usedServerAsPrimary = true;
+        } else if (mlInputs.isNotEmpty) {
+          local = _modelErrorResult(err);
+        } else {
+          local = {
+            ..._modelErrorResult(err),
+            'result_state': 'INSUFFICIENT_INPUT',
+            'disease': 'Not enough recognizable symptoms',
+            'possible_condition': 'Not enough recognizable symptoms',
+            'disease_display': 'Not enough recognizable symptoms',
+          };
+        }
       } else {
-        local = {
-          ..._modelErrorResult(err),
-          'result_state': 'INSUFFICIENT_INPUT',
-          'disease': 'Not enough recognizable symptoms',
-          'possible_condition': 'Not enough recognizable symptoms',
-          'disease_display': 'Not enough recognizable symptoms',
-        };
+        if (kDebugMode) {
+          debugPrint('SymptomProvider TFLite unavailable offline: $err — CSV fallback');
+        }
+        local = await _csvFallback(
+          mlInputs: mlInputs,
+          language: language,
+          err: err,
+        );
       }
     }
 
@@ -136,17 +145,22 @@ class SymptomProvider extends ChangeNotifier {
         inputText: inputText,
         result: result,
       );
-      try {
-        await _apiService.post(
-          '/symptoms/analyze/',
-          body: {
-            'symptoms': symptomsText ?? recognizedText ?? inputText,
-            if (recognizedText != null) 'recognized_text': recognizedText,
-            'language': language,
-          },
-          timeout: const Duration(seconds: 12),
-        );
-      } catch (_) {}
+      if (!usedServerAsPrimary) {
+        try {
+          await _apiService.post(
+            '/symptoms/analyze/',
+            body: {
+              'symptoms': mlInputs.isNotEmpty
+                  ? mlInputs
+                  : (symptomsText ?? recognizedText ?? inputText),
+              if (recognizedText != null && recognizedText.isNotEmpty)
+                'recognized_text': recognizedText,
+              'language': language,
+            },
+            timeout: const Duration(seconds: 12),
+          );
+        } catch (_) {}
+      }
     }
 
     _lastAnalysis = result;
@@ -155,8 +169,91 @@ class SymptomProvider extends ChangeNotifier {
     return _lastAnalysis;
   }
 
-  Future<Map<String, dynamic>?> analyzeSkin(
-    File? imageFile, {
+  Future<Map<String, dynamic>> _csvFallback({
+    required List<String> mlInputs,
+    required String language,
+    required String err,
+  }) async {
+    final csv = await SymptomDatasetService.instance.predict(
+      mlInputs,
+      language: language,
+    );
+    if (csv != null && csv['result_state'] != 'INSUFFICIENT_INPUT') {
+      return {
+        ...csv,
+        'result_state': csv['result_state'] ?? 'SUCCESS_FALLBACK',
+        'ml_error': err,
+      };
+    }
+    if (csv != null && csv['result_state'] == 'INSUFFICIENT_INPUT') {
+      return csv;
+    }
+    if (mlInputs.isNotEmpty) {
+      return _modelErrorResult(err);
+    }
+    return {
+      ..._modelErrorResult(err),
+      'result_state': 'INSUFFICIENT_INPUT',
+      'disease': 'Not enough recognizable symptoms',
+      'possible_condition': 'Not enough recognizable symptoms',
+      'disease_display': 'Not enough recognizable symptoms',
+    };
+  }
+
+  Future<Map<String, dynamic>?> _tryServerAnalyze({
+    required List<String> mlInputs,
+    String? symptomsText,
+    String? recognizedText,
+    required String language,
+  }) async {
+    try {
+      final raw = await _apiService.post(
+        '/symptoms/analyze/',
+        body: {
+          'symptoms': mlInputs.isNotEmpty
+              ? mlInputs
+              : (symptomsText ?? recognizedText ?? ''),
+          if (recognizedText != null && recognizedText.isNotEmpty)
+            'recognized_text': recognizedText,
+          'language': language,
+        },
+        timeout: const Duration(seconds: 12),
+      );
+      return _mapServerAnalysis(raw, language);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('SymptomProvider server analyze failed: $e');
+      }
+      return null;
+    }
+  }
+
+  Map<String, dynamic>? _mapServerAnalysis(dynamic raw, String language) {
+    if (raw is! Map) return null;
+    final map = Map<String, dynamic>.from(raw);
+    if (map['error'] != null && map['disease'] == null) return null;
+    final source = (map['source'] ?? 'symptom_ml').toString();
+    final trained = source == 'symptom_ml' || source == 'server_ml';
+    if (!trained) {
+      if (kDebugMode) {
+        debugPrint(
+          'SymptomProvider refusing server CSV fallback while online (source=$source)',
+        );
+      }
+      return null;
+    }
+    map['source'] = 'server_ml';
+    map['possible_condition'] =
+        map['possible_condition'] ?? map['disease_display'] ?? map['disease'];
+    map['disease_display'] =
+        map['disease_display'] ?? map['possible_condition'] ?? map['disease'];
+    map['score_type'] = 'model_probability';
+    map['result_state'] = 'SUCCESS_SERVER_ML';
+    map['language'] = language;
+    return map;
+  }
+
+  Future<Map<String, dynamic>?> analyzeSkin({
     String language = 'en',
     List<String>? skinSymptomTokens,
   }) async {
@@ -164,69 +261,35 @@ class SymptomProvider extends ChangeNotifier {
     _lastAnalysis = null;
     notifyListeners();
 
-    if (imageFile != null) {
-      final local = await SkinCnnService.instance.tryPredict(imageFile);
-      if (local != null) {
-        await ScreeningPersistence.instance.enqueueHuman(
-          inputType: 'image',
-          inputText: 'skin_photo:${imageFile.path.split(RegExp(r'[\\/]')).last}',
-          result: local,
-        );
-        try {
-          await _apiService.postMultipart(
-            '/symptoms/analyze-skin/',
-            file: imageFile,
-            fields: {'language': language},
-            timeout: const Duration(seconds: 12),
-          );
-        } catch (_) {}
-        _lastAnalysis = local;
-        _isLoading = false;
-        notifyListeners();
-        return _lastAnalysis;
-      }
-
-      try {
-        final response = await _apiService.postMultipart(
-          '/symptoms/analyze-skin/',
-          file: imageFile,
-          fields: {'language': language},
-          timeout: const Duration(seconds: 60),
-        );
-        _lastAnalysis = response is Map<String, dynamic>
-            ? response
-            : Map<String, dynamic>.from(response as Map);
-        _isLoading = false;
-        notifyListeners();
-        return _lastAnalysis;
-      } catch (_) {}
+    if (skinSymptomTokens == null || skinSymptomTokens.isEmpty) {
+      _isLoading = false;
+      notifyListeners();
+      throw Exception('Select at least one skin symptom');
     }
 
-    if (skinSymptomTokens != null && skinSymptomTokens.isNotEmpty) {
-      final dataset = await SymptomMlService.instance.tryPredict(
-            skinSymptomTokens,
-            language: language,
-          ) ??
-          await SymptomDatasetService.instance.predict(
-            skinSymptomTokens,
-            skinOnly: true,
-            language: language,
-          );
-      if (dataset != null) {
-        await ScreeningPersistence.instance.enqueueHuman(
-          inputType: 'symptoms',
-          inputText: skinSymptomTokens.join(', '),
-          result: dataset,
+    final dataset = await SymptomMlService.instance.tryPredict(
+          skinSymptomTokens,
+          language: language,
+        ) ??
+        await SymptomDatasetService.instance.predict(
+          skinSymptomTokens,
+          skinOnly: true,
+          language: language,
         );
-        _lastAnalysis = dataset;
-        _isLoading = false;
-        notifyListeners();
-        return _lastAnalysis;
-      }
+    if (dataset != null) {
+      await ScreeningPersistence.instance.enqueueHuman(
+        inputType: 'symptoms',
+        inputText: skinSymptomTokens.join(', '),
+        result: dataset,
+      );
+      _lastAnalysis = dataset;
+      _isLoading = false;
+      notifyListeners();
+      return _lastAnalysis;
     }
 
     _isLoading = false;
     notifyListeners();
-    throw Exception(SkinCnnService.missingMessage);
+    throw Exception('Skin screening could not be completed. Please try again.');
   }
 }

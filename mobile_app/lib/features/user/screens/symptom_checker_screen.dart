@@ -1,7 +1,4 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -10,6 +7,7 @@ import '../../../core/services/api_service.dart';
 import '../../../core/l10n/language_id_service.dart';
 import '../../../core/services/locale_controller.dart';
 import '../../../core/services/permission_dialog_service.dart';
+import '../../../core/services/voice_recognition_service.dart';
 import '../../../l10n/l10n.dart';
 import '../../../routes/app_routes.dart';
 import '../../../providers/symptom_provider.dart';
@@ -21,10 +19,8 @@ import '../../ai_symptom_checker/services/symptom_text_extractor.dart';
 import '../../one_health/escalation_policy.dart';
 import '../../one_health/escalation_sheet.dart';
 import '../../one_health/screening_health_steps.dart';
-import '../../one_health/widgets/screening_result_view.dart';
+import '../../one_health/screening_result_view.dart';
 import '../widgets/user_sidebar.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 
 
@@ -48,17 +44,14 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
   bool _showResult = false;
   bool _notifying = false;
   String _checkerMode = 'symptoms';
-  File? _skinImage;
-  bool _skinImageConfirmed = false;
-  final ImagePicker _picker = ImagePicker();
 
-  final stt.SpeechToText _speech = stt.SpeechToText();
+  final VoiceRecognitionService _voice = VoiceRecognitionService.instance;
   bool _isListening = false;
+  bool _voiceAnalyzeQueued = false;
   String _voiceText = '';
   String _sttError = '';
   String _selectedLanguage = 'English';
   String _localeId = 'en-IN';
-  List<stt.LocaleName> _availableLocales = [];
 
   String _getTxt(String key) {
     final l = context.l10n;
@@ -87,18 +80,8 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
         return l.tabSkin;
       case 'skin_desc':
         return l.skinDesc;
-      case 'take_photo':
-        return l.takePhoto;
-      case 'pick_gallery':
-        return l.pickGallery;
       case 'analyze_skin':
         return l.analyzeSkin;
-      case 'retake':
-        return l.retake;
-      case 'use_photo':
-        return l.usePhoto;
-      case 'camera_denied':
-        return l.cameraDenied;
       case 'skin_symptoms':
         return l.skinSymptoms;
       case 'skin_disclaimer':
@@ -109,6 +92,8 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
         return l.askAi;
       case 'consult':
         return l.contactDoctor;
+      case 'book':
+        return l.bookAppointment;
       case 'notify':
         return l.contactAsha;
       case 'notified':
@@ -171,6 +156,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
 
   @override
   void dispose() {
+    _voice.stop();
     _freeTextCtrl.dispose();
     super.dispose();
   }
@@ -199,20 +185,10 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
   }
 
   String _speechLocaleFor(String lang) {
-    if (lang == 'Marathi') {
-      final mr = _availableLocales.where(
-        (l) => l.localeId.toLowerCase().startsWith('mr'),
-      );
-      if (mr.isNotEmpty) return mr.first.localeId;
-      final hi = _availableLocales.where((l) => l.localeId.contains('hi'));
-      return hi.isNotEmpty ? hi.first.localeId : 'hi-IN';
-    }
-    if (lang == 'Hindi') {
-      final hi = _availableLocales.where((l) => l.localeId.contains('hi'));
-      return hi.isNotEmpty ? hi.first.localeId : 'hi-IN';
-    }
-    final en = _availableLocales.where((l) => l.localeId.contains('en'));
-    return en.isNotEmpty ? en.first.localeId : 'en-IN';
+    final preferred = lang == 'Marathi'
+        ? 'mr-IN'
+        : (lang == 'Hindi' ? 'hi-IN' : 'en-IN');
+    return _voice.resolveLocaleId(preferred);
   }
 
   Future<void> _setLanguage(String lang) async {
@@ -224,79 +200,107 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     await LocaleController.instance.setLanguage(code);
   }
 
-  void _initSpeech() async {
+  Future<void> _initSpeech() async {
     try {
-      bool hasSpeech = await _speech.initialize(
-        onError: (errorNotification) {
-          debugPrint('STT Error: $errorNotification');
-          if (mounted) {
-            setState(() {
-              _sttError = errorNotification.errorMsg;
-              _isListening = false;
-            });
-          }
-        },
-        onStatus: (status) {
-          debugPrint('STT Status: $status');
-          if (status == 'notListening' || status == 'done') {
-            if (mounted) setState(() => _isListening = false);
-          }
-        },
+      final ok = await _voice.initialize(
+        onStatus: _onSpeechStatus,
+        onError: _onSpeechError,
       );
-      
-      if (hasSpeech) {
-        _availableLocales = await _speech.locales();
-        for (var locale in _availableLocales) {
-          debugPrint('Available Locale: ${locale.name} [${locale.localeId}]');
+      if (!mounted) return;
+      setState(() {
+        _localeId = _speechLocaleFor(_selectedLanguage);
+        if (!ok) {
+          _sttError = _getTxt('error_init');
         }
-      }
-
-      if (mounted) setState(() {});
-      if (!hasSpeech) {
-        debugPrint('The user has denied the use of speech recognition.');
-      }
+      });
     } catch (e) {
       debugPrint('Speech init failed: $e');
     }
   }
 
-  void _toggleListening() async {
-    if (!_isListening) {
-      bool available = await _speech.initialize();
-      if (available) {
-        setState(() {
-          _isListening = true;
-          _voiceText = '';
-          _sttError = '';
-        });
-        _speech.listen(
-          onResult: (val) => setState(() {
-            _voiceText = val.recognizedWords;
-            _freeTextCtrl.text = val.recognizedWords;
-            _freeTextCtrl.selection = TextSelection.fromPosition(
-              TextPosition(offset: _freeTextCtrl.text.length),
-            );
-            if (val.finalResult) {
-              _isListening = false;
-              _refreshExtractedFromText();
-            }
-          }),
-          localeId: _localeId,
-          listenFor: const Duration(seconds: 60),
-          pauseFor: const Duration(seconds: 10),
-          partialResults: true,
-          onDevice: true,
-          cancelOnError: true,
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_getTxt('speech_denied'))),
-        );
-      }
-    } else {
+  void _onSpeechStatus(String status) {
+    if (!mounted) return;
+    if (status == 'notListening' || status == 'done') {
       setState(() => _isListening = false);
-      _speech.stop();
+      if (_voiceAnalyzeQueued && _voiceText.trim().isNotEmpty && !_isAnalyzing) {
+        _voiceAnalyzeQueued = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _runVoiceToModel();
+        });
+      }
+    } else if (status == 'listening') {
+      setState(() => _isListening = true);
     }
+  }
+
+  void _onSpeechError(String error) {
+    if (!mounted) return;
+    setState(() {
+      _sttError = error;
+      _isListening = false;
+    });
+  }
+
+  Future<void> _toggleListening() async {
+    if (_isListening) {
+      setState(() {
+        _isListening = false;
+        _voiceAnalyzeQueued = _voiceText.trim().isNotEmpty;
+      });
+      await _voice.stop();
+      return;
+    }
+
+    final allowed = await PermissionDialogService.ensureVoiceInput(context);
+    if (!mounted) return;
+    if (!allowed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_getTxt('speech_denied'))),
+      );
+      return;
+    }
+
+    setState(() {
+      _isListening = true;
+      _voiceText = '';
+      _sttError = '';
+      _voiceAnalyzeQueued = false;
+      _localeId = _speechLocaleFor(_selectedLanguage);
+    });
+
+    final started = await _voice.startListening(
+      localeId: _localeId,
+      onStatus: _onSpeechStatus,
+      onError: _onSpeechError,
+      onResult: (text, isFinal) {
+        if (!mounted) return;
+        setState(() {
+          _voiceText = text;
+          _freeTextCtrl.text = text;
+          _freeTextCtrl.selection = TextSelection.fromPosition(
+            TextPosition(offset: _freeTextCtrl.text.length),
+          );
+        });
+        if (isFinal && text.trim().isNotEmpty) {
+          _voiceAnalyzeQueued = true;
+        }
+      },
+    );
+
+    if (!started && mounted) {
+      setState(() => _isListening = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_getTxt('speech_denied'))),
+      );
+    }
+  }
+
+  Future<void> _runVoiceToModel() async {
+    if (_isAnalyzing) return;
+    await _voice.stop();
+    if (!mounted) return;
+    _refreshExtractedFromText();
+    await _analyzeSymptoms();
   }
 
   void _toggleSymptom(String token) {
@@ -442,100 +446,10 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     }
   }
 
-  Future<void> _pickSkinImage(ImageSource source) async {
-    if (source == ImageSource.camera) {
-      final allowed = await PermissionDialogService.ensure(
-        context,
-        permission: Permission.camera,
-        title: _selectedLanguage == 'Hindi' ? 'कैमरा अनुमति' : 'Allow camera',
-        message: _selectedLanguage == 'Hindi'
-            ? 'त्वचा फोटो लेने के लिए कैमरा अनुमति दें।'
-            : 'Allow camera so VitalReach can take a skin photo.',
-      );
-      if (!allowed || !mounted) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_getTxt('camera_denied')),
-            action: SnackBarAction(
-              label: _getTxt('pick_gallery'),
-              onPressed: () => _pickSkinImage(ImageSource.gallery),
-            ),
-          ),
-        );
-        return;
-      }
-    } else {
-      final allowed = await PermissionDialogService.ensure(
-        context,
-        permission: Permission.photos,
-        title: _selectedLanguage == 'Hindi' ? 'गैलरी अनुमति' : 'Allow photos',
-        message: _selectedLanguage == 'Hindi'
-            ? 'त्वचा फोटो चुनने के लिए गैलरी अनुमति दें।'
-            : 'Allow photo access so VitalReach can use a gallery image for skin screening.',
-      );
-      if (!allowed || !mounted) return;
-    }
-    try {
-      final picked = await _picker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-      if (picked == null) return;
-      final file = File(picked.path);
-      if (!await file.exists()) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not read the selected image.')),
-        );
-        return;
-      }
-      setState(() {
-        _skinImage = file;
-        _skinImageConfirmed = false;
-        _showResult = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Image capture failed: $e'),
-          action: source == ImageSource.camera
-              ? SnackBarAction(
-                  label: _getTxt('pick_gallery'),
-                  onPressed: () => _pickSkinImage(ImageSource.gallery),
-                )
-              : null,
-        ),
-      );
-    }
-  }
-
-  void _retakeSkinPhoto() {
-    setState(() {
-      _skinImage = null;
-      _skinImageConfirmed = false;
-      _showResult = false;
-    });
-  }
-
-  void _confirmSkinPhoto() {
-    if (_skinImage == null) return;
-    setState(() => _skinImageConfirmed = true);
-  }
-
   Future<void> _analyzeSkin() async {
-    if (_skinImage == null && _selectedSkinSymptoms.isEmpty) {
+    if (_selectedSkinSymptoms.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_getTxt('skin_first'))),
-      );
-      return;
-    }
-    if (_skinImage != null && !_skinImageConfirmed) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_getTxt('use_photo'))),
       );
       return;
     }
@@ -545,7 +459,6 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     });
     try {
       await Provider.of<SymptomProvider>(context, listen: false).analyzeSkin(
-        _skinImage,
         language: _langCode(),
         skinSymptomTokens: List<String>.from(_selectedSkinSymptoms),
       );
@@ -619,15 +532,40 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
     );
   }
 
-  void _escalateHuman({required bool preferDoctor}) {
+  String _screeningSymptomsText() {
+    if (_checkerMode == 'skin') return _selectedSkinSymptoms.join(', ');
+    return [..._selectedSymptoms, ..._extractedSymptoms].join(', ');
+  }
+
+  String _bookingNotes() {
+    final analysis =
+        Provider.of<SymptomProvider>(context, listen: false).lastAnalysis;
+    final finding = analysis?['possible_condition']?.toString() ??
+        analysis?['disease']?.toString() ??
+        'Elevated-risk screening result';
+    final severity = analysis?['severity']?.toString() ?? 'High';
+    final symptoms = _screeningSymptomsText();
+    final parts = <String>[];
+    if (symptoms.trim().isNotEmpty) parts.add(symptoms.trim());
+    parts.add('Screening: $finding (risk: $severity). Not a diagnosis.');
+    return parts.join('. ');
+  }
+
+  void _bookDoctor() {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.bookAppointment,
+      arguments: {'symptoms': _bookingNotes()},
+    );
+  }
+
+  void _escalateHuman() {
     final analysis = Provider.of<SymptomProvider>(context, listen: false).lastAnalysis;
     final finding = analysis?['possible_condition']?.toString() ??
         analysis?['disease']?.toString() ??
         'Elevated-risk screening result';
     final severity = analysis?['severity']?.toString() ?? 'High';
-    final symptoms = _checkerMode == 'skin'
-        ? _selectedSkinSymptoms.join(', ')
-        : [..._selectedSymptoms, ..._extractedSymptoms].join(', ');
+    final symptoms = _screeningSymptomsText();
     final summary = EscalationPolicy.careTeamSummary(
       domain: _resultDomain(),
       possibleFinding: finding,
@@ -637,25 +575,15 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       offlineQueued: analysis?['queued_offline'] == true,
       aiSource: analysis?['source']?.toString(),
     );
-    if (preferDoctor) {
-      showEscalationSheet(
-        context,
-        severity: severity,
-        isAnimal: false,
-        language: _langCode(),
-        summary: summary,
-        forceShow: true,
-      );
-    } else {
-      showEscalationSheet(
-        context,
-        severity: severity,
-        isAnimal: false,
-        language: _langCode(),
-        summary: summary,
-        forceShow: true,
-      );
-    }
+    showEscalationSheet(
+      context,
+      severity: severity,
+      isAnimal: false,
+      language: _langCode(),
+      summary: summary,
+      bookingSymptoms: _bookingNotes(),
+      forceShow: true,
+    );
   }
 
   Future<void> _notifyAsha() async {
@@ -882,7 +810,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
         ButtonSegment(
           value: 'skin',
           label: Text(_getTxt('tab_skin')),
-          icon: const Icon(Icons.photo_camera_outlined),
+          icon: const Icon(Icons.spa_outlined),
         ),
       ],
       selected: {_checkerMode},
@@ -890,9 +818,6 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
         setState(() {
           _checkerMode = value.first;
           _showResult = false;
-          if (value.first != 'skin') {
-            _skinImageConfirmed = false;
-          }
         });
       },
       style: ButtonStyle(
@@ -921,93 +846,6 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
           _getTxt('skin_desc'),
           style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
         ),
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          height: 220,
-          decoration: BoxDecoration(
-            color: const Color(0xFFF5F7FA),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: _skinImage == null
-              ? const Center(
-                  child: Icon(Icons.image_outlined, size: 56, color: Colors.grey),
-                )
-              : Image.file(_skinImage!, fit: BoxFit.cover),
-        ),
-        const SizedBox(height: 16),
-        if (_skinImage == null) ...[
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickSkinImage(ImageSource.camera),
-                  icon: const Icon(Icons.photo_camera_outlined),
-                  label: Text(_getTxt('take_photo')),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickSkinImage(ImageSource.gallery),
-                  icon: const Icon(Icons.photo_library_outlined),
-                  label: Text(_getTxt('pick_gallery')),
-                ),
-              ),
-            ],
-          ),
-        ] else if (!_skinImageConfirmed) ...[
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _retakeSkinPhoto,
-                  icon: const Icon(Icons.refresh),
-                  label: Text(_getTxt('retake')),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _confirmSkinPhoto,
-                  icon: const Icon(Icons.check),
-                  label: Text(_getTxt('use_photo')),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Preview the photo, then tap Use Photo before analysis.',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-        ] else ...[
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _retakeSkinPhoto,
-                  icon: const Icon(Icons.refresh),
-                  label: Text(_getTxt('retake')),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickSkinImage(ImageSource.gallery),
-                  icon: const Icon(Icons.photo_library_outlined),
-                  label: Text(_getTxt('pick_gallery')),
-                ),
-              ),
-            ],
-          ),
-        ],
         const SizedBox(height: 16),
         Text(
           _getTxt('skin_symptoms'),
@@ -1057,10 +895,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
           child: ElevatedButton(
             onPressed: _isAnalyzing
                 ? null
-                : ((_skinImage != null && _skinImageConfirmed) ||
-                        _selectedSkinSymptoms.isNotEmpty
-                    ? _analyzeSkin
-                    : null),
+                : (_selectedSkinSymptoms.isNotEmpty ? _analyzeSkin : null),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
@@ -1189,10 +1024,11 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary,
+                color: _isListening ? Colors.red : AppColors.primary,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: (_isListening ? Colors.red : AppColors.primary)
+                        .withOpacity(0.3),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
@@ -1221,11 +1057,11 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
                 ),
               ),
             if (_isListening)
-              const Padding(
-                padding: EdgeInsets.only(top: 8.0),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
-                  'Listening... Please speak now',
-                  style: TextStyle(
+                  _getTxt('listening'),
+                  style: const TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
@@ -1312,6 +1148,9 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       case 'SUCCESS_ONDEVICE_ML':
         sourceLabel = 'On-device ML';
         break;
+      case 'SUCCESS_SERVER_ML':
+        sourceLabel = 'Server ML';
+        break;
       case 'SUCCESS_FALLBACK':
         sourceLabel = 'Fallback';
         break;
@@ -1332,6 +1171,7 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
             break;
           case 'dataset_local':
           case 'dataset_skin':
+          case 'dataset_csv':
             sourceLabel = 'Fallback';
             break;
           case 'model_error':
@@ -1419,37 +1259,34 @@ class _SymptomCheckerScreenState extends State<SymptomCheckerScreen> {
       onContactPrimary: EscalationPolicy.shouldShowEscalationButtons(band)
           ? () {
               if (doctorFirst) {
-                _escalateHuman(preferDoctor: true);
+                _escalateHuman();
               } else {
-                final already = analysis['alert_sent'] == true;
-                if (!already && !_notifying) {
-                  _notifyAsha();
-                }
-                _escalateHuman(preferDoctor: false);
+                _bookDoctor();
               }
             }
           : null,
       onContactSecondary: EscalationPolicy.shouldShowEscalationButtons(band)
           ? () {
-              if (doctorFirst) {
-                final already = analysis['alert_sent'] == true;
-                if (!already && !_notifying) {
-                  _notifyAsha();
-                }
-                Navigator.pushNamed(context, AppRoutes.ashaWorkers);
-              } else {
-                Navigator.pushNamed(context, AppRoutes.consultDoctor);
+              final already = analysis['alert_sent'] == true;
+              if (!already && !_notifying) {
+                _notifyAsha();
               }
+              Navigator.pushNamed(context, AppRoutes.ashaWorkers);
             }
           : null,
-      primaryContactLabel: doctorFirst ? _getTxt('consult') : _getTxt('notify'),
-      secondaryContactLabel: doctorFirst ? _getTxt('notify') : _getTxt('consult'),
+      onBookDoctor: EscalationPolicy.shouldShowEscalationButtons(band) &&
+              doctorFirst
+          ? _bookDoctor
+          : null,
+      primaryContactLabel:
+          doctorFirst ? _getTxt('consult') : _getTxt('book'),
+      secondaryContactLabel: _getTxt('notify'),
+      bookDoctorLabel: _getTxt('book'),
       primaryContactIcon: doctorFirst
           ? Icons.medical_services_outlined
-          : Icons.health_and_safety_outlined,
-      secondaryContactIcon: doctorFirst
-          ? Icons.health_and_safety_outlined
-          : Icons.medical_services_outlined,
+          : Icons.event_available,
+      secondaryContactIcon: Icons.health_and_safety_outlined,
+      bookDoctorIcon: Icons.event_available,
     );
   }
 }

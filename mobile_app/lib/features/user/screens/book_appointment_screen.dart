@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/services/locale_controller.dart';
+import '../../../core/services/permission_dialog_service.dart';
+import '../../../core/services/voice_recognition_service.dart';
+import '../../../l10n/l10n.dart';
 import '../services/doctor_service.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
-  const BookAppointmentScreen({super.key});
+  final String? initialSymptoms;
+
+  const BookAppointmentScreen({super.key, this.initialSymptoms});
 
   @override
   State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
@@ -13,13 +19,34 @@ class BookAppointmentScreen extends StatefulWidget {
 class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   final _symptomsController = TextEditingController();
   final DoctorService _doctorService = DoctorService();
+  final VoiceRecognitionService _voice = VoiceRecognitionService.instance;
 
   bool _isAnalyzing = false;
   bool _isBooking = false;
+  bool _isListening = false;
+  bool _voiceSubmitQueued = false;
+  String _sttError = '';
   Map<String, dynamic>? _matchResult;
   
   String? _selectedDate;
   String? _selectedTime;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialSymptoms?.trim();
+    if (initial != null && initial.isNotEmpty) {
+      _symptomsController.text = initial;
+    }
+    _voice.initialize(onStatus: _onSpeechStatus, onError: _onSpeechError);
+  }
+
+  @override
+  void dispose() {
+    _voice.stop();
+    _symptomsController.dispose();
+    super.dispose();
+  }
 
   final List<String> _commonSymptoms = [
     'Fever', 'Cough', 'Pain', 'Weakness',
@@ -35,16 +62,80 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     }
   }
 
-  void _simulateVoiceInput() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Listening... Please speak your symptoms.')),
-    );
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        _symptomsController.text = 'I have a high fever and a bad cough since yesterday.';
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  void _onSpeechStatus(String status) {
+    if (!mounted) return;
+    if (status == 'notListening' || status == 'done') {
+      setState(() => _isListening = false);
+      if (_voiceSubmitQueued &&
+          _symptomsController.text.trim().isNotEmpty &&
+          !_isAnalyzing) {
+        _voiceSubmitQueued = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _submitSymptoms();
+        });
       }
+    } else if (status == 'listening') {
+      setState(() => _isListening = true);
+    }
+  }
+
+  void _onSpeechError(String error) {
+    if (!mounted) return;
+    setState(() {
+      _sttError = error;
+      _isListening = false;
     });
+  }
+
+  Future<void> _toggleVoiceInput() async {
+    if (_isListening) {
+      setState(() {
+        _isListening = false;
+        _voiceSubmitQueued = _symptomsController.text.trim().isNotEmpty;
+      });
+      await _voice.stop();
+      return;
+    }
+
+    final allowed = await PermissionDialogService.ensureVoiceInput(context);
+    if (!mounted) return;
+    if (!allowed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.speechDenied)),
+      );
+      return;
+    }
+
+    setState(() {
+      _isListening = true;
+      _sttError = '';
+      _voiceSubmitQueued = false;
+    });
+
+    final started = await _voice.startListening(
+      localeId: LocaleController.instance.speechLocaleId,
+      onStatus: _onSpeechStatus,
+      onError: _onSpeechError,
+      onResult: (text, isFinal) {
+        if (!mounted) return;
+        setState(() {
+          _symptomsController.text = text;
+          _symptomsController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _symptomsController.text.length),
+          );
+        });
+        if (isFinal && text.trim().isNotEmpty) {
+          _voiceSubmitQueued = true;
+        }
+      },
+    );
+
+    if (!started && mounted) {
+      setState(() => _isListening = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.speechDenied)),
+      );
+    }
   }
 
   void _showError(String rawError) {
@@ -216,15 +307,37 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
-              onPressed: _simulateVoiceInput,
-              icon: const Icon(Icons.mic, color: AppColors.primary),
-              label: const Text('Speak your problem', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+              onPressed: _isAnalyzing ? null : _toggleVoiceInput,
+              icon: Icon(
+                _isListening ? Icons.stop_circle : Icons.mic,
+                color: _isListening ? Colors.red : AppColors.primary,
+              ),
+              label: Text(
+                _isListening
+                    ? context.l10n.listeningSpeak
+                    : 'Speak your problem',
+                style: TextStyle(
+                  color: _isListening ? Colors.red : AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               style: TextButton.styleFrom(
-                backgroundColor: AppColors.lightBlue,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                backgroundColor: _isListening
+                    ? Colors.red.shade50
+                    : AppColors.lightBlue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
             ),
           ),
+          if (_sttError.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              _sttError,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ],
           const SizedBox(height: 24),
           Wrap(
             spacing: 8,

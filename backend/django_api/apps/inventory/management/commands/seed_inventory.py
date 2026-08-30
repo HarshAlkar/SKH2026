@@ -118,15 +118,43 @@ class Command(BaseCommand):
             defaults={'facility': pharmacy, 'designation': 'Chief Pharmacist'},
         )
 
-        # Link existing ASHA workers to Rampur PHC by matching village
+        kaman, _ = HealthcareFacility.objects.get_or_create(
+            name='Kaman Primary Health Centre',
+            defaults={
+                'facility_type': 'phc',
+                'village': 'Kaman',
+                'district': 'Nashik',
+                'latitude': 19.3900,
+                'longitude': 72.9100,
+                'is_active': True,
+            },
+        )
+        StockBatch.objects.update_or_create(
+            facility=kaman,
+            catalog=catalogs[0],
+            batch_no='KAM-PARA-01',
+            defaults={
+                'quantity': 80,
+                'expiry_date': today + timedelta(days=300),
+                'reorder_level': 20,
+                'supplier': supplier,
+            },
+        )
+
+        # Link existing ASHA workers to a nearby PHC
         for asha in ASHAWorker.objects.select_related('user').all():
+            village = (asha.assigned_village or '').lower()
             if not asha.assigned_village:
                 asha.assigned_village = 'Rampur'
                 asha.phc_center = phc.name
                 asha.district = 'Nashik'
                 asha.save()
-            elif 'rampur' in (asha.assigned_village or '').lower() or not asha.phc_center:
-                asha.phc_center = phc.name
+            elif 'kaman' in village:
+                asha.phc_center = asha.phc_center or kaman.name
+                asha.district = asha.district or 'Nashik'
+                asha.save()
+            else:
+                asha.phc_center = asha.phc_center or phc.name
                 asha.district = asha.district or 'Nashik'
                 asha.save()
 

@@ -22,12 +22,45 @@ class SymptomPredictTests(unittest.TestCase):
         self.assertIn("disclaimer", result)
         self.assertNotIn("diagnosis", (result.get("disclaimer") or "").lower().split("not a")[0] if False else "")
         self.assertIn("not a", (result.get("disclaimer") or "").lower())
+        self.assertEqual(result.get("source"), "symptom_ml")
+        self.assertEqual(result.get("score_type"), "model_probability")
 
     def test_empty_symptoms(self):
         from ai_engine.predict import predict_symptoms
 
         result = predict_symptoms([])
         self.assertEqual(result["disease"], "Undetermined")
+
+    def test_csv_fallback_is_not_labeled_trained(self):
+        from ai_engine import predict as predict_mod
+
+        result = predict_mod._csv_fallback(["itching", "skin_rash", "nodal_skin_eruptions"])
+        self.assertEqual(result.get("source"), "dataset_csv")
+        self.assertEqual(result.get("score_type"), "symptom_match_fallback")
+
+    def test_mixed_symptoms_are_not_undetermined(self):
+        from ai_engine.predict import predict_symptoms
+
+        result = predict_symptoms(
+            [
+                "fatigue",
+                "vomiting",
+                "high_fever",
+                "headache",
+                "chest_pain",
+                "dark_urine",
+            ]
+        )
+        self.assertNotEqual(result["disease"], "Undetermined")
+        top = [row["disease"] for row in (result.get("top_predictions") or [])]
+        self.assertTrue(
+            any(
+                name in {"Jaundice", "Typhoid", "Hepatitis D", "Hepatitis B", "Malaria"}
+                for name in top + [result["disease"]]
+            ),
+            msg=f"unexpected ranking: disease={result['disease']} top={top}",
+        )
+        self.assertGreater(float(result["confidence"]), 0.05)
 
 
 class LivestockPredictTests(unittest.TestCase):

@@ -55,12 +55,15 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
         final map = Map<String, dynamic>.from(row);
         records.add(
           HealthRecordModel(
+            id: int.tryParse(map['id']?.toString() ?? ''),
+            patientId: int.tryParse(map['patientId']?.toString() ?? ''),
             patientName: map['patientName']?.toString() ?? 'Patient',
             village: map['village']?.toString() ?? '',
             temperature: map['temperature']?.toString() ?? '--',
             bloodPressure: map['bloodPressure']?.toString() ?? '--',
             bloodSugar: map['bloodSugar']?.toString() ?? '--',
             weight: map['weight']?.toString() ?? '--',
+            symptoms: map['symptoms']?.toString() ?? '',
             lastUpdated: map['lastUpdated']?.toString() ?? '',
             riskLevel: _riskFrom(map['riskLevel']?.toString() ?? ''),
           ),
@@ -221,6 +224,7 @@ class _HealthRecordsScreenState extends State<HealthRecordsScreen> {
                                   itemBuilder: (context, index) {
                                     return HealthRecordCard(
                                       record: _filteredRecords[index],
+                                      onChanged: _load,
                                     );
                                   },
                                 ),

@@ -18,6 +18,7 @@ DISEASE_HI = {
     "Diabetes": "मधुमेह",
     "Heart attack": "हृदयघात",
     "AIDS": "एड्स",
+    "Elevated-risk screening result": "उच्च-जोखिम स्क्रीनिंग परिणाम",
 }
 
 DISEASE_MR = {
@@ -38,6 +39,7 @@ DISEASE_MR = {
     "Diabetes": "मधुमेह",
     "Heart attack": "हृदयविकाराचा झटका",
     "AIDS": "एड्स",
+    "Elevated-risk screening result": "उच्च-धोका स्क्रीनिंग निकाल",
 }
 
 SEVERITY_HI = {
@@ -143,6 +145,9 @@ def localize_analysis(analysis, language="en", alert_sent=False):
     hindi = lang_out == "hi"
     marathi = lang_out == "mr"
     disease = analysis.get("disease") or "Undetermined"
+    headline = analysis.get("possible_condition") or analysis.get("disease_display") or disease
+    if analysis.get("ambiguous") or headline == "Elevated-risk screening result":
+        headline = "Elevated-risk screening result"
     severity = analysis.get("severity") or "Low"
     top = list(analysis.get("top_predictions") or [])
 
@@ -173,7 +178,7 @@ def localize_analysis(analysis, language="en", alert_sent=False):
         disclaimer = DISCLAIMER_EN
 
     return {
-        "disease_display": disease_map.get(disease, disease),
+        "disease_display": disease_map.get(headline, headline),
         "severity_display": severity_map.get(severity, severity),
         "advice": advice_map[advice_key],
         "disclaimer": disclaimer,

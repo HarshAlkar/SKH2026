@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Release builds: cleartext disabled by default (HTTPS only).
-  Debug/local LAN: cleartext allowed only for localhost and private LAN ranges
-  via domain-config when using a debug network_security_config overlay.
-  Production should use HTTPS — TCP/IP alone is NOT encryption; TLS is.
+  Local LAN testing needs HTTP cleartext (phone → PC Wi-Fi IP).
+  Domain-config cannot express CIDR (10.0.0.0/8), so base-config must allow
+  cleartext; otherwise real devices on 10.x / 192.168.x show offline and
+  signaling/WebRTC never connects.
+
+  Production / cloud: use HTTPS hosts (e.g. *.onrender.com) — TLS still applies.
+  Manifest also sets usesCleartextTraffic=true for the same reason.
 -->
 <network-security-config>
-    <base-config cleartextTrafficPermitted="false">
+    <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
@@ -15,10 +18,5 @@
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>
-        <domain includeSubdomains="true">10.0.0.0</domain>
-        <domain includeSubdomains="true">192.168.0.0</domain>
-        <domain includeSubdomains="true">192.168.1.0</domain>
-        <domain includeSubdomains="true">192.168.29.0</domain>
-        <domain includeSubdomains="true">172.16.0.0</domain>
     </domain-config>
 </network-security-config>

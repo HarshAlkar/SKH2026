@@ -520,7 +520,8 @@ class AppLocalizationsHi extends AppLocalizations {
   String get tabSkin => 'त्वचा फोटो';
 
   @override
-  String get skinDesc => 'प्रभावित त्वचा की साफ तस्वीर लें या चुनें';
+  String get skinDesc =>
+      'संभावित स्थितियों की जांच के लिए त्वचा के लक्षण चुनें';
 
   @override
   String get takePhoto => 'फोटो लें';
@@ -542,7 +543,7 @@ class AppLocalizationsHi extends AppLocalizations {
       'कैमरा अनुमति नहीं मिली। आप गैलरी से फोटो चुन सकते हैं।';
 
   @override
-  String get skinSymptoms => 'या त्वचा के लक्षण चुनें';
+  String get skinSymptoms => 'त्वचा के लक्षण चुनें';
 
   @override
   String get skinDisclaimer =>
@@ -605,7 +606,7 @@ class AppLocalizationsHi extends AppLocalizations {
   String get speechDenied => 'वाक् पहचान उपलब्ध नहीं है या अनुमति नहीं मिली';
 
   @override
-  String get skinFirst => 'त्वचा की तस्वीर लें या त्वचा के लक्षण चुनें';
+  String get skinFirst => 'कम से कम एक त्वचा लक्षण चुनें';
 
   @override
   String get severityLow => 'कम';

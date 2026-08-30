@@ -75,11 +75,12 @@ class LocalStore {
   Future<Database> _openPrimary(String path) {
     return openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, _) async {
         await _createV1Tables(db);
         await _createChatTables(db);
         await _upgradeToV3(db);
+        await _upgradeToV4(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
@@ -87,6 +88,9 @@ class LocalStore {
         }
         if (oldVersion < 3) {
           await _upgradeToV3(db);
+        }
+        if (oldVersion < 4) {
+          await _upgradeToV4(db);
         }
       },
     );
@@ -187,6 +191,12 @@ class LocalStore {
     await db.execute('ALTER TABLE outbox ADD COLUMN fields_json TEXT');
     await db.execute('ALTER TABLE chat_messages ADD COLUMN pending_sync INTEGER NOT NULL DEFAULT 0');
     await db.execute('ALTER TABLE chat_messages ADD COLUMN client_id TEXT');
+  }
+
+  Future<void> _upgradeToV4(Database db) async {
+    try {
+      await db.execute('ALTER TABLE chat_messages ADD COLUMN image_url TEXT');
+    } catch (_) {}
   }
 
   Future<int> enqueue({

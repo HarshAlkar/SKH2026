@@ -1087,7 +1087,7 @@ abstract class AppLocalizations {
   /// No description provided for @skinDesc.
   ///
   /// In en, this message translates to:
-  /// **'Take or choose a clear photo of the affected skin'**
+  /// **'Select skin symptoms to screen for possible conditions'**
   String get skinDesc;
 
   /// No description provided for @takePhoto.
@@ -1129,7 +1129,7 @@ abstract class AppLocalizations {
   /// No description provided for @skinSymptoms.
   ///
   /// In en, this message translates to:
-  /// **'Or select skin symptoms from dataset'**
+  /// **'Select skin symptoms'**
   String get skinSymptoms;
 
   /// No description provided for @skinDisclaimer.
@@ -1249,7 +1249,7 @@ abstract class AppLocalizations {
   /// No description provided for @skinFirst.
   ///
   /// In en, this message translates to:
-  /// **'Take a skin photo or select skin symptoms'**
+  /// **'Select at least one skin symptom'**
   String get skinFirst;
 
   /// No description provided for @severityLow.

@@ -82,6 +82,6 @@
 		</array>
 		<!-- Maps SDK for iOS only (restrict by bundle ID). Places key is server-side. -->
 		<key>GMSApiKey</key>
-		<string>AIzaSyB3quMtXIWlnX5IYCsi23xiAjdvQUZy2bs</string>
+		<string>AIzaSyCumVZ_km61Iu2-sQcpoH42b_uc_szeW3c</string>
 	</dict>
 </plist>

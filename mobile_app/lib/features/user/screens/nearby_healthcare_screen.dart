@@ -183,6 +183,26 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
   Set<Marker> get _markers {
     final places = _visiblePlaces;
     final markers = <Marker>{};
+
+    // Always show the device's current GPS position on the map.
+    if (_currentPosition != null) {
+      markers.add(
+        Marker(
+          markerId: const MarkerId('user_current_location'),
+          position: LatLng(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+          ),
+          infoWindow: const InfoWindow(
+            title: 'You are here',
+            snippet: 'Current GPS location',
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+          zIndexInt: 2,
+        ),
+      );
+    }
+
     for (var i = 0; i < places.length; i++) {
       final p = places[i];
       markers.add(
@@ -194,6 +214,7 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
             snippet: '${p.categoryLabel} · ${p.distanceLabel}',
           ),
           icon: BitmapDescriptor.defaultMarkerWithHue(_hueForCategory(p.category)),
+          zIndexInt: 1,
         ),
       );
     }
@@ -373,18 +394,50 @@ class _NearbyHealthcareScreenState extends State<NearbyHealthcareScreen> {
                           _currentPosition!.latitude,
                           _currentPosition!.longitude,
                         ),
-                        zoom: 13.5,
+                        zoom: 14.5,
                       ),
+                      mapType: MapType.normal,
                       myLocationEnabled: true,
-                      myLocationButtonEnabled: false,
-                      zoomControlsEnabled: false,
+                      myLocationButtonEnabled: true,
+                      compassEnabled: true,
+                      zoomControlsEnabled: true,
                       markers: _markers,
-                      onMapCreated: (controller) {
+                      onMapCreated: (controller) async {
                         _mapController = controller;
                         if (_currentPosition != null) {
-                          _animateToUser(_currentPosition!);
+                          // Wait a frame so the map surface is ready, then center on GPS.
+                          await Future<void>.delayed(const Duration(milliseconds: 350));
+                          if (!mounted || _mapController == null) return;
+                          await _mapController!.animateCamera(
+                            CameraUpdate.newCameraPosition(
+                              CameraPosition(
+                                target: LatLng(
+                                  _currentPosition!.latitude,
+                                  _currentPosition!.longitude,
+                                ),
+                                zoom: 14.5,
+                              ),
+                            ),
+                          );
                         }
                       },
+                    ),
+                    Positioned(
+                      left: 8,
+                      bottom: 8,
+                      child: IgnorePointer(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'Blue pin = your GPS · Other pins = places',
+                            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                          ),
+                        ),
+                      ),
                     ),
                     if (_state == NearbyLoadState.loading)
                       const Positioned.fill(
